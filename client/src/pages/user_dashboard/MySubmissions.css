@@ -1,0 +1,11 @@
+.activity-wrapper{padding:20px}
+.activity-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.activity-card{background:#fff;border:1px solid #e6e9ef;border-radius:12px;overflow:hidden}
+.activity-empty{background:#fff;border:1px dashed #e6e9ef;border-radius:12px;padding:24px;color:#6b7c93;text-align:center}
+.activity-table{width:100%;border-collapse:collapse}
+.activity-table thead{background:#f7f9fc}
+.activity-table th,.activity-table td{padding:12px 14px;border-bottom:1px solid #eef1f6;text-align:left}
+.status-pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.85rem;font-weight:600}
+.status-pill.pending{background:#fff8e1;color:#8d6e63;border:1px solid #ffe0b2}
+.status-pill.approved{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9}
+.status-pill.rejected{background:#ffebee;color:#c62828;border:1px solid #ffcdd2}

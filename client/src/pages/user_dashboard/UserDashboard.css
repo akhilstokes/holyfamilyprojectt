@@ -1,0 +1,14 @@
+.live-rate-view table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.live-rate-view th, td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+}
+
+.live-rate-view th {
+  background-color: #f2f2f2;
+}

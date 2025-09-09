@@ -1,0 +1,131 @@
+/* General Page Title */
+.page-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #34495e;
+    margin-bottom: 2rem;
+}
+
+/* Stats Cards */
+.stats-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.card-icon {
+    font-size: 2rem;
+    color: #fff;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-icon.blue { background-color: #3498db; }
+.card-icon.green { background-color: #2ecc71; }
+.card-icon.purple { background-color: #9b59b6; }
+
+.card-info h4 {
+    font-size: 1rem;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.card-info p {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #34495e;
+}
+
+/* Table Styling from BillRequests */
+.admin-content {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    overflow: hidden; /* For rounded corners on table */
+}
+
+.admin-content h2 {
+    margin: 0;
+    padding: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #34495e;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+th, td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+thead tr {
+    background-color: #f4f7fa;
+}
+
+th {
+    font-weight: 600;
+    color: #7f8c8d;
+}
+
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    color: #fff;
+}
+
+.status-pending { background-color: #f39c12; }
+.status-approved { background-color: #2ecc71; }
+.status-rejected { background-color: #e74c3c; }
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: opacity 0.2s;
+}
+
+.btn:hover {
+    opacity: 0.85;
+}
+
+.btn-success { background-color: #2ecc71; }
+.btn-danger { background-color: #e74c3c; }

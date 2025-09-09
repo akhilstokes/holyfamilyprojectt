@@ -1,0 +1,18 @@
+.profile-container { display: flex; justify-content: center; align-items: flex-start; padding: 40px; min-height: 80vh; background: #f4f7fa; }
+.profile-card { background: #fff; padding: 24px 28px; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.08); width: 520px; }
+.profile-card h2 { margin: 0 0 16px; color: #1f2937; text-align: left; }
+
+.profile-form { display: grid; gap: 14px; }
+.form-row { display: grid; gap: 6px; }
+.form-row label { font-size: 13px; color: #6b7280; }
+.form-row input { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; outline: none; }
+.form-row input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+
+.form-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+.btn { padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+.btn.primary { background: #2563eb; color: #fff; }
+.btn.primary:disabled { opacity: .7; cursor: not-allowed; }
+
+.alert { padding: 10px 12px; border-radius: 8px; margin: 8px 0; font-size: 14px; }
+.alert.success { background: #ecfdf5; color: #065f46; }
+.alert.error { background: #fef2f2; color: #991b1b; }

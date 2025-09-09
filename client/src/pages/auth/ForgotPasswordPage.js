@@ -1,0 +1,65 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+import { Link } from 'react-router-dom';
+
+const ForgotPasswordPage = () => {
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const onSubmit = async (e) => {
+        e.preventDefault();
+        setMessage('');
+        setError('');
+        setIsLoading(true);
+
+        try {
+            const response = await axios.post(
+                `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/forgot-password`, 
+                { email }
+            );
+            setMessage(response.data.message || 'Password reset link has been sent to your email.');
+        } catch (err) {
+            setError(err.response?.data?.message || 'An error occurred while sending the reset link.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="auth-wrapper">
+            <div className="form-container">
+                <h2>Forgot Password</h2>
+                <p>Enter your email address and we'll send you a link to reset your password.</p>
+                {message && <div className="success-message">{message}</div>}
+                {error && <div className="error-message">{error}</div>}
+                <form onSubmit={onSubmit}>
+                    <div className="input-group">
+                        <input
+                            className="form-input"
+                            type="email"
+                            placeholder="Email Address"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            disabled={isLoading}
+                        />
+                    </div>
+                    <button 
+                        className="form-button" 
+                        type="submit"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Sending...' : 'Send Reset Link'}
+                    </button>
+                </form>
+                <p className="form-text">
+                    Remember your password? <Link to="/login">Login here</Link>
+                </p>
+            </div>
+        </div>
+    );
+};
+
+export default ForgotPasswordPage;

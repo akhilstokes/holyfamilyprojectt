@@ -1,0 +1,149 @@
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.company-logo {
+  height: 40px;   /* Adjust size */
+  width: auto;
+}
+
+.company-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff7b29; /* Matches your orange brand color */
+}
+
+.navbar {
+    background: var(--white-color);
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 80px;
+    width: 100%;
+    max-width: 1400px;
+    padding: 0 2rem;
+}
+
+.navbar-logo {
+    color: var(--primary-color);
+    justify-self: start;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-logo .fa-industry {
+    margin-right: 0.5rem;
+}
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    text-align: center;
+}
+
+.nav-item {
+    height: 80px;
+}
+
+.nav-link {
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    padding: 0 1rem;
+    height: 100%;
+    transition: all 0.2s ease-out;
+}
+
+.nav-link:hover {
+    color: var(--primary-color);
+}
+
+.nav-link.active {
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.nav-auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-button {
+    padding: 8px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease-out;
+}
+
+.btn-login {
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.btn-login:hover {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+
+.btn-register {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    border: 1px solid var(--primary-color);
+}
+
+.btn-register:hover {
+    background-color: var(--primary-hover);
+}
+/* Dropdown styling */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: 80px;
+    left: 0;
+    background-color: var(--white-color);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    min-width: 180px;
+    z-index: 999;
+    border-radius: 4px;
+}
+
+.dropdown-content .nav-link {
+    display: block;
+    padding: 10px 15px;
+    height: auto;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.dropdown-content .nav-link:hover {
+    background-color: #f9f9f9;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}

@@ -1,0 +1,381 @@
+
+/* === Hero Section === */
+.hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 80vh;
+    padding: 0 2rem;
+    color: var(--white-color);
+    background: linear-gradient(rgba(0, 45, 98, 0.7), rgba(0, 45, 98, 0.7)), 
+                url('https://images.unsplash.com/photo-1554968363-a2b9d3d3a067?q=80&w=2070') no-repeat center center/cover;
+}
+
+/* use var for brand overlay if needed elsewhere */
+.hero { --hero-overlay: var(--brand-dark); }
+
+.hero-title {
+    font-size: clamp(2.2rem, 4.5vw, 3.5rem);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+}
+
+.hero-subtitle {
+    font-size: clamp(1rem, 2.2vw, 1.25rem);
+    font-weight: 300;
+    margin-bottom: 2rem;
+    max-width: 600px;
+}
+
+.hero-cta-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+/* === Orange Button (Updated) === */
+.cta-button {
+    padding: 12px 30px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Use theme variables */
+.cta-primary {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    border: none;
+}
+
+.cta-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-3px);
+}
+
+/* Secondary CTA style */
+.cta-secondary {
+    background: transparent;
+    color: var(--white-color);
+    border: 2px solid rgba(255,255,255,0.7);
+}
+.cta-secondary:hover {
+    border-color: #fff;
+    transform: translateY(-3px);
+}
+
+/* === Features Section === */
+.features-section {
+    padding: 5rem 2rem;
+    text-align: center;
+    background-color: var(--white-color);
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.section-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 3rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+    .hero { height: 70vh; padding: 0 1.25rem; }
+    .hero-cta-buttons { flex-direction: column; width: 100%; }
+    .cta-button { width: 100%; text-align: center; }
+}
+
+.feature-card {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.feature-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+}
+
+.feature-card h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+    font-size: 1rem;
+    color: #555;
+}
+
+/* === Footer === */
+.footer {
+    padding: 2rem;
+    text-align: center;
+    background-color: #222;
+    color: #aaa;
+}
+
+/* === Buying Section (Premium) === */
+.buying-section {
+    padding: 5rem 2rem;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,45,98,0.03) 100%);
+}
+
+.buying-header {
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto 2rem;
+}
+
+.buying-header h2 {
+    font-size: 2.4rem;
+    margin-bottom: .5rem;
+    color: var(--text-color);
+}
+
+.buying-header p {
+    color: #59626a;
+    margin-bottom: 1.5rem;
+}
+
+.buy-now-btn {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(240, 123, 63, 0.25);
+}
+
+.buying-grid {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.buying-card {
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: var(--shadow-light);
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+
+.buying-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-strong);
+    border-color: rgba(0,0,0,0.06);
+}
+
+.buying-icon {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: .75rem;
+}
+
+.buying-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: .35rem;
+}
+
+.buying-card p {
+    color: #59626a;
+}
+
+/* === Buying Section (Premium) === */
+.buying-section {
+    padding: 5rem 2rem;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,45,98,0.03) 100%);
+}
+
+.buying-header {
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto 2rem;
+}
+
+.buying-header h2 {
+    font-size: 2.4rem;
+    margin-bottom: .5rem;
+    color: var(--text-color);
+}
+
+.buying-header p {
+    color: #59626a;
+    margin-bottom: 1.5rem;
+}
+
+.buy-now-btn {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(240, 123, 63, 0.25);
+}
+
+.buying-grid {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.buying-card {
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: var(--shadow-light);
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+
+.buying-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-strong);
+    border-color: rgba(0,0,0,0.06);
+}
+
+.buying-icon {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: .75rem;
+}
+
+.buying-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: .35rem;
+}
+
+.buying-card p {
+    color: #59626a;
+}
+
+/* === Premium Buying Layout + Animations === */
+.buying-container {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 2.25rem;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.buying-content { min-width: 0; }
+
+.buying-container .buying-header {
+    text-align: left;
+    max-width: 600px;
+    margin: 0 0 1rem 0;
+}
+
+.buying-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.buying-illustration {
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    filter: drop-shadow(0 12px 30px rgba(0,0,0,0.08));
+}
+
+/* Element slide-up utility */
+@keyframes slideUp {
+    0% { opacity: 0; transform: translateY(14px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+.slide-up { opacity: 0; animation: slideUp .6s ease-out forwards; }
+
+/* SVG subtle float */
+@keyframes svgFloat {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+    100% { transform: translateY(0px); }
+}
+.svg-float { animation: svgFloat 6s ease-in-out infinite; }
+
+/* Pulsing rings */
+@keyframes ringPulse {
+    0%   { transform: scale(1); opacity: .8; }
+    70%  { transform: scale(1.25); opacity: 0; }
+    100% { transform: scale(1.25); opacity: 0; }
+}
+.ring { animation: ringPulse 2.2s ease-out infinite; transform-origin: center; }
+.ring.delay { animation-delay: .6s; }
+
+/* Responsive */
+@media (max-width: 992px) {
+    .buying-container { grid-template-columns: 1fr; gap: 1.5rem; }
+    .buying-visual { order: -1; }
+    .buying-header h2 { font-size: 2rem; }
+}
+
+/* === Page Entry Animations === */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero elements */
+.fade-in {
+    opacity: 0;
+    animation: fadeInUp .6s ease-out forwards;
+}
+.fade-in-delay {
+    opacity: 0;
+    animation: fadeInUp .6s ease-out .15s forwards;
+}
+.fade-in-delay2 {
+    opacity: 0;
+    animation: fadeInUp .6s ease-out .3s forwards;
+}
+
+/* Features grid cards with subtle stagger */
+.features-grid .feature-card { 
+    opacity: 0; 
+    animation: fadeInUp .5s ease-out forwards; 
+}
+.features-grid .feature-card:nth-child(1) { animation-delay: .1s; }
+.features-grid .feature-card:nth-child(2) { animation-delay: .2s; }
+.features-grid .feature-card:nth-child(3) { animation-delay: .3s; }
+.features-grid .feature-card:nth-child(4) { animation-delay: .4s; }
+.features-grid .feature-card:nth-child(5) { animation-delay: .5s; }
