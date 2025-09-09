@@ -1,0 +1,197 @@
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* === Sidebar === */
+.sidebar {
+    width: 260px;
+    background-color: #2d3436; /* Dark background from our theme */
+    color: var(--white-color);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 0;
+    transition: width 0.3s ease;
+}
+
+.sidebar-header {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    border-bottom: 1px solid #444;
+}
+
+.sidebar-nav {
+    list-style: none;
+    margin-top: 1.5rem;
+    flex-grow: 1;
+}
+
+.nav-item a {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    color: #bdc3c7;
+    text-decoration: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.nav-item a:hover {
+    background-color: #3a4245;
+    color: var(--white-color);
+}
+
+.nav-item a.active {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    font-weight: 500;
+}
+
+.nav-icon {
+    margin-right: 1rem;
+    width: 20px; /* Aligns icons neatly */
+}
+
+/* === Main Content === */
+.main-content-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-header {
+    background: var(--white-color);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    height: 80px;
+}
+
+/* Header actions: Profile + Logout */
+.user-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.profile-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #2d3436;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 10px;
+    border-radius: 6px;
+}
+.profile-link:hover {
+    background: #f2f3f5;
+}
+.profile-link i { font-size: 1rem; }
+
+.logout-button {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.logout-button:hover {
+    background-color: var(--primary-hover);
+}
+
+.dashboard-content {
+    flex-grow: 1;
+    padding: 2rem;
+    background-color: var(--secondary-color);
+}
+
+/* Content sections: cards and grid utilities */
+.dash-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+}
+.dash-card {
+    background: var(--white-color);
+    border: 1px solid #eee;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 1rem;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+.dash-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+}
+.col-3 { grid-column: span 3; }
+.col-4 { grid-column: span 4; }
+.col-6 { grid-column: span 6; }
+.col-12 { grid-column: span 12; }
+
+.stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.stat .label { color: #6b7280; font-weight: 500; }
+.stat .value { font-size: 1.35rem; font-weight: 700; color: #111827; }
+.stat .trend { font-size: .85rem; color: #059669; }
+
+@media (max-width: 1024px) {
+    .col-3, .col-4 { grid-column: span 6; }
+}
+@media (max-width: 640px) {
+    .col-3, .col-4, .col-6 { grid-column: span 12; }
+}
+
+/* === Compact, refined sizing for better density === */
+.dashboard-container {
+    font-size: 14px; /* base font size down from default */
+}
+.sidebar {
+    width: 220px; /* slightly narrower */
+}
+.sidebar-header {
+    font-size: 1.1rem;
+}
+.nav-item a {
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem; /* smaller link text */
+}
+.nav-icon {
+    width: 16px;
+    margin-right: 0.75rem;
+}
+.dashboard-header {
+    height: 64px;
+    padding: 0.5rem 1rem;
+}
+.logout-button {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    border-radius: 5px;
+}
+.dashboard-content {
+    padding: 1.25rem; /* reduce page padding */
+    font-size: 0.95rem; /* smaller content font */
+    line-height: 1.45;
+}
+
+/* Mobile tweaks */
+@media (max-width: 768px) {
+    .sidebar { width: 200px; }
+    .sidebar-header { font-size: 1rem; }
+    .nav-item a { padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+    .dashboard-header { height: 56px; }
+    .logout-button { padding: 6px 12px; font-size: 0.8rem; }
+    .dashboard-content { padding: 1rem; font-size: 0.9rem; }
+}

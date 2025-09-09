@@ -1,0 +1,157 @@
+:root {
+    /* rely on App.css variables; keep here if this file is used standalone */
+}
+
+.admin-dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--secondary-color);
+}
+
+.admin-sidebar {
+    width: 260px;
+    background-color: var(--brand-dark);
+    color: #ecf0f1;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.admin-sidebar-header {
+    padding: 1.5rem;
+    font-size: 1.6rem;
+    font-weight: 600;
+    text-align: center;
+    color: #fff;
+    background-color: var(--brand-dark);
+}
+
+.admin-sidebar-nav {
+    list-style: none;
+    margin-top: 1rem;
+    flex-grow: 1;
+}
+
+.admin-nav-item a {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    color: #e6e9ef;
+    text-decoration: none;
+    transition: background-color 0.2s, color 0.2s;
+    border-left: 4px solid transparent;
+}
+
+.admin-nav-item a:hover {
+    background-color: rgba(255,255,255,0.08);
+    color: #fff;
+}
+
+.admin-nav-item a.active {
+    background-color: rgba(30, 136, 229, 0.18); /* brighter accent */
+    color: #fff;
+    font-weight: 700;
+    border-left: 4px solid #1E88E5; /* bright blue accent */
+}
+
+.admin-nav-icon {
+    margin-right: 1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.admin-main-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top navigation bar - consistent dark blue gradient across all admin pages */
+.admin-header {
+    background: linear-gradient(90deg, #0D47A1 0%, #1565C0 100%);
+    color: #fff;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px; /* uniform height */
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15); /* subtle bottom shadow */
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; /* clean modern */
+}
+
+.admin-header h1 {
+    font-size: 1.25rem;
+    font-weight: 800; /* bold */
+    color: #fff; /* ensure white */
+    margin: 0;
+    letter-spacing: -0.2px;
+    text-align: left; /* left aligned */
+}
+
+.admin-user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: inherit;
+}
+
+/* Top bar buttons - white text, bold; soft hover animation */
+.admin-user-info .logout-button,
+.admin-user-info .profile-button {
+    background: rgba(255,255,255,0.14);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    backdrop-filter: saturate(120%) blur(2px);
+}
+
+.admin-user-info .logout-button:hover,
+.admin-user-info .profile-button:hover {
+    transform: scale(1.03); /* slight scale-up */
+    box-shadow: 0 6px 18px rgba(21, 101, 192, 0.45); /* soft glow */
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255,255,255,0.55);
+}
+
+.admin-user-info .logout-button:active,
+.admin-user-info .profile-button:active {
+    transform: scale(0.99);
+}
+
+.admin-page-content {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+}
+
+/* Default sidebar link */
+.admin-sidebar-nav .admin-nav-item a {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: #fff;
+    text-decoration: none;
+    transition: background 0.3s;
+}
+
+/* Hover effect */
+.admin-sidebar-nav .admin-nav-item a:hover {
+    background-color: rgba(255,255,255,0.10);
+    border-radius: 5px;
+}
+
+/* Active link - keep dark style but highlight more */
+.admin-sidebar-nav .admin-nav-item a.active {
+    background-color: rgba(30, 136, 229, 0.18);
+    border-radius: 5px;
+    font-weight: 700;
+}
+
+/* Icon spacing */
+.admin-nav-icon { margin-right: 10px; }

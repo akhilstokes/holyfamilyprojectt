@@ -1,0 +1,16 @@
+.authmodal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000}
+.authmodal{width:min(520px,92vw);background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:18px}
+.authmodal--compact{width:min(380px,92vw); padding:14px; border-radius:10px}
+.authmodal--compact .authmodal__title{font-size:1.05rem}
+.authmodal--compact .authmodal__tab{padding:6px 8px}
+.authmodal--compact .input-group input{padding:8px}
+.authmodal--compact .authmodal__or{margin:10px 0}
+.authmodal__header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.authmodal__title{margin:0;font-size:1.25rem}
+.authmodal__tabs{display:flex;gap:8px;margin:8px 0 12px}
+.authmodal__tab{flex:1;border:1px solid #e6e9ef;border-radius:8px;padding:8px 10px;background:#f7f9fc;cursor:pointer;font-weight:600}
+.authmodal__tab.active{background:#e8f1ff;border-color:#cfe1ff}
+.authmodal__form{display:grid;gap:10px}
+.input-group{display:grid;gap:6px}
+.input-group input{padding:10px;border:1px solid #e6e9ef;border-radius:8px}
+.authmodal__or{margin:14px 0;text-align:center;color:#6b7c93}

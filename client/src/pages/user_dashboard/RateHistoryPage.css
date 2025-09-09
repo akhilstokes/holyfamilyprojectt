@@ -1,0 +1,25 @@
+.rate-history {
+  padding: 20px;
+}
+
+.rate-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.rate-table th,
+.rate-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+}
+
+.rate-table th {
+  background-color: #007bff;
+  color: white;
+}
+
+.rate-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}

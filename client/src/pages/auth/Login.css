@@ -1,0 +1,15 @@
+.back-home-btn {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 10px 18px;
+  background-color: #555;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.back-home-btn:hover {
+  background-color: #333;
+}
