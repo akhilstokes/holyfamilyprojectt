@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 import './AuthModal.css';
 
 /*
@@ -22,6 +23,8 @@ export default function AuthModal({ open, onClose, onSuccess, compact = false })
     email: '',
     phoneNumber: '',
     password: '',
+    confirmPassword: '',
+    role: 'user', // 'user' | 'field_staff' | 'accountant'
   });
 
   const validateEmail = (email) => /\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+/.test(email);
@@ -50,15 +53,27 @@ export default function AuthModal({ open, onClose, onSuccess, compact = false })
   const doRegister = async (e) => {
     e.preventDefault();
     setError('');
-    const { name, email, phoneNumber, password } = registerForm;
-    if (!name || !validateEmail(email) || !password) {
-      setError('Please fill name, valid email and password');
+    const { name, email, phoneNumber, password, confirmPassword, role } = registerForm;
+    if (!name || !validateEmail(email)) {
+      setError('Please fill name and a valid email');
       return;
     }
+    if (!password || password !== confirmPassword) {
+      setError('Enter password and confirm it correctly');
+      return;
+    }
+
     try {
       setLoading(true);
-      const res = await register({ name, email, phoneNumber, password });
-      if (res?.success) {
+      let res;
+      if (role === 'field_staff') {
+        const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+        // Staff registration handled by staff endpoint; password not used by backend
+        res = await axios.post(`${base}/api/auth/register-staff`, { name, email, phoneNumber });
+      } else {
+        res = await register({ name, email, phoneNumber, password });
+      }
+      if (res?.success || res?.data?.token) {
         onSuccess?.();
         onClose?.();
       }
@@ -91,7 +106,7 @@ export default function AuthModal({ open, onClose, onSuccess, compact = false })
     <div className="authmodal-backdrop" role="dialog" aria-modal="true">
       <div className={`authmodal ${compact ? 'authmodal--compact' : ''}`}>
         <div className="authmodal__header">
-          <h3 className="authmodal__title">Welcome</h3>
+          <h3 className="authmodal__title">Join Holy Family Polymers</h3>
           <button className="link" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
@@ -99,11 +114,11 @@ export default function AuthModal({ open, onClose, onSuccess, compact = false })
           <button
             className={`authmodal__tab ${tab === 'login' ? 'active' : ''}`}
             onClick={() => setTab('login')}
-          >Login</button>
+          >Sign in</button>
           <button
             className={`authmodal__tab ${tab === 'register' ? 'active' : ''}`}
             onClick={() => setTab('register')}
-          >Register</button>
+          >Create account</button>
         </div>
 
         {error && <div className="error-message" style={{ marginBottom: 12 }}>{error}</div>}
@@ -111,7 +126,7 @@ export default function AuthModal({ open, onClose, onSuccess, compact = false })
         {tab === 'login' && (
           <form onSubmit={doLogin} className="authmodal__form">
             <div className="input-group">
-              <label>Email</label>
+              <label>Email address</label>
               <input
                 type="email"
                 value={loginForm.email}
@@ -131,7 +146,7 @@ export default function AuthModal({ open, onClose, onSuccess, compact = false })
               />
             </div>
             <button type="submit" className="btn-primary w-100" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
         )}
@@ -148,7 +163,7 @@ export default function AuthModal({ open, onClose, onSuccess, compact = false })
               />
             </div>
             <div className="input-group">
-              <label>Email</label>
+              <label>Email address</label>
               <input
                 type="email"
                 value={registerForm.email}
@@ -158,30 +173,50 @@ export default function AuthModal({ open, onClose, onSuccess, compact = false })
               />
             </div>
             <div className="input-group">
-              <label>Phone</label>
+              <label>Phone number</label>
               <input
                 value={registerForm.phoneNumber}
                 onChange={(e) => setRegisterForm({ ...registerForm, phoneNumber: e.target.value })}
                 placeholder="Phone number"
               />
             </div>
+            {registerForm.role !== 'field_staff' && (
+              <>
+                <div className="input-group">
+                  <label>Password</label>
+                  <input
+                    type="password"
+                    value={registerForm.password}
+                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                    placeholder="Create a password"
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Confirm password</label>
+                  <input
+                    type="password"
+                    value={registerForm.confirmPassword}
+                    onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                    placeholder="Re-enter password"
+                  />
+                </div>
+              </>
+            )}
             <div className="input-group">
-              <label>Password</label>
-              <input
-                type="password"
-                value={registerForm.password}
-                onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                placeholder="Create a password"
-                required
-              />
+              <label>Select your role</label>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <label><input type="radio" name="role" checked={registerForm.role==='user'} onChange={()=>setRegisterForm({ ...registerForm, role:'user' })}/> User</label>
+                <label><input type="radio" name="role" checked={registerForm.role==='field_staff'} onChange={()=>setRegisterForm({ ...registerForm, role:'field_staff' })}/> Staff</label>
+                <label><input type="radio" name="role" checked={registerForm.role==='accountant'} onChange={()=>setRegisterForm({ ...registerForm, role:'accountant' })}/> Accountant</label>
+              </div>
             </div>
             <button type="submit" className="btn-primary w-100" disabled={loading}>
-              {loading ? 'Creating account...' : 'Register'}
+              {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
         )}
 
-        <div className="authmodal__or">OR</div>
+        <div className="authmodal__or">Or continue with</div>
 
         <GoogleLogin
           onSuccess={onGoogleSuccess}

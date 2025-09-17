@@ -9,6 +9,15 @@ const barrelMovementSchema = new mongoose.Schema(
     toLocation: { type: String, default: '' },
     notes: { type: String, default: '' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
+    // Logistics semantics for field operations
+    movementKind: { type: String, enum: ['dispatch', 'return', null], default: null },
+    recipientUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    dispatchDate: { type: Date, default: null },
+    returnDate: { type: Date, default: null },
+    isReturnedEmpty: { type: Boolean, default: null },
+    dispatchNote: { type: String, default: '' },
+    returnNote: { type: String, default: '' },
   },
   { timestamps: true }
 );

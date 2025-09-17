@@ -86,21 +86,7 @@ const AdminLeavePage = () => {
             <div className="page-header">
                 <h1>Leave Management </h1>
                 <p>Manage and review staff leave requests</p>
-                <div style={{ marginTop: 8 }}>
-                    <button
-                        className="add-rate-btn"
-                        onClick={async () => {
-                            try {
-                                const res = await axios.post('/api/user-management/seed-demo-staff', {}, { headers: { Authorization: `Bearer ${token}` } });
-                                alert(`${res.data.message}.\nEmail: ${res.data.credentials.email}\nPassword: ${res.data.credentials.password}`);
-                            } catch (e) {
-                                alert(e.response?.data?.message || 'Failed to seed demo staff');
-                            }
-                        }}
-                    >
-                        Seed Demo Staff
-                    </button>
-                </div>
+                {/* Removed Seed Demo Staff button per request */}
             </div>
 
             <div className="stats-overview">

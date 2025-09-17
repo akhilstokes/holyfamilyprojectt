@@ -2,25 +2,41 @@
     color: var(--text-color);
 }
 
-/* === About Header Section === */
+/* === About Header Section — Minimal Clean === */
 .about-header {
-    background-color: var(--primary-color);
-    color: var(--white-color);
+    background: var(--white-color);
+    color: var(--text-color);
     text-align: center;
-    padding: 4rem 2rem;
+    padding: 3.5rem 2rem 2.75rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .about-header h1 {
-    font-size: 3rem;
+    font-size: 2.6rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-color);
+    position: relative;
+}
+
+.about-header h1::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -12px;
+    width: 88px;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--primary-color);
 }
 
 .about-header p {
-    font-size: 1.2rem;
-    font-weight: 300;
-    max-width: 800px;
-    margin: 0 auto;
+    font-size: 1.05rem;
+    font-weight: 400;
+    max-width: 780px;
+    margin: 0.75rem auto 0;
+    color: #555;
 }
 
 /* === Content Section === */
@@ -35,11 +51,24 @@
 }
 
 .about-section h2 {
-    font-size: 2.2rem;
-    font-weight: 600;
-    color: var(--primary-color);
+    font-size: 2rem;
+    font-weight: 700;
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
+    color: var(--text-color);
+    position: relative;
+}
+
+.about-section h2::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -10px;
+    width: 72px;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--primary-color);
 }
 
 /* === Story Section (Two-Column Layout) === */
@@ -54,12 +83,18 @@
     width: 100%;
     border-radius: 12px;
     box-shadow: var(--shadow-strong);
+    transition: transform .4s ease, box-shadow .4s ease;
 }
 
 .story-text p {
     margin-bottom: 1rem;
     line-height: 1.8;
     color: #555;
+}
+
+.story-image img:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 35px rgba(0,0,0,.12);
 }
 
 /* === Values Section (Card Layout) === */
@@ -75,6 +110,7 @@
     text-align: center;
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
 }
 
 .value-icon {

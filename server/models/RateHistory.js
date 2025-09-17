@@ -6,11 +6,11 @@ const rateHistorySchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false, // Allow null for system-generated rates
     },
     rateType: {
       type: String,
-      required: true, // e.g., 'wage', 'commission', 'price', etc.
+      required: true, // e.g., 'latex60', 'rubber_sheet', 'wage', 'commission', etc.
       trim: true,
     },
     rateValue: {
@@ -26,6 +26,23 @@ const rateHistorySchema = new mongoose.Schema(
       ref: 'User',
       default: null,
     },
+    // Source of the rate: 'manual', 'rubber_board', 'system', etc.
+    source: {
+      type: String,
+      default: 'manual',
+      enum: ['manual', 'rubber_board', 'system', 'api']
+    },
+    // URL from which the rate was fetched (for external sources)
+    fetchedFrom: {
+      type: String,
+      default: null
+    },
+    // Additional metadata
+    metadata: {
+      type: Map,
+      of: mongoose.Schema.Types.Mixed,
+      default: {}
+    }
   },
   { timestamps: true }
 );

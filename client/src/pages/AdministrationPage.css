@@ -3,6 +3,29 @@
   padding: 40px;
 }
 
+.admin-page h1 {
+  font-size: 2.6rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--brand-dark));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+}
+
+.admin-page h1::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -10px;
+  width: 90px;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--primary-color), var(--brand-dark));
+}
+
 .admin-cards {
   display: flex;
   flex-wrap: wrap;
@@ -12,17 +35,20 @@
 }
 
 .admin-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  width: 250px;
+  background: var(--white-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow-light);
+  padding: 22px;
+  width: 260px;
   text-align: center;
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  border: 1px solid var(--border-color);
 }
 
 .admin-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-strong);
+  border-color: var(--primary-color);
 }
 
 .admin-img {
@@ -31,4 +57,14 @@
   border-radius: 50%;
   object-fit: cover;
   margin-bottom: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.admin-card h3 {
+  margin: 8px 0 4px;
+  color: var(--text-color);
+}
+
+.admin-card p {
+  color: #666;
 }

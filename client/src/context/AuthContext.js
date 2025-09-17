@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { validateTokenFormat, clearCorruptedToken as clearToken } from '../utils/tokenUtils';
 
 const AuthContext = createContext();
 
@@ -20,6 +21,7 @@ export const AuthProvider = ({ children }) => {
     // Validate token on app start
     useEffect(() => {
         validateToken();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const validateToken = async () => {
@@ -31,9 +33,11 @@ export const AuthProvider = ({ children }) => {
             return;
         }
 
-        // Basic token format validation
-        if (typeof token !== 'string' || token.trim() === '') {
-            console.error('Invalid token format in localStorage');
+        // Validate token format using utility
+        const tokenValidation = validateTokenFormat(token);
+        if (!tokenValidation.valid) {
+            console.error('Invalid token format in localStorage:', tokenValidation.reason);
+            clearToken();
             logout();
             return;
         }
@@ -80,8 +84,9 @@ export const AuthProvider = ({ children }) => {
             const { token, user: userData } = response.data;
             
             // Validate token format before storing
-            if (!token || typeof token !== 'string' || token.trim() === '') {
-                throw new Error('Invalid token received from server');
+            const tokenValidation = validateTokenFormat(token);
+            if (!tokenValidation.valid) {
+                throw new Error(`Invalid token received from server: ${tokenValidation.reason}`);
             }
             
             // Store token and user data
@@ -104,6 +109,32 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const staffLogin = async (staffId) => {
+        try {
+            const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/staff-login`, {
+                staffId,
+            });
+
+            const { token, user: userData } = response.data;
+
+            const tokenValidation = validateTokenFormat(token);
+            if (!tokenValidation.valid) {
+                throw new Error(`Invalid token received from server: ${tokenValidation.reason}`);
+            }
+
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(userData));
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+            setUser(userData);
+            setIsAuthenticated(true);
+
+            return { success: true, user: userData };
+        } catch (error) {
+            throw error;
+        }
+    };
+
     const register = async (userData) => {
         try {
             const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/register`, userData);
@@ -111,8 +142,9 @@ export const AuthProvider = ({ children }) => {
             const { token, user: newUser } = response.data;
             
             // Validate token format before storing
-            if (!token || typeof token !== 'string' || token.trim() === '') {
-                throw new Error('Invalid token received from server');
+            const tokenValidation = validateTokenFormat(token);
+            if (!tokenValidation.valid) {
+                throw new Error(`Invalid token received from server: ${tokenValidation.reason}`);
             }
             
             // Store token and user data
@@ -138,6 +170,13 @@ export const AuthProvider = ({ children }) => {
         delete axios.defaults.headers.common['Authorization'];
         setUser(null);
         setIsAuthenticated(false);
+        setRegistrationComplete(true);
+    };
+
+    // Utility function to clear corrupted tokens
+    const clearCorruptedToken = () => {
+        clearToken();
+        logout();
     };
 
     const googleSignIn = async (credential) => {
@@ -149,8 +188,9 @@ export const AuthProvider = ({ children }) => {
             const { token, user: userData } = response.data;
             
             // Validate token format before storing
-            if (!token || typeof token !== 'string' || token.trim() === '') {
-                throw new Error('Invalid token received from server');
+            const tokenValidation = validateTokenFormat(token);
+            if (!tokenValidation.valid) {
+                throw new Error(`Invalid token received from server: ${tokenValidation.reason}`);
             }
             
             // Store token and user data
@@ -176,9 +216,11 @@ export const AuthProvider = ({ children }) => {
         registrationComplete,
         login,
         register,
+        staffLogin,
         logout,
         googleSignIn,
-        validateToken
+        validateToken,
+        clearCorruptedToken
     };
 
     return (

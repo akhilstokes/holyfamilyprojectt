@@ -147,3 +147,107 @@ export const formatPhoneNumber = (phoneNumber) => {
     }
     return phoneNumber;
 };
+
+// Staff ID validation
+export const validateStaffId = (staffId) => {
+    if (!staffId.trim()) {
+        return 'Staff ID is required.';
+    }
+    if (!/^[A-Z0-9]{6,12}$/.test(staffId)) {
+        return 'Staff ID must be 6-12 characters long and contain only uppercase letters and numbers.';
+    }
+    return '';
+};
+
+// Location validation for staff check-in
+export const validateLocation = (location) => {
+    if (!location) {
+        return 'Location is required for check-in/out.';
+    }
+    if (!location.latitude || !location.longitude) {
+        return 'Valid GPS coordinates are required.';
+    }
+    if (location.accuracy > 100) {
+        return 'GPS accuracy is too low. Please wait for better signal.';
+    }
+    if (location.latitude < -90 || location.latitude > 90) {
+        return 'Invalid latitude value.';
+    }
+    if (location.longitude < -180 || location.longitude > 180) {
+        return 'Invalid longitude value.';
+    }
+    return '';
+};
+
+// Photo validation for staff check-in
+export const validatePhoto = (file) => {
+    if (!file) {
+        return 'Photo is required for check-in/out.';
+    }
+    if (!file.type.startsWith('image/')) {
+        return 'Please select a valid image file.';
+    }
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        return 'Image file size must be less than 5MB.';
+    }
+    return '';
+};
+
+// General form validation
+export const validateForm = (formData, requiredFields = []) => {
+    const errors = {};
+    
+    // Check required fields
+    requiredFields.forEach(field => {
+        if (!formData[field] || !formData[field].toString().trim()) {
+            errors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required.`;
+        }
+    });
+    
+    // Validate specific fields if present
+    if (formData.name) {
+        const nameError = validateName(formData.name);
+        if (nameError) errors.name = nameError;
+    }
+    
+    if (formData.email) {
+        const emailError = validateEmail(formData.email);
+        if (emailError) errors.email = emailError;
+    }
+    
+    if (formData.phoneNumber) {
+        const phoneError = validatePhoneNumber(formData.phoneNumber);
+        if (phoneError) errors.phoneNumber = phoneError;
+    }
+    
+    if (formData.password) {
+        const passwordError = validatePassword(formData.password);
+        if (passwordError) errors.password = passwordError;
+    }
+    
+    if (formData.staffId) {
+        const staffIdError = validateStaffId(formData.staffId);
+        if (staffIdError) errors.staffId = staffIdError;
+    }
+    
+    return errors;
+};
+
+// Role-specific validation
+export const validateUserRegistration = (formData) => {
+    const requiredFields = ['name', 'email', 'phoneNumber'];
+    if (formData.role !== 'field_staff') {
+        requiredFields.push('password');
+    }
+    return validateForm(formData, requiredFields);
+};
+
+export const validateStaffRegistration = (formData) => {
+    const requiredFields = ['name', 'email', 'phoneNumber'];
+    return validateForm(formData, requiredFields);
+};
+
+export const validateAdminForm = (formData) => {
+    const requiredFields = ['name', 'email', 'phoneNumber', 'password'];
+    return validateForm(formData, requiredFields);
+};

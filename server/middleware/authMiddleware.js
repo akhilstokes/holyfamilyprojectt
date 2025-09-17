@@ -11,9 +11,16 @@ exports.protect = async (req, res, next) => {
         try {
             token = req.headers.authorization.split(' ')[1];
             
-            // Check if token exists
-            if (!token) {
+            // Check if token exists and is not empty
+            if (!token || token.trim() === '') {
                 return res.status(401).json({ message: 'Not authorized, no token provided' });
+            }
+            
+            // Basic token format validation (JWT should have 3 parts separated by dots)
+            const tokenParts = token.split('.');
+            if (tokenParts.length !== 3) {
+                console.error('Malformed JWT token - incorrect number of parts:', tokenParts.length);
+                return res.status(401).json({ message: 'Invalid token format' });
             }
             
             // Verify the token
@@ -29,6 +36,7 @@ exports.protect = async (req, res, next) => {
             next();
         } catch (error) {
             console.error('Token verification error:', error);
+            console.error('Token received:', token ? `${token.substring(0, 20)}...` : 'null');
             
             // Handle specific JWT errors
             if (error.name === 'JsonWebTokenError') {

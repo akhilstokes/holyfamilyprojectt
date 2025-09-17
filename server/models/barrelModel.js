@@ -8,6 +8,13 @@ const barrelSchema = new mongoose.Schema(
     currentVolume: { type: Number, default: 0, min: 0 }, // liters
     status: { type: String, enum: ['in-use', 'in-storage', 'disposed'], default: 'in-storage' },
 
+    // Material metadata for FEFO and search
+    materialName: { type: String, default: '' },
+    batchNo: { type: String, default: '' },
+    manufactureDate: { type: Date },
+    expiryDate: { type: Date },
+    unit: { type: String, default: 'L' }, // liters by default
+
     purchaseDate: { type: Date, default: Date.now },
     disposalRequested: { type: Boolean, default: false },
     purchaseApproved: { type: Boolean, default: true },

@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 import { 
-    validateName, 
-    validateEmail, 
-    validatePhoneNumber, 
-    validatePassword,
-    cleanPhoneNumber 
+    cleanPhoneNumber,
+    validateUserRegistration
 } from '../../utils/validation';
+import './AuthStyles.css';
 
 const RegisterPage = () => {
     const [formData, setFormData] = useState({
@@ -15,6 +14,7 @@ const RegisterPage = () => {
         email: '',
         phoneNumber: '',
         password: '',
+        role: 'user'
     });
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +24,7 @@ const RegisterPage = () => {
 
     const returnTo = location.state?.from || null;
 
-    const { name, email, phoneNumber, password } = formData;
+    const { name, email, phoneNumber, password, role } = formData;
 
     const onChange = (e) => {
         const { name, value } = e.target;
@@ -52,18 +52,7 @@ const RegisterPage = () => {
     };
 
     const validateForm = () => {
-        const newErrors = {};
-        
-        const nameError = validateName(name);
-        const emailError = validateEmail(email);
-        const phoneError = validatePhoneNumber(phoneNumber);
-        const passwordError = validatePassword(password);
-        
-        if (nameError) newErrors.name = nameError;
-        if (emailError) newErrors.email = emailError;
-        if (phoneError) newErrors.phoneNumber = phoneError;
-        if (passwordError) newErrors.password = passwordError;
-        
+        const newErrors = validateUserRegistration(formData);
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -76,21 +65,28 @@ const RegisterPage = () => {
             try {
                 const finalPhoneNumber = cleanPhoneNumber(phoneNumber);
 
-                const registrationData = {
-                    ...formData,
-                    phoneNumber: finalPhoneNumber
-                };
-
-                const result = await register(registrationData);
+                let result;
+                if (role === 'field_staff') {
+                    const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+                    await axios.post(`${base}/api/auth/register-staff`, {
+                        name,
+                        email,
+                        phoneNumber: finalPhoneNumber
+                    });
+                    // mimic shape for navigation
+                    result = { user: { role: 'field_staff' } };
+                } else {
+                    const registrationData = {
+                        name,
+                        email,
+                        phoneNumber: finalPhoneNumber,
+                        password
+                    };
+                    await register(registrationData);
+                }
                 
                 // After successful registration, redirect
-                if (returnTo) {
-                    navigate(returnTo, { replace: true });
-                } else if (result.user.role === 'admin') {
-                    navigate('/admin/home');
-                } else {
-                    navigate('/user/home');
-                }
+                navigate('/login');
             } catch (err) {
                 console.error('Registration error:', err);
                 if (err.response?.data?.errors) {
@@ -108,80 +104,176 @@ const RegisterPage = () => {
     return (
         <div className="auth-wrapper">
             <div className="form-container">
-
-                {/* ✅ Company Logo */}
+                {/* Company Logo */}
                 <div className="logo-container">
                     <img 
                         src="/images/logo.png" 
-                        alt="Company Logo" 
+                        alt="Holy Family Polymers Logo" 
                         className="company-logo"
                     />
                 </div>
 
-                <h2>Register Your Account</h2>
-                {errors.general && <div className="error-message">{errors.general}</div>}
+                <div className="back-row">
+                    <Link to="/" className="back-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Back to Home
+                    </Link>
+                </div>
+
+                <h2>Create Account</h2>
+                
+                {errors.general && (
+                    <div className="error-message">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                            <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2"/>
+                            <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                        {errors.general}
+                    </div>
+                )}
+
                 <form onSubmit={onSubmit}>
-                    <div className="input-group">
+                    <div className="input-group floating">
                         <input
                             className={`form-input ${errors.name ? 'error' : ''}`}
                             type="text"
-                            placeholder="Full Name (letters, spaces, dots allowed)"
+                            placeholder=" "
                             name="name"
                             value={name}
                             onChange={onChange}
                             maxLength={50}
                         />
+                        <label>Full Name</label>
                         {errors.name && <div className="field-error">{errors.name}</div>}
                     </div>
-                    <div className="input-group">
+
+                    <div className="input-group floating">
                         <input
                             className={`form-input ${errors.email ? 'error' : ''}`}
                             type="email"
-                            placeholder="Email Address"
+                            placeholder=" "
                             name="email"
                             value={email}
                             onChange={onChange}
                         />
+                        <label>Email Address</label>
                         {errors.email && <div className="field-error">{errors.email}</div>}
                     </div>
-                    <div className="input-group">
+
+                    <div className="input-group floating">
                         <input
                             className={`form-input ${errors.phoneNumber ? 'error' : ''}`}
                             type="text"
-                            placeholder="Phone Number (10 digits or +91 9876543210)"
+                            placeholder=" "
                             name="phoneNumber"
                             value={phoneNumber}
                             onChange={onChange}
                             maxLength={15}
                         />
+                        <label>Phone Number</label>
                         {errors.phoneNumber && <div className="field-error">{errors.phoneNumber}</div>}
                     </div>
+
                     <div className="input-group">
-                        <input
-                            className={`form-input ${errors.password ? 'error' : ''}`}
-                            type="password"
-                            placeholder="Password (letters, numbers, special chars, no spaces)"
-                            name="password"
-                            value={password}
-                            onChange={onChange}
-                            onKeyDown={handleKeyDown}
-                        />
-                        {errors.password && <div className="field-error">{errors.password}</div>}
+                        <label style={{ marginBottom: '0.75rem', display: 'block', fontWeight: '600', color: 'var(--gray-700)' }}>
+                            Account Type
+                        </label>
+                        <div className="radio-group">
+                            <div 
+                                className={`radio-option ${role === 'user' ? 'selected' : ''}`}
+                                onClick={() => setFormData({ ...formData, role: 'user' })}
+                            >
+                                <input 
+                                    type="radio" 
+                                    name="role" 
+                                    checked={role === 'user'} 
+                                    onChange={() => setFormData({ ...formData, role: 'user' })}
+                                />
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2"/>
+                                    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                                </svg>
+                                Customer
+                            </div>
+                            <div 
+                                className={`radio-option ${role === 'field_staff' ? 'selected' : ''}`}
+                                onClick={() => setFormData({ ...formData, role: 'field_staff' })}
+                            >
+                                <input 
+                                    type="radio" 
+                                    name="role" 
+                                    checked={role === 'field_staff'} 
+                                    onChange={() => setFormData({ ...formData, role: 'field_staff' })}
+                                />
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+                                    <path d="M7 9H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                    <circle cx="8.5" cy="13.5" r="1.5" fill="currentColor"/>
+                                    <path d="M12 15c-1.2-1.6-4.8-1.6-6 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                                Staff Member
+                            </div>
+                        </div>
                     </div>
+
+                    {role !== 'field_staff' && (
+                        <div className="input-group floating">
+                            <input
+                                className={`form-input ${errors.password ? 'error' : ''}`}
+                                type="password"
+                                placeholder=" "
+                                name="password"
+                                value={password}
+                                onChange={onChange}
+                                onKeyDown={handleKeyDown}
+                            />
+                            <label>Password</label>
+                            {errors.password && <div className="field-error">{errors.password}</div>}
+                        </div>
+                    )}
+
+                    {role === 'field_staff' && (
+                        <div className="info-message" style={{ 
+                            background: 'var(--info-light)', 
+                            color: '#1e40af', 
+                            padding: '1rem', 
+                            borderRadius: 'var(--radius-lg)', 
+                            marginBottom: '1.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="2"/>
+                            </svg>
+                            Staff accounts don't require a password. You'll receive login credentials via email.
+                        </div>
+                    )}
+
                     <button 
                         className="form-button" 
                         type="submit"
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Registering...' : 'Register'}
+                        {isLoading && <span className="loading-spinner"></span>}
+                        {isLoading ? 'Creating Account...' : 'Create Account'}
                     </button>
                 </form>
-                <p className="form-text">
-                    Already have an account? <Link to="/login" state={returnTo ? { from: returnTo } : undefined}>Login here</Link>
-                </p>
+
+                <div className="auth-links">
+                    <span>
+                        Already have an account? 
+                        <Link to="/login" state={returnTo ? { from: returnTo } : undefined}>
+                            Sign In
+                        </Link>
+                    </span>
+                </div>
             </div>
         </div>
-        
     );
 };
 

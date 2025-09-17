@@ -1,28 +1,39 @@
 const Rate = require("../models/rateModel");
+const axios = require('axios');
+const cheerio = require('cheerio');
 
-// Add or update today's rate
+// Admin: Add a new company rate with optional effectiveDate (calendar)
+// @route POST /api/rates/update
+// body: { companyRate: number, marketRate: number, effectiveDate?: 'YYYY-MM-DD', product?: 'latex60' }
 exports.updateRate = async (req, res) => {
   try {
-    const { marketRate, companyRate, source } = req.body;
+    const { marketRate, companyRate, source, effectiveDate, product } = req.body;
 
     if (marketRate == null || companyRate == null) {
       return res.status(400).json({ message: "Both marketRate and companyRate are required" });
     }
 
-    // Always store latest as a new entry
-    const rate = new Rate({ marketRate, companyRate, source });
-    await rate.save();
+    const doc = new Rate({
+      marketRate,
+      companyRate,
+      source: source || 'manual',
+      effectiveDate: effectiveDate ? new Date(effectiveDate) : new Date(),
+      product: product || 'latex60',
+    });
 
-    return res.status(201).json({ message: "Rate updated successfully", rate });
+    await doc.save();
+    return res.status(201).json({ message: "Rate updated successfully", rate: doc });
   } catch (error) {
     return res.status(500).json({ message: "Error updating rate", error: error.message });
   }
 };
 
-// Get the latest rate
+// Get the latest rate by product (default latex60)
+// @route GET /api/rates/latest?product=latex60
 exports.getLatestRate = async (req, res) => {
   try {
-    const rate = await Rate.findOne().sort({ createdAt: -1 });
+    const product = req.query.product || 'latex60';
+    const rate = await Rate.findOne({ product }).sort({ effectiveDate: -1, createdAt: -1 });
     if (!rate) {
       return res.status(404).json({ message: "No rates found" });
     }
@@ -32,10 +43,12 @@ exports.getLatestRate = async (req, res) => {
   }
 };
 
-// Get all rates (history) - Admin
+// Get all rates (history) - Admin (filter by product)
+// @route GET /api/rates/history?product=latex60
 exports.getAllRates = async (req, res) => {
   try {
-    const rates = await Rate.find().sort({ createdAt: -1 });
+    const product = req.query.product || 'latex60';
+    const rates = await Rate.find({ product }).sort({ effectiveDate: -1, createdAt: -1 });
     return res.json(rates);
   } catch (error) {
     return res.status(500).json({ message: "Error fetching rates", error: error.message });
@@ -43,21 +56,24 @@ exports.getAllRates = async (req, res) => {
 };
 
 // Public: Get recent rate history (no auth)
+// @route GET /api/rates/public-history?product=latex60&limit=30
 exports.getPublicRates = async (req, res) => {
   try {
-    const limit = Number(req.query.limit) || 30; // default 30 most recent
-    const rates = await Rate.find().sort({ createdAt: -1 }).limit(limit);
+    const product = req.query.product || 'latex60';
+    const limit = Number(req.query.limit) || 30;
+    const rates = await Rate.find({ product }).sort({ effectiveDate: -1, createdAt: -1 }).limit(limit);
     return res.json(rates);
   } catch (error) {
     return res.status(500).json({ message: "Error fetching public rates", error: error.message });
   }
 };
 
-// User/Admin: Get rate history by date range (inclusive)
-// @route GET /api/rates/history-range?from=2024-01-01&to=2024-01-31
+// User/Admin: Get rate history by date range (inclusive) for a product
+// @route GET /api/rates/history-range?from=2024-01-01&to=2024-01-31&product=latex60
 exports.getRatesByDateRange = async (req, res) => {
   try {
     const { from, to } = req.query;
+    const product = req.query.product || 'latex60';
 
     if (!from || !to) {
       return res.status(400).json({ message: 'from and to query params are required (YYYY-MM-DD)' });
@@ -73,11 +89,291 @@ exports.getRatesByDateRange = async (req, res) => {
     toDate.setHours(23, 59, 59, 999);
 
     const rates = await Rate.find({
-      createdAt: { $gte: fromDate, $lte: toDate },
-    }).sort({ createdAt: -1 });
+      product,
+      effectiveDate: { $gte: fromDate, $lte: toDate },
+    }).sort({ effectiveDate: -1, createdAt: -1 });
 
     return res.json(rates);
   } catch (error) {
     return res.status(500).json({ message: 'Error fetching rate history', error: error.message });
+  }
+};
+
+// Fetch live Latex(60%) rate from Rubber Board website
+// @route GET /api/rates/live/latex
+exports.fetchLatexRateRubberBoard = async (req, res) => {
+  try {
+    const candidateUrls = [
+      'https://rubberboard.gov.in',
+      'https://rubberboard.org.in/public?lang=E',
+      'https://rubberboard.org.in/public'
+    ];
+
+    let html = null;
+    let fetchedUrl = null;
+
+    // Try multiple possible URLs (site sometimes changes)
+    for (const url of candidateUrls) {
+      try {
+        const response = await axios.get(url, { timeout: 10000 });
+        if (response.status === 200 && typeof response.data === 'string') {
+          html = response.data;
+          fetchedUrl = url;
+          break;
+        }
+      } catch (_) {
+        // try next url
+      }
+    }
+
+    if (!html) {
+      return res.status(502).json({ message: 'Unable to fetch Rubber Board page' });
+    }
+
+    const $ = cheerio.load(html);
+
+    // Find the table row containing 'Latex(60%)'
+    let latexRow = null;
+    $('tr').each((_, el) => {
+      const text = $(el).text().trim();
+      if (/latex\s*\(60\%?\)/i.test(text)) {
+        latexRow = $(el);
+        return false; // break
+      }
+    });
+
+    if (!latexRow || latexRow.length === 0) {
+      return res.status(404).json({ message: 'Latex(60%) row not found on source page', source: fetchedUrl });
+    }
+
+    // Attempt to read headers from the same table
+    const table = latexRow.closest('table');
+    let headers = [];
+    if (table.length) {
+      const headerRow = table.find('thead tr').first().length ? table.find('thead tr').first() : table.find('tr').first();
+      headers = headerRow.find('th,td').map((i, th) => $(th).text().trim().replace(/\s+/g, ' ')).get();
+    }
+
+    // Extract numeric values from the latex row (INR and possibly USD values)
+    const cells = latexRow.find('td,th').map((i, td) => $(td).text().trim()).get();
+    const numeric = cells
+      .map((t) => {
+        const cleaned = t.replace(/[₹,]/g, '');
+        const m = cleaned.match(/-?\d+(?:\.\d+)?/);
+        return m ? parseFloat(m[0]) : null;
+      })
+      .filter((v) => v !== null);
+
+    // Heuristic mapping to markets if available in order
+    const markets = {};
+    const knownMarkets = ['Kottayam', 'Kochi', 'Agartala', 'USD'];
+    knownMarkets.forEach((mkt, idx) => {
+      if (numeric[idx] != null) markets[mkt] = numeric[idx];
+    });
+
+    // Try to detect the 'as on' date from page text
+    const pageText = $('body').text();
+    const dateMatch = pageText.match(/on\s+(\d{1,2}-\d{1,2}-\d{4})/i);
+    const asOnDate = dateMatch ? dateMatch[1] : null;
+
+    return res.json({
+      source: fetchedUrl,
+      asOnDate,
+      product: 'Latex(60%)',
+      unit: 'per 100 Kg',
+      headers,
+      numeric,
+      markets
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to fetch latex rate', error: error.message });
+  }
+};
+
+// Combined: Admin latest company rate + Rubber Board live rate
+// @route GET /api/rates/latex/today?product=latex60
+exports.getLatexToday = async (req, res) => {
+  try {
+    const product = req.query.product || 'latex60';
+
+    // 1) Fetch Rubber Board live
+    const candidateUrls = [
+      'https://rubberboard.gov.in',
+      'https://rubberboard.org.in/public?lang=E',
+      'https://rubberboard.org.in/public'
+    ];
+
+    let html = null;
+    let fetchedUrl = null;
+
+    for (const url of candidateUrls) {
+      try {
+        const response = await axios.get(url, { timeout: 10000 });
+        if (response.status === 200 && typeof response.data === 'string') {
+          html = response.data;
+          fetchedUrl = url;
+          break;
+        }
+      } catch (_) {}
+    }
+
+    if (!html) {
+      return res.status(502).json({ message: 'Unable to fetch Rubber Board page' });
+    }
+
+    const $ = cheerio.load(html);
+
+    let latexRow = null;
+    $('tr').each((_, el) => {
+      const text = $(el).text().trim();
+      if (/latex\s*\(60\%?\)/i.test(text)) {
+        latexRow = $(el);
+        return false;
+      }
+    });
+
+    if (!latexRow || latexRow.length === 0) {
+      return res.status(404).json({ message: 'Latex(60%) row not found on source page', source: fetchedUrl });
+    }
+
+    const table = latexRow.closest('table');
+    let headers = [];
+    if (table.length) {
+      const headerRow = table.find('thead tr').first().length ? table.find('thead tr').first() : table.find('tr').first();
+      headers = headerRow.find('th,td').map((i, th) => $(th).text().trim().replace(/\s+/g, ' ')).get();
+    }
+
+    const cells = latexRow.find('td,th').map((i, td) => $(td).text().trim()).get();
+    const numeric = cells
+      .map((t) => {
+        const cleaned = t.replace(/[₹,]/g, '');
+        const m = cleaned.match(/-?\d+(?:\.\d+)?/);
+        return m ? parseFloat(m[0]) : null;
+      })
+      .filter((v) => v !== null);
+
+    const markets = {};
+    const knownMarkets = ['Kottayam', 'Kochi', 'Agartala', 'USD'];
+    knownMarkets.forEach((mkt, idx) => {
+      if (numeric[idx] != null) markets[mkt] = numeric[idx];
+    });
+
+    const pageText = $('body').text();
+    const dateMatch = pageText.match(/on\s+(\d{1,2}-\d{1,2}-\d{4})/i);
+    const asOnDate = dateMatch ? dateMatch[1] : null;
+
+    // 2) Fetch Admin latest
+    const latest = await Rate.findOne({ product }).sort({ effectiveDate: -1, createdAt: -1 });
+
+    return res.json({
+      product,
+      unit: 'per 100 Kg',
+      admin: latest
+        ? { companyRate: latest.companyRate, marketRate: latest.marketRate, effectiveDate: latest.effectiveDate }
+        : null,
+      market: {
+        productLabel: 'Latex(60%)',
+        source: fetchedUrl,
+        asOnDate,
+        headers,
+        markets
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to fetch combined latex data', error: error.message });
+  }
+};
+
+// Combined: Admin latest company rate + Rubber Board live rate
+// @route GET /api/rates/latex/today?product=latex60
+exports.getLatexToday = async (req, res) => {
+  try {
+    const product = req.query.product || 'latex60';
+
+    // 1) Fetch Rubber Board live
+    const candidateUrls = [
+      'https://rubberboard.gov.in',
+      'https://rubberboard.org.in/public?lang=E',
+      'https://rubberboard.org.in/public'
+    ];
+
+    let html = null;
+    let fetchedUrl = null;
+
+    for (const url of candidateUrls) {
+      try {
+        const response = await axios.get(url, { timeout: 10000 });
+        if (response.status === 200 && typeof response.data === 'string') {
+          html = response.data;
+          fetchedUrl = url;
+          break;
+        }
+      } catch (_) {}
+    }
+
+    if (!html) {
+      return res.status(502).json({ message: 'Unable to fetch Rubber Board page' });
+    }
+
+    const $ = cheerio.load(html);
+
+    let latexRow = null;
+    $('tr').each((_, el) => {
+      const text = $(el).text().trim();
+      if (/latex\s*\(60\%?\)/i.test(text)) {
+        latexRow = $(el);
+        return false;
+      }
+    });
+
+    if (!latexRow || latexRow.length === 0) {
+      return res.status(404).json({ message: 'Latex(60%) row not found on source page', source: fetchedUrl });
+    }
+
+    const table = latexRow.closest('table');
+    let headers = [];
+    if (table.length) {
+      const headerRow = table.find('thead tr').first().length ? table.find('thead tr').first() : table.find('tr').first();
+      headers = headerRow.find('th,td').map((i, th) => $(th).text().trim().replace(/\s+/g, ' ')).get();
+    }
+
+    const cells = latexRow.find('td,th').map((i, td) => $(td).text().trim()).get();
+    const numeric = cells
+      .map((t) => {
+        const cleaned = t.replace(/[₹,]/g, '');
+        const m = cleaned.match(/-?\d+(?:\.\d+)?/);
+        return m ? parseFloat(m[0]) : null;
+      })
+      .filter((v) => v !== null);
+
+    const markets = {};
+    const knownMarkets = ['Kottayam', 'Kochi', 'Agartala', 'USD'];
+    knownMarkets.forEach((mkt, idx) => {
+      if (numeric[idx] != null) markets[mkt] = numeric[idx];
+    });
+
+    const pageText = $('body').text();
+    const dateMatch = pageText.match(/on\s+(\d{1,2}-\d{1,2}-\d{4})/i);
+    const asOnDate = dateMatch ? dateMatch[1] : null;
+
+    // 2) Fetch Admin latest
+    const latest = await Rate.findOne({ product }).sort({ effectiveDate: -1, createdAt: -1 });
+
+    return res.json({
+      product,
+      unit: 'per 100 Kg',
+      admin: latest
+        ? { companyRate: latest.companyRate, marketRate: latest.marketRate, effectiveDate: latest.effectiveDate }
+        : null,
+      market: {
+        productLabel: 'Latex(60%)',
+        source: fetchedUrl,
+        asOnDate,
+        headers,
+        markets
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to fetch combined latex data', error: error.message });
   }
 };

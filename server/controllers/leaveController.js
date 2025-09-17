@@ -4,10 +4,11 @@ const User = require('../models/userModel');
 // STAFF ROUTES
 exports.applyLeave = async (req, res) => {
     try {
-        const { leaveType, startDate, endDate, reason } = req.body;
+        const { leaveType, startDate, endDate, reason, dayType } = req.body;
         const leave = new Leave({
             staff: req.user._id,
             leaveType,
+            dayType: dayType === 'half' ? 'half' : 'full',
             startDate,
             endDate,
             reason

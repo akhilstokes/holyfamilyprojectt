@@ -116,34 +116,57 @@
 .btn-register:hover {
     background-color: var(--primary-hover);
 }
-/* Dropdown styling */
-.dropdown {
-    position: relative;
+
+/* Staff auth buttons */
+.staff-auth-separator {
+    color: #ccc;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    margin: 0 5px;
 }
 
-.dropdown-content {
-    display: none;
+.btn-staff-login {
+    background-color: transparent;
+    color: #28a745; /* Green color for staff */
+    border: 1px solid #28a745;
+}
+
+.btn-staff-login:hover {
+    background-color: #28a745;
+    color: var(--white-color);
+}
+
+.btn-staff-register {
+    background-color: #28a745;
+    color: var(--white-color);
+    border: 1px solid #28a745;
+}
+
+.btn-staff-register:hover {
+    background-color: #218838; /* Darker green on hover */
+}
+/* Profile dropdown (buyers navbar) */
+.profile-menu { position: relative; }
+.profile-dropdown {
     position: absolute;
-    top: 80px;
-    left: 0;
-    background-color: var(--white-color);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    min-width: 180px;
-    z-index: 999;
-    border-radius: 4px;
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 200px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    padding: 6px;
+    z-index: 1000;
 }
-
-.dropdown-content .nav-link {
-    display: block;
-    padding: 10px 15px;
-    height: auto;
-    border-bottom: 1px solid #f1f1f1;
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: #111827;
+    text-decoration: none;
 }
-
-.dropdown-content .nav-link:hover {
-    background-color: #f9f9f9;
-}
-
-.dropdown:hover .dropdown-content {
-    display: block;
-}
+.dropdown-item:hover { background: #f3f4f6; }

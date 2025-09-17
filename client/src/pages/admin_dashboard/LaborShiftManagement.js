@@ -23,14 +23,14 @@ const LaborShiftManagement = () => {
 
     const fetchWorkers = async () => {
         try {
-            const response = await fetch('/api/admin/workers', {
+            const response = await fetch('/api/workers', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
             const data = await response.json();
-            if (data.success) {
-                setWorkers(data.workers);
+            if (response.ok) {
+                setWorkers(data);
             }
         } catch (error) {
             console.error('Error fetching workers:', error);
@@ -383,6 +383,23 @@ const LaborShiftManagement = () => {
 };
 
 export default LaborShiftManagement;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

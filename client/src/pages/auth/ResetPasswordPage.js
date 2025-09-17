@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import './AuthStyles.css';
 
 const ResetPasswordPage = () => {
     const [password, setPassword] = useState('');
@@ -42,46 +43,60 @@ const ResetPasswordPage = () => {
 
     return (
         <div className="auth-wrapper">
-             <div className="auth-image-section"></div>
-            <div className="auth-form-section">
-                <div className="form-container">
-                    <h2>Reset Your Password</h2>
-                    {message && <div className="success-message">{message}</div>}
-                    {error && <div className="error-message">{error}</div>}
-                    <form onSubmit={onSubmit}>
-                        <div className="input-group">
-                            <input
-                                className="form-input"
-                                type="password"
-                                placeholder="Enter new password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                disabled={isLoading}
-                            />
-                        </div>
-                        <div className="input-group">
-                            <input
-                                className="form-input"
-                                type="password"
-                                placeholder="Confirm new password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                                disabled={isLoading}
-                            />
-                        </div>
-                        <button
-                            className="form-button"
-                            type="submit"
+            <div className="form-container">
+                <div className="logo-container">
+                    <img src="/images/logo.png" alt="Holy Family Polymers Logo" className="company-logo" />
+                </div>
+
+                <div className="back-row">
+                    <Link to="/" className="back-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Back to Home
+                    </Link>
+                </div>
+
+                <h2>Reset Your Password</h2>
+                {message && <div className="success-message">{message}</div>}
+                {error && <div className="error-message">{error}</div>}
+                <form onSubmit={onSubmit}>
+                    <div className="input-group floating">
+                        <input
+                            className="form-input"
+                            type="password"
+                            placeholder=" "
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
                             disabled={isLoading}
-                        >
-                            {isLoading ? 'Resetting...' : 'Reset Password'}
-                        </button>
-                    </form>
-                     <p className="form-text">
+                        />
+                        <label>New Password</label>
+                    </div>
+                    <div className="input-group floating">
+                        <input
+                            className="form-input"
+                            type="password"
+                            placeholder=" "
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                            disabled={isLoading}
+                        />
+                        <label>Confirm New Password</label>
+                    </div>
+                    <button
+                        className="form-button"
+                        type="submit"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Resetting...' : 'Reset Password'}
+                    </button>
+                </form>
+                <div className="auth-links" style={{ marginTop: '1rem' }}>
+                    <span>
                         Remember your password? <Link to="/login">Login here</Link>
-                    </p>
+                    </span>
                 </div>
             </div>
         </div>

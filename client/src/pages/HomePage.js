@@ -1,123 +1,216 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './HomePage.css';
 
-
-
-
-
 const HomePage = () => {
-    
     return (
-        <div>
-            {/* Hero Section */}
-            <header className="hero">
-                <h1 className="hero-title fade-in">Welcome to Holy Family Polymers</h1>
-                <p className="hero-subtitle fade-in-delay">
-                    Sustainable rubber band manufacturing from natural tapped latex — eco-friendly, durable, and trusted nationwide.
-                </p>
-                <div className="hero-cta-buttons fade-in-delay2">
-                    <a href="#features" className="cta-button cta-primary">Learn More</a>
+        <div className="homepage">
+            {/* Hero Section with Company Branding */}
+            <section className="hero-section">
+                <div className="hero-background">
+                    <div className="hero-overlay"></div>
                 </div>
-            </header>
-
-            {/* Features Section */}
-            <section id="features" className="features-section">
-                <h2 className="section-title">Why Choose Us?</h2>
-                <p className="section-subtitle">
-                    We combine eco-friendly production, quality assurance, and nationwide service to deliver the best rubber products.
-                </p>
-                <div className="features-grid">
-                    <div className="feature-card">
-                        <i className="fas fa-leaf feature-icon"></i>
-                        <h3>Eco-Friendly Production</h3>
-                        <p>100% natural latex sourced from sustainable rubber plantations with minimal environmental impact.</p>
+                <div className="hero-content">
+                    <div className="hero-text">
+                        <h1 className="hero-title">Holy Family Polymers</h1>
+                        <p className="hero-subtitle">
+                            Leading the future of sustainable rubber manufacturing with eco-friendly processes and premium quality products.
+                        </p>
+                        <div className="hero-actions">
+                            <Link to="/about" className="btn btn-primary">Learn More</Link>
+                            <Link to="/contact" className="btn btn-secondary">Get In Touch</Link>
+                        </div>
                     </div>
-                    <div className="feature-card">
-                        <i className="fas fa-certificate feature-icon"></i>
-                        <h3>Premium Quality</h3>
-                        <p>Strict quality checks ensure durable, elastic, and biodegradable rubber bands for multiple uses.</p>
-                    </div>
-                    <div className="feature-card">
-                        <i className="fas fa-truck feature-icon"></i>
-                        <h3>Nationwide Delivery</h3>
-                        <p>Efficient logistics network ensuring on-time delivery of bulk and retail orders across the country.</p>
-                    </div>
-                    <div className="feature-card">
-                        <i className="fas fa-handshake feature-icon"></i>
-                        <h3>Farmer Partnerships</h3>
-                        <p>Working closely with local farmers to ensure fair trade and consistent raw material supply.</p>
-                    </div>
-                    <div className="feature-card">
-                        <i className="fas fa-cogs feature-icon"></i>
-                        <h3>Custom Manufacturing</h3>
-                        <p>Offering a variety of sizes, colors, and strengths tailored to customer needs.</p>
+                    <div className="hero-image">
+                        <img src="/images/logo.png" alt="Holy Family Polymers Logo" />
                     </div>
                 </div>
             </section>
 
-            {/* Buying Section */}
-            <section id="buying" className="buying-section">
-                <div className="buying-container">
-                    <div className="buying-content">
-                        <div className="buying-header">
-                            <h2 className="slide-up">Premium Buying Experience</h2>
-                            <p className="slide-up" style={{ animationDelay: '.08s' }}>
-                                Transparent rates, secure checkout, and reliable delivery — crafted for professionals.
-                            </p>
-                            <a href="/buying" className="cta-button cta-primary buy-now-btn slide-up" style={{ animationDelay: '.16s' }}>
-                                Start Buying
-                            </a>
-                        </div>
-
-                        <div className="buying-grid">
-                            <div className="buying-card slide-up" style={{ animationDelay: '.1s' }}>
-                                <i className="fas fa-rupee-sign buying-icon"></i>
-                                <h3>Live Rates</h3>
-                                <p>Get the latest market and company rates in real‑time for informed decisions.</p>
+            {/* Quick Navigation Section */}
+            <section className="quick-nav-section">
+                <div className="container">
+                    <h2 className="section-title">Explore Our Platform</h2>
+                    <div className="quick-nav-grid">
+                        <Link to="/about" className="nav-card">
+                            <div className="nav-icon">
+                                <i className="fas fa-info-circle"></i>
                             </div>
-                            <div className="buying-card slide-up" style={{ animationDelay: '.2s' }}>
-                                <i className="fas fa-shield-alt buying-icon"></i>
-                                <h3>Secure Payments</h3>
-                                <p>Protected transactions with verified billing and audit-ready invoices.</p>
+                            <h3>About Us</h3>
+                            <p>Learn about our company history, values, and commitment to sustainability</p>
+                        </Link>
+                        
+                        <Link to="/history" className="nav-card">
+                            <div className="nav-icon">
+                                <i className="fas fa-history"></i>
                             </div>
-                            <div className="buying-card slide-up" style={{ animationDelay: '.3s' }}>
-                                <i className="fas fa-box buying-icon"></i>
-                                <h3>Quality Assured</h3>
-                                <p>Every order is quality checked to meet our strict manufacturing standards.</p>
+                            <h3>Our History</h3>
+                            <p>Discover our journey from humble beginnings to industry leadership</p>
+                        </Link>
+                        
+                        <Link to="/gallery" className="nav-card">
+                            <div className="nav-icon">
+                                <i className="fas fa-images"></i>
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="buying-visual">
-                        {/* Inline SVG illustration with subtle motion */}
-                        <svg className="buying-illustration svg-float" viewBox="0 0 360 300" role="img" aria-label="Buying Illustration">
-                            <defs>
-                                <linearGradient id="buyGrad" x1="0" y1="0" x2="1" y2="1">
-                                    <stop offset="0%" stopColor="var(--primary-color)" stopOpacity="0.85"/>
-                                    <stop offset="100%" stopColor="var(--primary-hover)" stopOpacity="0.85"/>
-                                </linearGradient>
-                                <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-                                    <feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="rgba(0,0,0,0.15)"/>
-                                </filter>
-                            </defs>
-                            <rect x="40" y="40" rx="16" ry="16" width="280" height="200" fill="url(#buyGrad)" filter="url(#softShadow)"/>
-                            <text x="90" y="120" fontFamily="Poppins, sans-serif" fontWeight="700" fontSize="42" fill="#fff">₹</text>
-                            <rect x="120" y="105" width="140" height="10" rx="5" fill="rgba(255,255,255,0.9)"/>
-                            <rect x="120" y="130" width="100" height="10" rx="5" fill="rgba(255,255,255,0.75)"/>
-                            <rect x="120" y="155" width="160" height="10" rx="5" fill="rgba(255,255,255,0.6)"/>
-                            <circle cx="280" cy="80" r="18" fill="var(--white-color)"/>
-                            <path d="M272 80 l8 8 16-16" stroke="var(--primary-color)" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                            <circle className="ring" cx="300" cy="210" r="18" stroke="var(--white-color)" strokeOpacity="0.7" strokeWidth="3" fill="none"/>
-                            <circle className="ring delay" cx="60" cy="210" r="14" stroke="var(--white-color)" strokeOpacity="0.5" strokeWidth="3" fill="none"/>
-                        </svg>
+                            <h3>Gallery</h3>
+                            <p>View our manufacturing facilities, products, and team in action</p>
+                        </Link>
+                        
+                        <Link to="/administration" className="nav-card">
+                            <div className="nav-icon">
+                                <i className="fas fa-users-cog"></i>
+                            </div>
+                            <h3>Administration</h3>
+                            <p>Meet our leadership team and organizational structure</p>
+                        </Link>
+                        
+                        <Link to="/contact" className="nav-card">
+                            <div className="nav-icon">
+                                <i className="fas fa-envelope"></i>
+                            </div>
+                            <h3>Contact</h3>
+                            <p>Get in touch with us for inquiries, partnerships, or support</p>
+                        </Link>
+                        
+                        <Link to="/login" className="nav-card login-card">
+                            <div className="nav-icon">
+                                <i className="fas fa-sign-in-alt"></i>
+                            </div>
+                            <h3>Login</h3>
+                            <p>Access your account to manage orders, track shipments, and more</p>
+                        </Link>
                     </div>
                 </div>
             </section>
 
+            {/* Features Highlight Section */}
+            <section className="features-section">
+                <div className="container">
+                    <h2 className="section-title">Why Choose Holy Family Polymers?</h2>
+                    <div className="features-grid">
+                        <div className="feature-item">
+                            <div className="feature-icon">
+                                <i className="fas fa-leaf"></i>
+                            </div>
+                            <h3>Eco-Friendly</h3>
+                            <p>100% natural latex sourced from sustainable rubber plantations with minimal environmental impact.</p>
+                        </div>
+                        
+                        <div className="feature-item">
+                            <div className="feature-icon">
+                                <i className="fas fa-award"></i>
+                            </div>
+                            <h3>Premium Quality</h3>
+                            <p>Strict quality checks ensure durable, elastic, and biodegradable rubber bands for multiple uses.</p>
+                        </div>
+                        
+                        <div className="feature-item">
+                            <div className="feature-icon">
+                                <i className="fas fa-shipping-fast"></i>
+                            </div>
+                            <h3>Fast Delivery</h3>
+                            <p>Efficient logistics network ensuring on-time delivery of bulk and retail orders nationwide.</p>
+                        </div>
+                        
+                        <div className="feature-item">
+                            <div className="feature-icon">
+                                <i className="fas fa-handshake"></i>
+                            </div>
+                            <h3>Farmer Partnerships</h3>
+                            <p>Working closely with local farmers to ensure fair trade and consistent raw material supply.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* News/Updates Section */}
+            <section className="news-section">
+                <div className="container">
+                    <h2 className="section-title">Latest Updates</h2>
+                    <div className="news-grid">
+                        <article className="news-card featured">
+                            <div className="news-image">
+                                <img src="/images/holy2.jpg" alt="Manufacturing Update" />
+                            </div>
+                            <div className="news-content">
+                                <span className="news-category">Manufacturing</span>
+                                <h3>New Production Line Launched</h3>
+                                <p>We've successfully launched our new eco-friendly production line, increasing capacity by 40% while reducing environmental impact.</p>
+                                <span className="news-time">2 days ago</span>
+                            </div>
+                        </article>
+                        
+                        <article className="news-card">
+                            <div className="news-image">
+                                <img src="/images/holy3.jpg" alt="Sustainability Award" />
+                            </div>
+                            <div className="news-content">
+                                <span className="news-category">Awards</span>
+                                <h3>Sustainability Excellence Award</h3>
+                                <p>Holy Family Polymers receives recognition for outstanding environmental practices in rubber manufacturing.</p>
+                                <span className="news-time">1 week ago</span>
+                            </div>
+                        </article>
+                        
+                        <article className="news-card">
+                            <div className="news-image">
+                                <img src="/images/holy4.jpg" alt="Partnership News" />
+                            </div>
+                            <div className="news-content">
+                                <span className="news-category">Partnerships</span>
+                                <h3>New Distribution Partnership</h3>
+                                <p>Expanding our reach with new distribution partners across three states, bringing our products closer to customers.</p>
+                                <span className="news-time">2 weeks ago</span>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            {/* Call to Action Section */}
+            <section className="cta-section">
+                <div className="container">
+                    <div className="cta-content">
+                        <h2>Ready to Experience Quality?</h2>
+                        <p>Join thousands of satisfied customers who trust Holy Family Polymers for their rubber band needs.</p>
+                        <div className="cta-buttons">
+                            <Link to="/contact" className="btn btn-primary">Get Quote</Link>
+                            <Link to="/login" className="btn btn-outline">Login to Account</Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             {/* Footer */}
             <footer className="footer">
-                <p>&copy; 2025 Holy Family Polymers. All Rights Reserved.</p>
+                <div className="container">
+                    <div className="footer-content">
+                        <div className="footer-section">
+                            <h3>Holy Family Polymers</h3>
+                            <p>Leading sustainable rubber manufacturing with eco-friendly processes and premium quality products.</p>
+                        </div>
+                        <div className="footer-section">
+                            <h4>Quick Links</h4>
+                            <ul>
+                                <li><Link to="/about">About Us</Link></li>
+                                <li><Link to="/history">Our History</Link></li>
+                                <li><Link to="/gallery">Gallery</Link></li>
+                                <li><Link to="/contact">Contact</Link></li>
+                            </ul>
+                        </div>
+                        <div className="footer-section">
+                            <h4>Services</h4>
+                            <ul>
+                                <li><Link to="/administration">Administration</Link></li>
+                                <li><Link to="/login">Login</Link></li>
+                                <li><Link to="/contact">Support</Link></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div className="footer-bottom">
+                        <p>&copy; 2025 Holy Family Polymers. All Rights Reserved.</p>
+                    </div>
+                </div>
             </footer>
         </div>
     );
