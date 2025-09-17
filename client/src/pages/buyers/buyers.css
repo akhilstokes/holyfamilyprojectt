@@ -46,6 +46,14 @@
 .checkout-panel { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; max-width: 520px; }
 .checkout-panel textarea { min-height: 120px; resize: vertical; }
 
+/* Checkout payments layout inspired by the provided model */
+.checkout-payments { display: grid; grid-template-columns: 340px 1fr; gap: 16px; }
+.pay-left { background: #fff; border: 1px solid #eee; border-radius: 12px; display: grid; }
+.pay-item { text-align: left; padding: 14px 16px; border: none; background: transparent; cursor: pointer; border-bottom: 1px solid #f3f3f3; font-weight: 600; }
+.pay-item.active, .pay-item:hover { background: #f9fafb; color: #0a7aff; }
+.pay-right { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; }
+.pay-section { margin-bottom: 12px; }
+
 /* Orders */
 .orders-list { display: grid; gap: 12px; }
 .order-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px; }
@@ -56,3 +64,15 @@
 .status.confirmed { background: #ecfccb; color: #3f6212; }
 .status.delivered { background: #dcfce7; color: #166534; }
 .status.cancelled { background: #fee2e2; color: #991b1b; }
+
+/* Product details */
+.product-details { display: grid; grid-template-columns: 5fr 7fr; gap: 2rem; }
+.pd-image { width: 100%; padding-top: 66%; background-size: cover; background-position: center; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+.pd-info { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.pd-price { font-size: 1.6rem; font-weight: 700; margin-bottom: .5rem; }
+.pd-actions { display: flex; gap: 10px; margin-top: 1rem; }
+
+/* Buyers profile form styling */
+.buyers-form { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; display: grid; gap: 10px; max-width: 560px; }
+.buyers-form input, .buyers-form select { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; }
+.buyers-form input:focus, .buyers-form select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); outline: none; }

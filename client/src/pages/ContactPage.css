@@ -7,9 +7,25 @@
 
 .contact-page h1 {
     font-size: 2.8rem;
-    font-weight: 600;
-    color: var(--primary-color);
+    font-weight: 700;
     margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--brand-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+}
+
+.contact-page h1::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -8px;
+    width: 80px;
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--brand-dark));
 }
 
 .contact-page > p {
@@ -36,12 +52,14 @@
     box-shadow: var(--shadow-light);
     text-decoration: none;
     color: var(--text-color);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    border: 1px solid var(--border-color);
 }
 
 .contact-card:hover {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
     box-shadow: var(--shadow-strong);
+    border-color: var(--primary-color);
 }
 
 .contact-icon {

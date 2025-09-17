@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { fetchProducts } from '../../services/storeService';
+import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import './buyers.css';
 
@@ -52,9 +53,9 @@ const CatalogPage = () => {
         <div className="buyers-grid">
           {products.map((p) => (
             <div key={p._id} className="buyers-card">
-              <div className="buyers-image" style={{backgroundImage: `url(${p.imageUrl || '/images/placeholder.png'})`}} />
+              <Link to={`/buyers/product/${p._id}`} className="buyers-image" style={{backgroundImage: `url(${p.imageUrl || '/images/placeholder.png'})`, display: 'block'}} />
               <div className="buyers-card-content">
-                <div className="buyers-title">{p.name}</div>
+                <Link to={`/buyers/product/${p._id}`} className="buyers-title" style={{ textDecoration: 'none', color: 'inherit' }}>{p.name}</Link>
                 <div className="buyers-meta">
                   <span className={`pill ${p.category}`}>{p.category}</span>
                   <span className="sep">•</span>

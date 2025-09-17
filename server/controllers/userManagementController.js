@@ -83,6 +83,14 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
+        
+        // Validate ObjectId format
+        if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID format'
+            });
+        }
 
         const user = await User.findById(id).select('-password');
         
@@ -545,9 +553,29 @@ module.exports = {
     updateUserRole,
     getUserActivityLogs,
     deleteUser,
-    bulkUserActions,
-    seedDemoStaff
-};
+    bulkUserActions
+}; // seedDemoStaff intentionally not exported (demo data creation disabled)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

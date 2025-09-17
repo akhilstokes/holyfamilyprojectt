@@ -25,9 +25,19 @@ function LiveRateView() {
           </thead>
           <tbody>
             <tr>
-              <td>{new Date(rate.createdAt).toLocaleDateString()}</td>
-              <td>{rate.marketRate}</td>
-              <td>{rate.companyRate}</td>
+              <td>{new Date(rate.effectiveDate || rate.createdAt).toLocaleDateString("en-IN")}</td>
+              <td>
+                {typeof rate.marketRate === "number"
+                  ? `₹${rate.marketRate.toLocaleString("en-IN")}`
+                  : typeof rate.rate === "number"
+                  ? `₹${rate.rate.toLocaleString("en-IN")}`
+                  : "-"}
+              </td>
+              <td>
+                {typeof rate.companyRate === "number"
+                  ? `₹${rate.companyRate.toLocaleString("en-IN")}`
+                  : "-"}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -39,3 +49,4 @@ function LiveRateView() {
 }
 
 export default LiveRateView; // ✅ IMPORTANT
+ 

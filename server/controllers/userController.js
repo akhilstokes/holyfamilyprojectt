@@ -2,6 +2,19 @@ const BillRequest = require('../models/billRequestModel');
 const User = require('../models/userModel');
 
 /**
+ * @desc    List users for selection (minimal fields)
+ * @route   GET /api/users
+ */
+exports.listUsers = async (req, res) => {
+    try {
+        const users = await User.find({}, 'name email role').sort({ name: 1 });
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+/**
  * @desc    Submit a latex sell request
  * @route   POST /api/users/submit-bill
  */

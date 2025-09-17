@@ -16,7 +16,7 @@ const generateToken = (id, role) => {
 
 // --- Register a new user ---
 exports.register = async (req, res) => {
-    const { name, email, phoneNumber, password } = req.body;
+    const { name, email, phoneNumber } = req.body;
     try {
         // Check if user already exists
         const userExists = await User.findOne({ email });
@@ -152,6 +152,112 @@ exports.registerBuyer = async (req, res) => {
     }
 };
 
+// Generate a unique Staff ID: "HF" + 3 random alphanumeric chars (e.g., HF9A2)
+const generateRandomStaffId = async () => {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const pick = () => alphabet[Math.floor(Math.random() * alphabet.length)];
+    // Loop until a unique ID is found (collision chance is low with 36^3=46656)
+    for (let attempt = 0; attempt < 50; attempt++) {
+        const candidate = `HF${pick()}${pick()}${pick()}`;
+        // Ensure uniqueness
+        // eslint-disable-next-line no-await-in-loop
+        const exists = await User.findOne({ staffId: candidate }).lean();
+        if (!exists) return candidate;
+    }
+    throw new Error('Failed to generate unique Staff ID');
+};
+
+// --- Register a new staff member ---
+exports.registerStaff = async (req, res) => {
+    const { name, email, phoneNumber, password } = req.body;
+    try {
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ message: 'User with this email already exists' });
+        }
+
+        const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+        const finalPhoneNumber = cleanPhoneNumber.startsWith('91') && cleanPhoneNumber.length === 12 
+            ? cleanPhoneNumber.substring(2) 
+            : cleanPhoneNumber.startsWith('0') 
+                ? cleanPhoneNumber.substring(1) 
+                : cleanPhoneNumber;
+        // Generate new Staff ID in required format
+        const staffId = await generateRandomStaffId();
+
+        // Create staff with initial password set to staffId for convenience (though login uses Staff ID only)
+        const user = new User({ 
+            name, 
+            email, 
+            phoneNumber: finalPhoneNumber, 
+            password: staffId,
+            role: 'field_staff',
+            staffId
+        });
+        // Allow staff to bypass strict password validator as per schema
+        await user.save({ validateBeforeSave: false });
+
+        // Email the Staff ID to the staff member
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Your Staff ID - Holy Family Polymers',
+                message: `Hello ${user.name}, Your Staff ID is ${staffId}. Use this Staff ID to log in to the staff portal.`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+                        <h2 style="color:#0B6E4F;">Welcome to Holy Family Polymers</h2>
+                        <p>Hello ${user.name},</p>
+                        <p>Your Staff ID is <strong>${staffId}</strong>.</p>
+                        <p>Use your <strong>Staff ID</strong> to log in to the staff portal.</p>
+                    </div>
+                `
+            });
+        } catch (emailErr) {
+            console.warn('Failed to send staff ID email:', emailErr.message);
+        }
+
+        const token = generateToken(user._id, user.role);
+        res.status(201).json({
+            token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                staffId: user.staffId,
+            },
+        });
+    } catch (error) {
+        console.error('Staff registration error:', error);
+        if (error.name === 'ValidationError') {
+            const validationErrors = {};
+            Object.keys(error.errors).forEach(key => {
+                validationErrors[key] = error.errors[key].message;
+            });
+            return res.status(400).json({ 
+                message: 'Validation failed', 
+                errors: validationErrors 
+            });
+        }
+        if (error.code === 11000) {
+            return res.status(400).json({ 
+                message: 'User with this email already exists' 
+            });
+        }
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// --- Get a sample staff ID (preview before registration) ---
+exports.getNextStaffId = async (req, res) => {
+    try {
+        const staffId = await generateRandomStaffId();
+        res.status(200).json({ staffId });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // --- Log in an existing user ---
 exports.login = async (req, res) => {
     const { email, password } = req.body;
@@ -173,6 +279,47 @@ exports.login = async (req, res) => {
         }
     } catch (error) {
         console.error('Login error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// --- Staff Login using Staff ID and password ---
+exports.staffLogin = async (req, res) => {
+    const { staffId } = req.body;
+    try {
+        if (!staffId) {
+            return res.status(400).json({ message: 'Staff ID is required' });
+        }
+        // Normalize incoming ID: trim spaces, uppercase, collapse multiple spaces, allow hyphenated legacy forms
+        const raw = String(staffId || '');
+        const normalized = raw.trim().toUpperCase();
+
+        // Try exact match first
+        let user = await User.findOne({ staffId: normalized }).select('+password');
+
+        // If not found, attempt a relaxed match for legacy formatted IDs by stripping non-alphanumerics
+        if (!user) {
+            const alnum = normalized.replace(/[^A-Z0-9]/g, '');
+            if (alnum && alnum !== normalized) {
+                user = await User.findOne({ staffId: alnum }).select('+password');
+            }
+        }
+        if (!user || user.role !== 'field_staff') {
+            return res.status(401).json({ message: 'Invalid Staff ID' });
+        }
+        const token = generateToken(user._id, user.role);
+        res.json({
+            token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                staffId: user.staffId,
+            },
+        });
+    } catch (error) {
+        console.error('Staff login error:', error);
         res.status(500).json({ message: error.message });
     }
 };

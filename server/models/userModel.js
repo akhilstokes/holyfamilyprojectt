@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
                 // Only letters, spaces, and dots allowed
                 return /^[a-zA-Z\s.]+$/.test(name);
             },
-            message: "Name only "
+            message: "Name must contain only letters, spaces, and dots (no numbers or special characters)."
         }
     },
     email: {
@@ -72,6 +72,10 @@ const userSchema = new mongoose.Schema({
         minlength: [6, "Password must be at least 6 characters long."],
         validate: {
             validator: function(password) {
+                // Allow bypass for staff; staff will use staffId as initial password
+                if (this && this.role === 'field_staff') {
+                    return true;
+                }
                 // No spaces allowed
                 if (password.includes(' ')) {
                     return false;
@@ -106,6 +110,20 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['user', 'admin', 'field_staff', 'buyer'],
         default: 'user'
+    },
+    staffId: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true,
+        validate: {
+            validator: function(staffId) {
+                // If staffId is provided, it should be valid format
+                if (!staffId) return true; // Allow empty for non-staff
+                return /^[A-Z0-9]{5,12}$/.test(staffId);
+            },
+            message: "Staff ID must be 5-12 characters long and contain only uppercase letters and numbers."
+        }
     },
     status: {
         type: String,

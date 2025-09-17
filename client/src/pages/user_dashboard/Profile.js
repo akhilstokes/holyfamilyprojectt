@@ -11,7 +11,9 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phoneNumber: '', location: '' });
+  const [originalForm, setOriginalForm] = useState({ name: '', email: '', phoneNumber: '', location: '' });
 
   useEffect(() => {
     const init = async () => {
@@ -20,14 +22,18 @@ const Profile = () => {
         const userStr = localStorage.getItem('user');
         if (userStr) {
           const u = JSON.parse(userStr);
-          setForm(prev => ({ ...prev, name: u.name || '', email: u.email || '', phoneNumber: u.phoneNumber || '', location: u.location || '' }));
+          const prefill = { name: u.name || '', email: u.email || '', phoneNumber: u.phoneNumber || '', location: u.location || '' };
+          setForm(prev => ({ ...prev, ...prefill }));
+          setOriginalForm(prefill);
         }
         // Fetch fresh from backend with Authorization header
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const res = await axios.get(`${API}/api/users/profile`, { headers });
         const u = res.data;
-        setForm({ name: u.name || '', email: u.email || '', phoneNumber: u.phoneNumber || '', location: u.location || '' });
+        const fetched = { name: u.name || '', email: u.email || '', phoneNumber: u.phoneNumber || '', location: u.location || '' };
+        setForm(fetched);
+        setOriginalForm(fetched);
       } catch (e) {
         // Keep local values if request fails
       } finally {
@@ -69,13 +75,24 @@ const Profile = () => {
       // Update local storage and refresh context
       const current = JSON.parse(localStorage.getItem('user') || '{}');
       localStorage.setItem('user', JSON.stringify({ ...current, ...updated }));
+      const nextState = { name: updated.name || form.name, email: form.email, phoneNumber: updated.phoneNumber || form.phoneNumber, location: updated.location || form.location };
+      setForm(nextState);
+      setOriginalForm(nextState);
       setMessage('Profile updated successfully');
+      setEditMode(false);
       await validateToken();
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    setForm(originalForm);
+    setEditMode(false);
+    setError('');
+    setMessage('');
   };
 
   if (loading) return <p>Loading profile...</p>;
@@ -91,7 +108,7 @@ const Profile = () => {
         <form className="profile-form" onSubmit={handleSubmit}>
           <div className="form-row">
             <label htmlFor="name">Name</label>
-            <input id="name" name="name" type="text" value={form.name} onChange={handleChange} placeholder="Your name" />
+            <input id="name" name="name" type="text" value={form.name} onChange={handleChange} placeholder="Your name" disabled={!editMode} />
           </div>
 
           <div className="form-row">
@@ -101,16 +118,24 @@ const Profile = () => {
 
           <div className="form-row">
             <label htmlFor="phoneNumber">Phone Number</label>
-            <input id="phoneNumber" name="phoneNumber" type="tel" value={form.phoneNumber} onChange={handleChange} placeholder="e.g. 9876543210" />
+            <input id="phoneNumber" name="phoneNumber" type="tel" value={form.phoneNumber} onChange={handleChange} placeholder="e.g. 9876543210" disabled={!editMode} />
           </div>
 
           <div className="form-row">
             <label htmlFor="location">Location</label>
-            <input id="location" name="location" type="text" value={form.location} onChange={handleChange} placeholder="City, State" />
+            <input id="location" name="location" type="text" value={form.location} onChange={handleChange} placeholder="City, State" disabled={!editMode} />
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="btn primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
+            {!editMode && (
+              <button type="button" className="btn primary" onClick={() => setEditMode(true)}>Edit</button>
+            )}
+            {editMode && (
+              <>
+                <button type="button" className="btn" onClick={handleCancel} disabled={saving} style={{ marginRight: 8 }}>Cancel</button>
+                <button type="submit" className="btn primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
+              </>
+            )}
           </div>
         </form>
       </div>

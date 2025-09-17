@@ -10,7 +10,7 @@ const AdminProtectedRoute = ({ children }) => {
         return <div>Loading...</div>;
     }
     
-    // If not authenticated, redirect to login
+    // If not authenticated, redirect to login page
     if (!isAuthenticated || !user) {
         return <Navigate to="/login" />;
     }

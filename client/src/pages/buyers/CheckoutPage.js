@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { placeOrder, createRazorpayOrder, verifyRazorpayPayment } from '../../services/storeService';
+import { useAuth } from '../../context/AuthContext';
 import './buyers.css';
 
 const CheckoutPage = () => {
   const { items, clearCart, totals } = useCart();
+  const { isAuthenticated } = useAuth();
   const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('upi'); // 'upi' | 'card' | 'netbanking'
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -20,6 +23,9 @@ const CheckoutPage = () => {
   });
 
   const submit = async () => {
+    if (!isAuthenticated) {
+      return navigate('/login');
+    }
     setLoading(true);
     if (!items || items.length === 0 || totals.subtotal <= 0) {
       setLoading(false);
@@ -71,12 +77,20 @@ const CheckoutPage = () => {
         setLoading(false);
         if (verify?.success) {
           clearCart();
-          navigate('/buyers/orders');
+          navigate('/buyers/thank-you');
         } else {
           alert(verify?.message || 'Payment verification failed');
         }
       },
       theme: { color: '#0f766e' },
+      method: {
+        upi: paymentMethod === 'upi',
+        card: paymentMethod === 'card',
+        netbanking: paymentMethod === 'netbanking',
+        wallet: false,
+        emi: false,
+        paylater: false,
+      },
       modal: {
         ondismiss: () => {
           setLoading(false);
@@ -102,12 +116,37 @@ const CheckoutPage = () => {
       {items.length === 0 ? (
         <div className="buyers-empty">Your cart is empty.</div>
       ) : (
-        <div className="checkout-panel">
-          <label>Notes (optional)</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any special request..." />
-          <button className="buyers-btn primary" onClick={submit} disabled={loading}>
-            {loading ? 'Placing order...' : 'Place Order'}
-          </button>
+        <div className="checkout-payments">
+          <div className="pay-left">
+            <button className={`pay-item ${paymentMethod==='upi'?'active':''}`} onClick={()=>setPaymentMethod('upi')}>UPI</button>
+            <button className={`pay-item ${paymentMethod==='card'?'active':''}`} onClick={()=>setPaymentMethod('card')}>Credit / Debit Card</button>
+            <button className={`pay-item ${paymentMethod==='netbanking'?'active':''}`} onClick={()=>setPaymentMethod('netbanking')}>Net Banking</button>
+          </div>
+          <div className="pay-right">
+            {paymentMethod==='upi' && (
+              <div className="pay-section">
+                <h3>Pay via UPI</h3>
+                <p>Use any UPI app to complete payment securely after clicking Pay.</p>
+              </div>
+            )}
+            {paymentMethod==='card' && (
+              <div className="pay-section">
+                <h3>Pay via Card</h3>
+                <p>Add and secure cards as per RBI guidelines in the payment popup.</p>
+              </div>
+            )}
+            {paymentMethod==='netbanking' && (
+              <div className="pay-section">
+                <h3>Pay via Net Banking</h3>
+                <p>Select your bank in the payment popup and finish payment.</p>
+              </div>
+            )}
+            <label>Notes (optional)</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any special request..." />
+            <button className="buyers-btn primary" onClick={submit} disabled={loading}>
+              {loading ? 'Processing...' : `Pay ₹${totals.subtotal}`}
+            </button>
+          </div>
         </div>
       )}
     </div>
