@@ -79,8 +79,8 @@ const DailyWageView = () => {
     if (res.ok) setHistory(await res.json());
   };
 
-  React.useEffect(() => { loadHistory(); }, []);
-  React.useEffect(() => { loadSummary(); }, [month]);
+  React.useEffect(() => { loadHistory(); }, [loadHistory]);
+  React.useEffect(() => { loadSummary(); }, [month, loadSummary]);
 
   return (
     <div>
@@ -232,10 +232,8 @@ const MonthlyWageView = () => {
     if (res.ok) setHistory(await res.json());
   };
 
-  React.useEffect(() => { loadHistory(); }, []);
-  React.useEffect(() => { calculate(); }, [month]);
-
-  const summary = calc?.summary;
+  React.useEffect(() => { loadHistory(); }, [loadHistory]);
+  React.useEffect(() => { calculate(); }, [month, calculate]);
   const calculation = calc?.calculation;
 
   return (

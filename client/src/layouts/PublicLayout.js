@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 
 const PublicLayout = () => {
+    const location = useLocation();
     // Global numeric-only guard for public pages
     useEffect(() => {
         const keydownHandler = (e) => {
@@ -45,10 +46,23 @@ const PublicLayout = () => {
             document.removeEventListener('paste', pasteHandler, true);
         };
     }, []);
+    const gradientRoutes = ['/about', '/history', '/contact', '/gallery'];
+    const isGradient = gradientRoutes.some((p) => location.pathname.startsWith(p));
+    // Apply body-level gradient to guarantee full viewport background
+    useEffect(() => {
+        if (isGradient) {
+            document.body.classList.add('brand-gradient-root');
+        } else {
+            document.body.classList.remove('brand-gradient-root');
+        }
+        return () => {
+            document.body.classList.remove('brand-gradient-root');
+        };
+    }, [isGradient]);
     return (
         <>
             <Navbar />
-            <main>
+            <main className={isGradient ? 'brand-gradient' : ''}>
                 <Outlet /> {/* This will render the specific page content */}
             </main>
         </>

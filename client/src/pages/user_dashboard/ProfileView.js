@@ -34,29 +34,60 @@ const ProfileView = () => {
   if (loading) return <p>Loading profile...</p>;
 
   return (
-    <div className="profile-container">
-      <div className="profile-card">
-        <h2>View Profile</h2>
+    <div className="profile-container navy-theme">
+      {/* Left summary */}
+      <aside className="profile-summary">
+        <div className="summary-title">
+          <i className="fas fa-user-circle" />
+          <span>Your Profile Details</span>
+        </div>
+        <div className="summary-item">
+          <div className="label">Your Name</div>
+          <div className="value">{user.name || '--'}</div>
+        </div>
+        <div className="summary-item">
+          <div className="label">Your Email</div>
+          <div className="value"><a href={`mailto:${user.email}`}>{user.email || '--'}</a></div>
+        </div>
+        <div className="summary-item">
+          <div className="label">Your Mobile</div>
+          <div className="value">{user.phoneNumber || '--'}</div>
+        </div>
+        <div className="summary-item">
+          <div className="label">Status</div>
+          <div className="value active">Active</div>
+        </div>
+      </aside>
+
+      {/* Right content (read-only) */}
+      <section className="profile-content">
+        <div className="tabs" style={{ borderBottom: 'none', marginBottom: 0 }}>
+          <button className="tab active">Profile</button>
+        </div>
         {error && <div className="alert error">{error}</div>}
         <div className="profile-form">
-          <div className="form-row">
-            <label>Name</label>
-            <input type="text" value={user.name} disabled />
+          <div className="grid-2">
+            <div className="form-row">
+              <label>Name</label>
+              <input type="text" value={user.name} disabled />
+            </div>
+            <div className="form-row">
+              <label>Email</label>
+              <input type="email" value={user.email} disabled />
+            </div>
           </div>
-          <div className="form-row">
-            <label>Email</label>
-            <input type="email" value={user.email} disabled />
-          </div>
-          <div className="form-row">
-            <label>Phone Number</label>
-            <input type="tel" value={user.phoneNumber} disabled />
-          </div>
-          <div className="form-row">
-            <label>Location</label>
-            <input type="text" value={user.location} disabled />
+          <div className="grid-2">
+            <div className="form-row">
+              <label>Phone Number</label>
+              <input type="tel" value={user.phoneNumber} disabled />
+            </div>
+            <div className="form-row">
+              <label>Location</label>
+              <input type="text" value={user.location} disabled />
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

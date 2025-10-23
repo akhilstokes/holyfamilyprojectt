@@ -41,7 +41,7 @@ export default function StaffDashboard() {
   useEffect(() => { 
     fetchDashboard(); 
     fetchShiftSchedule();
-  }, []);
+  }, [fetchDashboard, fetchShiftSchedule]);
 
   const action = async (type) => {
     try {

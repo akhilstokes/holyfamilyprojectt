@@ -40,7 +40,7 @@ export default function StaffDocumentUpload() {
       const token = localStorage.getItem('token');
       const form = new FormData();
       form.append('file', file);
-      const res = await axios.post(`${API}/api/uploads/document`, form, {
+      await axios.post(`${API}/api/uploads/document`, form, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
           'Content-Type': 'multipart/form-data'

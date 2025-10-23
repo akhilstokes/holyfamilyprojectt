@@ -1,0 +1,78 @@
+/* HangerSpace visual layout to mimic the provided image */
+.hanger-page {
+  background: #050c35; /* deep navy */
+  padding: 24px;
+  border-radius: 12px;
+}
+
+.hanger-wrap {
+  display: grid;
+  grid-template-columns: auto 1fr 60px 1fr auto; /* labels, block, gap, block, labels */
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  min-height: 260px;
+}
+
+.row-labels {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 10px;
+  font-weight: 700;
+  color: #c8e3ff; /* bluish labels */
+}
+.row-labels .row-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  font-size: 18px;
+}
+
+.hanger-block {
+  display: grid;
+  grid-auto-rows: 28px; /* row height */
+  gap: 10px;          /* vertical spacing between rows */
+}
+
+.hanger-row .row-cells {
+  display: grid;
+  grid-template-columns: repeat(10, 28px);
+  gap: 10px; /* horizontal spacing between slots */
+}
+
+/* Semicircle slot style */
+.slot {
+  width: 28px;
+  height: 22px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  background: #c8cdd3; /* free = light gray */
+  box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 -1px 0 rgba(0,0,0,0.3) inset;
+}
+.slot.free { background: #9ae6b4; }
+.slot.occupied { background: #ef4444; }
+.slot.empty_barrel { background: #60a5fa; }
+.slot.complete_bill { background: #f59e0b; }
+
+.hanger-gap {
+  width: 60px; /* aisle between blocks */
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  color: #e2e8f0;
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.legend-item .slot {
+  box-shadow: none;
+}

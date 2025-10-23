@@ -1,0 +1,417 @@
+/* ================================
+   Role-Based Theme System
+   ================================ */
+
+/* 🎨 Role Color Variables */
+:root {
+  /* Admin - Indigo */
+  --admin-primary: #4f46e5;
+  --admin-secondary: #6366f1;
+  --admin-light: #e0e7ff;
+  --admin-dark: #312e81;
+  
+  /* Manager - Teal */
+  --manager-primary: #0ea5a4;
+  --manager-secondary: #14b8a6;
+  --manager-light: #ccfbf1;
+  --manager-dark: #134e4a;
+  
+  /* Labour - Amber */
+  --labour-primary: #f59e0b;
+  --labour-secondary: #fbbf24;
+  --labour-light: #fef3c7;
+  --labour-dark: #92400e;
+  
+  /* Field Staff - Cyan */
+  --field-primary: #06b6d4;
+  --field-secondary: #22d3ee;
+  --field-light: #cffafe;
+  --field-dark: #155e75;
+  
+  /* Lab - Purple */
+  --lab-primary: #7c3aed;
+  --lab-secondary: #8b5cf6;
+  --lab-light: #ede9fe;
+  --lab-dark: #581c87;
+  
+  /* Customer - Green */
+  --customer-primary: #10b981;
+  --customer-secondary: #34d399;
+  --customer-light: #d1fae5;
+  --customer-dark: #064e3b;
+  
+  /* Common Colors */
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --info-color: #3b82f6;
+  
+  /* Gradients */
+  --gradient-subtle: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+  --gradient-strong: linear-gradient(135deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05));
+}
+
+/* 🎯 Role-Based Component Classes */
+.role-admin {
+  --role-primary: var(--admin-primary);
+  --role-secondary: var(--admin-secondary);
+  --role-light: var(--admin-light);
+  --role-dark: var(--admin-dark);
+}
+
+.role-manager {
+  --role-primary: var(--manager-primary);
+  --role-secondary: var(--manager-secondary);
+  --role-light: var(--manager-light);
+  --role-dark: var(--manager-dark);
+}
+
+.role-labour {
+  --role-primary: var(--labour-primary);
+  --role-secondary: var(--labour-secondary);
+  --role-light: var(--labour-light);
+  --role-dark: var(--labour-dark);
+}
+
+.role-field-staff {
+  --role-primary: var(--field-primary);
+  --role-secondary: var(--field-secondary);
+  --role-light: var(--field-light);
+  --role-dark: var(--field-dark);
+}
+
+.role-lab {
+  --role-primary: var(--lab-primary);
+  --role-secondary: var(--lab-secondary);
+  --role-light: var(--lab-light);
+  --role-dark: var(--lab-dark);
+}
+
+.role-customer {
+  --role-primary: var(--customer-primary);
+  --role-secondary: var(--customer-secondary);
+  --role-light: var(--customer-light);
+  --role-dark: var(--customer-dark);
+}
+
+/* 🎨 Dashboard Cards */
+.dashboard-card {
+  background: var(--gradient-subtle);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 16px 0;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--role-primary);
+  opacity: 0.8;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+}
+
+.dashboard-card.role-admin::before { background: var(--admin-primary); }
+.dashboard-card.role-manager::before { background: var(--manager-primary); }
+.dashboard-card.role-labour::before { background: var(--labour-primary); }
+.dashboard-card.role-field-staff::before { background: var(--field-primary); }
+.dashboard-card.role-lab::before { background: var(--lab-primary); }
+.dashboard-card.role-customer::before { background: var(--customer-primary); }
+
+/* 🎯 Action Buttons */
+.btn-role {
+  background: var(--role-primary);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-role:hover {
+  background: var(--role-dark);
+  transform: translateY(-1px);
+}
+
+.btn-role:active {
+  transform: translateY(0);
+}
+
+.btn-role-outline {
+  background: transparent;
+  color: var(--role-primary);
+  border: 2px solid var(--role-primary);
+}
+
+.btn-role-outline:hover {
+  background: var(--role-primary);
+  color: white;
+}
+
+/* 📊 Status Indicators */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-indicator.success {
+  background: var(--success-color);
+  color: white;
+}
+
+.status-indicator.warning {
+  background: var(--warning-color);
+  color: white;
+}
+
+.status-indicator.error {
+  background: var(--error-color);
+  color: white;
+}
+
+.status-indicator.info {
+  background: var(--info-color);
+  color: white;
+}
+
+/* 🔄 Progress Indicators */
+.progress-container {
+  width: 100%;
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--role-primary);
+  border-radius: 8px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* 💬 Floating Prompts */
+.floating-prompt {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--role-primary);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  z-index: 1000;
+  max-width: 300px;
+  animation: slideInUp 0.3s ease;
+}
+
+.floating-prompt::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid var(--role-primary);
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 🔔 Tooltips */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 200px;
+  background: var(--role-dark);
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px 12px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.875rem;
+}
+
+.tooltip .tooltip-text::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--role-dark) transparent transparent transparent;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* 📱 Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-card {
+    padding: 16px;
+    margin: 12px 0;
+  }
+  
+  .floating-prompt {
+    bottom: 16px;
+    right: 16px;
+    max-width: calc(100vw - 32px);
+  }
+  
+  .btn-role {
+    padding: 10px 20px;
+    font-size: 0.875rem;
+  }
+}
+
+/* 🎨 Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .dashboard-card {
+    background: var(--gradient-strong);
+    border-color: rgba(255,255,255,0.2);
+  }
+  
+  .tooltip .tooltip-text {
+    background: var(--role-dark);
+  }
+}
+
+/* 🔄 Animation Classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 🎯 Role-Specific Utilities */
+.text-role-primary { color: var(--role-primary); }
+.bg-role-primary { background-color: var(--role-primary); }
+.border-role-primary { border-color: var(--role-primary); }
+
+.shadow-role {
+  box-shadow: 0 4px 14px 0 rgba(var(--role-primary), 0.2);
+}
+
+.gradient-role {
+  background: linear-gradient(135deg, var(--role-primary), var(--role-secondary));
+}
+
+/* ================================
+   Admin-scoped button overrides
+   Applies to any native button or .btn variants rendered inside admin layout
+   ================================ */
+.role-admin button,
+.role-admin .btn {
+  background: var(--role-primary);
+  color: #ffffff;
+  border: 1px solid var(--role-primary);
+}
+
+.role-admin button:hover,
+.role-admin .btn:hover {
+  background: var(--role-dark);
+  border-color: var(--role-dark);
+}
+
+/* Preserve intentful variants while mapping to role palette */
+.role-admin .btn-primary { background: var(--role-primary); border-color: var(--role-primary); color: #ffffff; }
+.role-admin .btn-secondary { background: var(--role-light); border-color: var(--role-primary); color: var(--role-dark); }
+.role-admin .btn-success { background: var(--success-color); border-color: var(--success-color); color: #ffffff; }
+.role-admin .btn-outline { background: transparent; color: var(--role-primary); border-color: var(--role-primary); }
+.role-admin .btn-outline:hover { background: var(--role-primary); color: #ffffff; }
+

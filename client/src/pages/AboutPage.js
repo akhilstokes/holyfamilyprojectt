@@ -3,7 +3,7 @@ import './AboutPage.css'; // Import the new CSS
 
 const AboutPage = () => {
     return (
-        <div className="about-page">
+        <div className="about-page brand-gradient">
             <header className="about-header">
                 <h1>About Holy Family Polymers</h1>
                 <p>Pioneering quality and trust in the natural rubber latex industry since our inception.</p>

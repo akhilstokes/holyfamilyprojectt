@@ -1,0 +1,194 @@
+/* Delivery Staff Modern Theme (scoped by body.role-delivery_staff) */
+
+/* Enhance headings and page feel */
+body.role-delivery_staff h2 {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Buttons */
+body.role-delivery_staff .btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  color: #fff;
+  border: 0;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.35);
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+}
+body.role-delivery_staff .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(239, 68, 68, 0.35);
+  filter: brightness(1.02);
+}
+
+body.role-delivery_staff .btn-secondary {
+  background: linear-gradient(135deg, #fb923c 0%, #f59e0b 100%);
+  color: #fff;
+  border: 0;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(251, 146, 60, 0.35);
+}
+body.role-delivery_staff .btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(251, 146, 60, 0.45);
+}
+
+/* Table container */
+body.role-delivery_staff .table-wrap {
+  margin-top: 1rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.6));
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+  overflow: auto;
+  backdrop-filter: blur(8px);
+}
+
+/* Custom scrollbar */
+body.role-delivery_staff .table-wrap::-webkit-scrollbar { height: 10px; width: 10px; }
+body.role-delivery_staff .table-wrap::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f59e0b, #ef4444);
+  border-radius: 10px;
+}
+
+/* Table */
+body.role-delivery_staff .table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+body.role-delivery_staff .table thead th {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(180deg, rgba(249, 115, 22, 0.12), rgba(239,68,68,0.12));
+  backdrop-filter: blur(6px);
+  font-weight: 800;
+  text-align: left;
+  padding: 14px 16px;
+  color: #0f172a;
+}
+body.role-delivery_staff .table tbody td {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+body.role-delivery_staff .table tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.02);
+}
+body.role-delivery_staff .table tbody tr:hover {
+  background: rgba(245, 158, 11, 0.08);
+  transition: background .15s ease;
+}
+
+/* Status badges */
+body.role-delivery_staff .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: #0f172a;
+  background: rgba(15,23,42,.06);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+body.role-delivery_staff .status-pickup-scheduled { background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(245, 158, 11, 0.25)); border-color: rgba(245, 158, 11, 0.45); }
+body.role-delivery_staff .status-enroute-pickup { background: linear-gradient(135deg, rgba(125, 211, 252, 0.25), rgba(59, 130, 246, 0.25)); border-color: rgba(59, 130, 246, 0.45); }
+body.role-delivery_staff .status-picked-up { background: linear-gradient(135deg, rgba(134, 239, 172, 0.25), rgba(16, 185, 129, 0.25)); border-color: rgba(16, 185, 129, 0.45); }
+body.role-delivery_staff .status-enroute-drop { background: linear-gradient(135deg, rgba(147, 197, 253, 0.25), rgba(99, 102, 241, 0.25)); border-color: rgba(99, 102, 241, 0.45); }
+body.role-delivery_staff .status-delivered { background: linear-gradient(135deg, rgba(110, 231, 183, 0.3), rgba(16, 185, 129, 0.35)); border-color: rgba(5, 150, 105, 0.55); }
+
+/* Empty state */
+body.role-delivery_staff .no-data {
+  padding: 2.5rem;
+  margin: 1rem 0;
+  text-align: center;
+  color: #64748b;
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(248,250,252,0.8));
+  border: 1px dashed rgba(148, 163, 184, 0.6);
+  border-radius: 16px;
+}
+
+/* Small button variant */
+body.role-delivery_staff .btn.btn-sm,
+body.role-delivery_staff .btn-sm {
+  padding: 0.4rem 0.7rem;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+/* Cards */
+body.role-delivery_staff .dash-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.75));
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+  padding: 16px;
+}
+
+/* Inputs & selects */
+body.role-delivery_staff input,
+body.role-delivery_staff select {
+  background: #f8fafc;
+  border: 1.5px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+body.role-delivery_staff input:focus,
+body.role-delivery_staff select:focus {
+  border-color: #fb923c;
+  box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.15);
+}
+
+/* Dashboard table (attendance etc.) */
+body.role-delivery_staff .dashboard-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(15,23,42,0.06);
+  border-radius: 12px;
+}
+body.role-delivery_staff .dashboard-table thead th {
+  background: linear-gradient(180deg, rgba(249, 115, 22, 0.12), rgba(239,68,68,0.12));
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 800;
+  color: #0f172a;
+}
+body.role-delivery_staff .dashboard-table tbody td {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(15,23,42,0.06);
+}
+body.role-delivery_staff .dashboard-table tbody tr:nth-child(even) { background: rgba(15, 23, 42, 0.02); }
+body.role-delivery_staff .dashboard-table tbody tr:hover { background: rgba(245, 158, 11, 0.08); }
+
+/* Map embed container */
+body.role-delivery_staff .map-embed {
+  position: relative;
+  width: 100%;
+  height: 360px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(249, 115, 22, 0.18);
+}
+body.role-delivery_staff .map-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

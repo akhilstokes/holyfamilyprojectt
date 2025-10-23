@@ -1,5 +1,0 @@
-.buyers-admin { padding: 16px; }
-.buyers-admin-table { display: grid; gap: 8px; }
-.buyers-admin-table .row { display: grid; grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 1.5fr; gap: 8px; padding: 10px; border: 1px solid #eee; border-radius: 8px; background: #fff; }
-.buyers-admin-table .head { background: #fafafa; font-weight: 700; }
-

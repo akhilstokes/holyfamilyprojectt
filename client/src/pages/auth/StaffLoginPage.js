@@ -33,8 +33,9 @@ const StaffLoginPage = () => {
         }
         const patternNew = /^HF[A-Z0-9]{3}$/i; // e.g., HFA42
         const patternLegacy = /^HFP-S-\d{4}$/i; // legacy pattern e.g., HFP-S-0002
-        if (!patternNew.test(staffId) && !patternLegacy.test(staffId)) {
-            setError('Enter a valid Staff ID like HFA42 or HFP-S-0002');
+        const patternDelivery = /^[A-Z]{3}-\d{4}-\d{3}$/i; // e.g., STF-2025-005
+        if (!patternNew.test(staffId) && !patternLegacy.test(staffId) && !patternDelivery.test(staffId)) {
+            setError('Enter a valid Staff ID like HFA42, HFP-S-0002, or STF-2025-005');
             return false;
         }
         setError('');
@@ -42,11 +43,15 @@ const StaffLoginPage = () => {
     };
 
     const redirectStaff = (role) => {
-        if (role === 'field_staff' || role === 'admin') {
-            navigate('/staff/operations', { replace: true });
-        } else {
-            setError('This login is for staff only.');
+        if (role === 'delivery_staff') {
+            navigate('/delivery', { replace: true });
+            return;
         }
+        if (role === 'field_staff' || role === 'admin') {
+            navigate('/staff', { replace: true });
+            return;
+        }
+        setError('This login is for staff only.');
     };
 
     // Google Sign-In not used for staff login
@@ -67,12 +72,12 @@ const StaffLoginPage = () => {
     };
 
     return (
-        <div className="auth-wrapper staff-theme">
+        <div className="auth-wrapper dark-theme no-showcase">
             <div className="form-container">
                 {/* Company Logo */}
                 <div className="logo-container">
                     <img 
-                        src="/images/logo.png" 
+                        src="/images/logo.svg" 
                         alt="Holy Family Polymers Logo" 
                         className="company-logo" 
                     />
@@ -138,7 +143,7 @@ const StaffLoginPage = () => {
                             required 
                             style={{ textTransform: 'uppercase' }}
                         />
-                        <label>Staff ID (e.g., HFA42 or HFP-S-0002)</label>
+                        <label>Staff ID (e.g., HFA42, HFP-S-0002, or STF-2025-005)</label>
                     </div>
                     
                     <button className="form-button staff" type="submit" disabled={loading}>

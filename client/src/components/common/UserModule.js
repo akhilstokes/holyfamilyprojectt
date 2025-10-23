@@ -30,22 +30,11 @@ const UserModule = ({ showIcons = true, showProfile = true, showLogout = true })
 
     return (
         <div className="user-module">
-            {/* Left: Home */}
-            {showIcons && (
-                <div className="user-module-left">
-                    <button className="icon-btn" title="Home" onClick={() => navigate('/user/dashboard')}>
-                        <i className="fas fa-home"></i>
-                    </button>
-                </div>
-            )}
 
             {/* Right: actions + profile */}
             <div className="user-module-right">
                 {showIcons && (
                     <div className="user-module-icons">
-                        <button className="icon-btn" title="Menu" onClick={() => navigate('/user/menu')}>
-                            <i className="fas fa-bars"></i>
-                        </button>
                         <button className="icon-btn notification-btn" title="Notifications" onClick={() => navigate('/user/notifications')}>
                             <i className="fas fa-bell"></i>
                             <span className="notification-badge"></span>

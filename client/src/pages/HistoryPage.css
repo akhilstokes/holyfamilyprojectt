@@ -1,14 +1,14 @@
-.history-container {
+.history-page {
   padding: 40px;
   max-width: 900px;
-  margin: auto;
-  background: #fff;
+  margin: 0 auto;
+  color: #1d1d1f; /* dark text on light background */
 }
-
-.history-container h1 {
+.history-page h1 {
   text-align: center;
   margin-bottom: 20px;
-  color: #f47b28;
+  color: #1d1d1f;
+  font-weight: 700;
 }
 
 .timeline {
@@ -24,12 +24,15 @@
 
 .timeline-year {
   font-weight: bold;
-  color: #f47b28;
+  color: #ff6b35;
   width: 80px;
 }
 
 .timeline-content {
-  background: #f7f7f7;
+  background: #ffffff;
   padding: 15px;
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  color: #4b5563;
 }

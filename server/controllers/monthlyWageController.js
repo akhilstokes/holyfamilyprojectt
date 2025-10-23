@@ -213,13 +213,17 @@ exports.calculateMonthlySalary = async (req, res) => {
   }
 };
 
-// Get all monthly salary workers
+// Get workers with monthly salary (supports filtering by wageType)
 exports.getAllMonthlySalaryWorkers = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
+    const { page = 1, limit = 20, search, wageType = 'monthly' } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    let query = { isActive: true, wageType: 'monthly' };
+    let query = { isActive: true };
+    // If wageType is provided and not 'all', filter by that wageType; otherwise include all
+    if (wageType !== 'all') {
+      query.wageType = wageType;
+    }
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },

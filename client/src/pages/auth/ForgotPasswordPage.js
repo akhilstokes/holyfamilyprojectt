@@ -29,7 +29,7 @@ const ForgotPasswordPage = () => {
     };
 
     return (
-        <div className="auth-wrapper">
+        <div className="auth-wrapper no-showcase">
             <div className="form-container">
                 <div className="logo-container">
                     <img src="/images/logo.png" alt="Holy Family Polymers Logo" className="company-logo" />

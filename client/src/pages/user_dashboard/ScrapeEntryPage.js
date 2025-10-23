@@ -7,8 +7,19 @@ const ScrapeEntryPage = () => {
   const [message, setMessage] = useState('');
 
   const onChange = (e) => {
-    const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    const { name, value, type } = e.target;
+    let v = value;
+    if (type === 'number') {
+      v = String(v).replace(/^-/, '');
+    }
+    if (name === 'moisturePercent') {
+      const n = parseFloat(v);
+      if (!isNaN(n)) {
+        if (n < 0) v = '0';
+        if (n > 100) v = '100';
+      }
+    }
+    setForm((f) => ({ ...f, [name]: v }));
   };
 
   const onSubmit = async (e) => {
@@ -49,15 +60,15 @@ const ScrapeEntryPage = () => {
           </div>
           <div className="form-group">
             <label>Total Weight (kg)</label>
-            <input name="totalWeightKg" value={form.totalWeightKg} onChange={onChange} className="form-control" type="number" step="0.01" />
+            <input name="totalWeightKg" value={form.totalWeightKg} onChange={onChange} className="form-control" type="number" step="0.01" min="0" inputMode="decimal" onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()} onWheel={(e)=>e.currentTarget.blur()} />
           </div>
           <div className="form-group">
             <label>Lump Rubber (kg)</label>
-            <input name="lumpRubberKg" value={form.lumpRubberKg} onChange={onChange} className="form-control" type="number" step="0.01" />
+            <input name="lumpRubberKg" value={form.lumpRubberKg} onChange={onChange} className="form-control" type="number" step="0.01" min="0" inputMode="decimal" onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()} onWheel={(e)=>e.currentTarget.blur()} />
           </div>
           <div className="form-group">
             <label>Moisture (%)</label>
-            <input name="moisturePercent" value={form.moisturePercent} onChange={onChange} className="form-control" type="number" step="0.1" min="0" max="100" />
+            <input name="moisturePercent" value={form.moisturePercent} onChange={onChange} className="form-control" type="number" step="0.1" min="0" max="100" inputMode="decimal" onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()} onWheel={(e)=>e.currentTarget.blur()} />
           </div>
           <div className="form-group">
             <label>Notes</label>

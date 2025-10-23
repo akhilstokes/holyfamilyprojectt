@@ -15,7 +15,7 @@ const UserPage = () => {
         { id: 'rates', icon: 'fas fa-chart-line', label: 'Live Rate', path: '/user/rates' },
         { id: 'history', icon: 'fas fa-history', label: 'Rate History', path: '/user/history' },
         { id: 'ai', icon: 'fas fa-robot', label: 'AI Rubber Expert', path: '/user/ai-expert' },
-        { id: 'calculator', icon: 'fas fa-calculator', label: 'Rubber Calculator', path: '/user/calculator' }
+        // calculator removed
     ];
 
     const topIcons = [

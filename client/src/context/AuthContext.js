@@ -1,231 +1,136 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import axios from 'axios';
-import { validateTokenFormat, clearCorruptedToken as clearToken } from '../utils/tokenUtils';
 
-const AuthContext = createContext();
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
-};
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [registrationComplete, setRegistrationComplete] = useState(true);
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    // Validate token on app start
-    useEffect(() => {
-        validateToken();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-    const validateToken = async () => {
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-            setLoading(false);
-            setIsAuthenticated(false);
-            return;
-        }
+  const applyRoleClass = useCallback((u) => {
+    try {
+      const el = document && document.body;
+      if (!el) return;
+      const roleClasses = ['role-admin','role-manager','role-accountant','role-delivery_staff','role-field_staff','role-user','role-lab','role-lab_manager','role-lab_staff'];
+      roleClasses.forEach(c => el.classList.remove(c));
+      const r = u && u.role ? `role-${u.role}` : null;
+      if (r) el.classList.add(r);
+    } catch {}
+  }, []);
 
-        // Validate token format using utility
-        const tokenValidation = validateTokenFormat(token);
-        if (!tokenValidation.valid) {
-            console.error('Invalid token format in localStorage:', tokenValidation.reason);
-            clearToken();
-            logout();
-            return;
-        }
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('auth');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setUser(parsed.user || null);
+        setToken(parsed.token || null);
+        applyRoleClass(parsed.user || null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-        try {
-            // Set default authorization header
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            
-            const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/validate-token`);
-            
-            if (response.data.valid) {
-                setUser(response.data.user);
-                setIsAuthenticated(true);
-                
-                // Check if registration is complete but don't log out; store status for UI flows
-                const regResponse = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/registration-status`);
-                setRegistrationComplete(!!regResponse.data.isComplete);
-            } else {
-                logout();
-            }
-        } catch (error) {
-            console.error('Token validation failed:', error);
-            
-            // Handle specific error types
-            if (error.response?.status === 401) {
-                // Token is invalid, clear it
-                logout();
-            } else {
-                // Network or other error, keep token but mark as not authenticated
-                setIsAuthenticated(false);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+  const saveAuth = useCallback((next) => {
+    if (next && next.token) {
+      localStorage.setItem('auth', JSON.stringify(next));
+      // Also persist raw token for legacy parts of the app
+      localStorage.setItem('token', next.token);
+      applyRoleClass(next.user || null);
+    } else {
+      localStorage.removeItem('auth');
+      localStorage.removeItem('token');
+      applyRoleClass(null);
+    }
+  }, [applyRoleClass]);
 
-    const login = async (email, password) => {
-        try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/login`, {
-                email,
-                password
-            });
+  const login = useCallback(async (email, password) => {
+    const { data } = await axios.post(`${apiBase}/api/auth/login`, { email, password });
+    setUser(data.user);
+    setToken(data.token);
+    saveAuth({ user: data.user, token: data.token });
+    return data;
+  }, [apiBase, saveAuth]);
 
-            const { token, user: userData } = response.data;
-            
-            // Validate token format before storing
-            const tokenValidation = validateTokenFormat(token);
-            if (!tokenValidation.valid) {
-                throw new Error(`Invalid token received from server: ${tokenValidation.reason}`);
-            }
-            
-            // Store token and user data
-            localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(userData));
-            
-            // Set authorization header
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            
-            // Check registration status (do not log out on incomplete; allow partial login and let UI guide)
-            const regResponse = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/registration-status`);
-            setRegistrationComplete(!!regResponse.data.isComplete);
+  // Staff login using Staff ID (e.g., HFA42 or HFP-S-0002)
+  const staffLogin = useCallback(async (staffId) => {
+    const { data } = await axios.post(`${apiBase}/api/auth/staff-login`, { staffId });
+    setUser(data.user);
+    setToken(data.token);
+    saveAuth({ user: data.user, token: data.token });
+    return data;
+  }, [apiBase, saveAuth]);
 
-            setUser(userData);
-            setIsAuthenticated(true);
-            
-            return { success: true, user: userData };
-        } catch (error) {
-            throw error;
-        }
-    };
+  const register = useCallback(async (payload) => {
+    const { data } = await axios.post(`${apiBase}/api/auth/register`, payload);
+    return data;
+  }, [apiBase]);
 
-    const staffLogin = async (staffId) => {
-        try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/staff-login`, {
-                staffId,
-            });
+  const googleSignIn = useCallback(async (credential) => {
+    // Backend expects POST /api/auth/google-signin with body { token }
+    const { data } = await axios.post(`${apiBase}/api/auth/google-signin`, { token: credential });
+    setUser(data.user);
+    setToken(data.token);
+    saveAuth({ user: data.user, token: data.token });
+    return data;
+  }, [apiBase, saveAuth]);
 
-            const { token, user: userData } = response.data;
+  const logout = useCallback(async () => {
+    const ok = window.confirm('Are you sure you want to log out?');
+    if (!ok) return;
+    setUser(null);
+    setToken(null);
+    saveAuth(null);
+  }, [saveAuth]);
 
-            const tokenValidation = validateTokenFormat(token);
-            if (!tokenValidation.valid) {
-                throw new Error(`Invalid token received from server: ${tokenValidation.reason}`);
-            }
+  // Validate token and refresh user object from backend
+  const validateToken = useCallback(async () => {
+    if (!token) return null;
+    try {
+      const { data } = await axios.get(`${apiBase}/api/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (data) {
+        setUser(data);
+        // Persist merged user info
+        saveAuth({ user: data, token });
+      }
+      return data;
+    } catch (e) {
+      // if token is invalid, clear auth
+      setUser(null);
+      setToken(null);
+      saveAuth(null);
+      return null;
+    }
+  }, [apiBase, token, saveAuth]);
 
-            localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(userData));
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  const value = useMemo(() => ({
+    user,
+    token,
+    isAuthenticated: Boolean(token && user),
+    loading,
+    login,
+    logout,
+    register,
+    googleSignIn,
+    staffLogin,
+    validateToken,
+  }), [user, token, loading, login, logout, register, googleSignIn, staffLogin, validateToken]);
 
-            setUser(userData);
-            setIsAuthenticated(true);
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-            return { success: true, user: userData };
-        } catch (error) {
-            throw error;
-        }
-    };
-
-    const register = async (userData) => {
-        try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/register`, userData);
-            
-            const { token, user: newUser } = response.data;
-            
-            // Validate token format before storing
-            const tokenValidation = validateTokenFormat(token);
-            if (!tokenValidation.valid) {
-                throw new Error(`Invalid token received from server: ${tokenValidation.reason}`);
-            }
-            
-            // Store token and user data
-            localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(newUser));
-            
-            // Set authorization header
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            
-            setUser(newUser);
-            setIsAuthenticated(true);
-            setRegistrationComplete(true);
-            
-            return { success: true, user: newUser };
-        } catch (error) {
-            throw error;
-        }
-    };
-
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        delete axios.defaults.headers.common['Authorization'];
-        setUser(null);
-        setIsAuthenticated(false);
-        setRegistrationComplete(true);
-    };
-
-    // Utility function to clear corrupted tokens
-    const clearCorruptedToken = () => {
-        clearToken();
-        logout();
-    };
-
-    const googleSignIn = async (credential) => {
-        try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/google-signin`, {
-                token: credential
-            });
-
-            const { token, user: userData } = response.data;
-            
-            // Validate token format before storing
-            const tokenValidation = validateTokenFormat(token);
-            if (!tokenValidation.valid) {
-                throw new Error(`Invalid token received from server: ${tokenValidation.reason}`);
-            }
-            
-            // Store token and user data
-            localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(userData));
-            
-            // Set authorization header
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            
-            setUser(userData);
-            setIsAuthenticated(true);
-            
-            return { success: true, user: userData };
-        } catch (error) {
-            throw error;
-        }
-    };
-
-    const value = {
-        user,
-        loading,
-        isAuthenticated,
-        registrationComplete,
-        login,
-        register,
-        staffLogin,
-        logout,
-        googleSignIn,
-        validateToken,
-        clearCorruptedToken
-    };
-
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 };

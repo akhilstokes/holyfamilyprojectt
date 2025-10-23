@@ -12,8 +12,10 @@ const Profile = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('edit'); // edit | password | history
   const [form, setForm] = useState({ name: '', email: '', phoneNumber: '', location: '' });
   const [originalForm, setOriginalForm] = useState({ name: '', email: '', phoneNumber: '', location: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
   useEffect(() => {
     const init = async () => {
@@ -46,6 +48,11 @@ const Profile = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -95,50 +102,134 @@ const Profile = () => {
     setMessage('');
   };
 
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+      setError('Please fill all password fields');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.post(`${API}/api/auth/change-password`, {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      }, { headers });
+      setMessage('Password updated successfully');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setActiveTab('edit');
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to change password');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <p>Loading profile...</p>;
 
   return (
-    <div className="profile-container">
-      <div className="profile-card">
-        <h2>My Profile</h2>
+    <div className="profile-container navy-theme">
+      {/* Left summary */}
+      <aside className="profile-summary">
+        <div className="summary-title">
+          <i className="fas fa-user-circle" />
+          <span>Your Profile Details</span>
+        </div>
+        <div className="summary-item">
+          <div className="label">Your Name</div>
+          <div className="value">{form.name || '--'}</div>
+        </div>
+        <div className="summary-item">
+          <div className="label">Your Email</div>
+          <div className="value"><a href={`mailto:${form.email}`}>{form.email || '--'}</a></div>
+        </div>
+        <div className="summary-item">
+          <div className="label">Your Mobile</div>
+          <div className="value">{form.phoneNumber || '--'}</div>
+        </div>
+        <div className="summary-item">
+          <div className="label">Status</div>
+          <div className="value active">Active</div>
+        </div>
+      </aside>
+
+      {/* Right content */}
+      <section className="profile-content">
+        <div className="tabs">
+          <button className={`tab ${activeTab==='edit'?'active':''}`} onClick={() => setActiveTab('edit')}>Edit Profile</button>
+          <button className={`tab ${activeTab==='password'?'active':''}`} onClick={() => setActiveTab('password')}>Change Password</button>
+        </div>
 
         {message && <div className="alert success">{message}</div>}
         {error && <div className="alert error">{error}</div>}
 
-        <form className="profile-form" onSubmit={handleSubmit}>
-          <div className="form-row">
-            <label htmlFor="name">Name</label>
-            <input id="name" name="name" type="text" value={form.name} onChange={handleChange} placeholder="Your name" disabled={!editMode} />
-          </div>
+        {activeTab === 'edit' && (
+          <form className="profile-form" onSubmit={handleSubmit}>
+            <div className="grid-2">
+              <div className="form-row">
+                <label htmlFor="name">Full Name</label>
+                <input id="name" name="name" type="text" value={form.name} onChange={handleChange} placeholder="Your name" disabled={!editMode} />
+              </div>
+              <div className="form-row">
+                <label htmlFor="email">Email</label>
+                <input id="email" name="email" type="email" value={form.email} disabled />
+              </div>
+            </div>
+            <div className="grid-2">
+              <div className="form-row">
+                <label htmlFor="phoneNumber">Mobile No</label>
+                <input id="phoneNumber" name="phoneNumber" type="tel" value={form.phoneNumber} onChange={handleChange} placeholder="e.g. 9876543210" disabled={!editMode} />
+              </div>
+              <div className="form-row">
+                <label htmlFor="location">Location</label>
+                <input id="location" name="location" type="text" value={form.location} onChange={handleChange} placeholder="City, State" disabled={!editMode} />
+              </div>
+            </div>
 
-          <div className="form-row">
-            <label htmlFor="email">Email</label>
-            <input id="email" name="email" type="email" value={form.email} disabled />
-          </div>
+            <div className="form-actions">
+              {!editMode && (
+                <button type="button" className="btn primary" onClick={() => setEditMode(true)}>Edit</button>
+              )}
+              {editMode && (
+                <>
+                  <button type="button" className="btn" onClick={handleCancel} disabled={saving} style={{ marginRight: 8 }}>Cancel</button>
+                  <button type="submit" className="btn primary" disabled={saving}>{saving ? 'Saving...' : 'Update'}</button>
+                </>
+              )}
+            </div>
+          </form>
+        )}
 
-          <div className="form-row">
-            <label htmlFor="phoneNumber">Phone Number</label>
-            <input id="phoneNumber" name="phoneNumber" type="tel" value={form.phoneNumber} onChange={handleChange} placeholder="e.g. 9876543210" disabled={!editMode} />
-          </div>
+        {activeTab === 'password' && (
+          <form className="profile-form" onSubmit={handlePasswordSubmit}>
+            <div className="form-row">
+              <label htmlFor="currentPassword">Current Password</label>
+              <input id="currentPassword" name="currentPassword" type="password" value={passwordForm.currentPassword} onChange={handlePasswordChange} placeholder="Enter current password" />
+            </div>
+            <div className="grid-2">
+              <div className="form-row">
+                <label htmlFor="newPassword">New Password</label>
+                <input id="newPassword" name="newPassword" type="password" value={passwordForm.newPassword} onChange={handlePasswordChange} placeholder="Enter new password" />
+              </div>
+              <div className="form-row">
+                <label htmlFor="confirmPassword">Confirm Password</label>
+                <input id="confirmPassword" name="confirmPassword" type="password" value={passwordForm.confirmPassword} onChange={handlePasswordChange} placeholder="Confirm password" />
+              </div>
+            </div>
+            <div className="form-actions">
+              <button type="submit" className="btn primary" disabled={saving}>{saving ? 'Updating...' : 'Change Password'}</button>
+            </div>
+          </form>
+        )}
 
-          <div className="form-row">
-            <label htmlFor="location">Location</label>
-            <input id="location" name="location" type="text" value={form.location} onChange={handleChange} placeholder="City, State" disabled={!editMode} />
-          </div>
-
-          <div className="form-actions">
-            {!editMode && (
-              <button type="button" className="btn primary" onClick={() => setEditMode(true)}>Edit</button>
-            )}
-            {editMode && (
-              <>
-                <button type="button" className="btn" onClick={handleCancel} disabled={saving} style={{ marginRight: 8 }}>Cancel</button>
-                <button type="submit" className="btn primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
-              </>
-            )}
-          </div>
-        </form>
-      </div>
+      </section>
     </div>
   );
 };

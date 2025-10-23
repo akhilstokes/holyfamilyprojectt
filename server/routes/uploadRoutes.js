@@ -30,4 +30,24 @@ router.post('/document', protect, upload.single('file'), (req, res) => {
   });
 });
 
+// POST /api/uploads/public
+// Public: for staff verification form
+router.post('/public', upload.single('file'), (req, res) => {
+  const file = req.file;
+  if (!file) return res.status(400).json({ message: 'No file uploaded' });
+
+  // Return metadata & public URL
+  const urlPath = `/uploads/${file.filename}`;
+  res.json({
+    message: 'Upload successful',
+    file: {
+      originalName: file.originalname,
+      filename: file.filename,
+      mimeType: file.mimetype,
+      size: file.size,
+      path: urlPath
+    }
+  });
+});
+
 module.exports = router;

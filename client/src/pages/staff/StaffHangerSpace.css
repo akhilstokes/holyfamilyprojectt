@@ -1,0 +1,5 @@
+@import '../admin/HangerSpace.css';
+
+/* Optionally override colors for staff view */
+.hanger-page .slot.free { background: #9ae6b4; }
+.hanger-page .slot.occupied { background: #e53e3e; }

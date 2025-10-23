@@ -1,21 +1,17 @@
-.about-page {
-    color: var(--text-color);
-}
-
 /* === About Header Section — Minimal Clean === */
 .about-header {
-    background: var(--white-color);
-    color: var(--text-color);
+    background: transparent;
+    color: #1d1d1f; /* dark text on light background */
     text-align: center;
     padding: 3.5rem 2rem 2.75rem;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
 .about-header h1 {
     font-size: 2.6rem;
     font-weight: 700;
     margin-bottom: 0.75rem;
-    color: var(--text-color);
+    color: #1d1d1f;
     position: relative;
 }
 
@@ -28,7 +24,7 @@
     width: 88px;
     height: 3px;
     border-radius: 3px;
-    background: var(--primary-color);
+    background: linear-gradient(90deg, #ff6b35, #ff9f66);
 }
 
 .about-header p {
@@ -36,7 +32,7 @@
     font-weight: 400;
     max-width: 780px;
     margin: 0.75rem auto 0;
-    color: #555;
+    color: #6b7280;
 }
 
 /* === Content Section === */
@@ -55,7 +51,7 @@
     font-weight: 700;
     text-align: center;
     margin-bottom: 2rem;
-    color: var(--text-color);
+    color: #1d1d1f;
     position: relative;
 }
 
@@ -68,7 +64,7 @@
     width: 72px;
     height: 3px;
     border-radius: 3px;
-    background: var(--primary-color);
+    background: linear-gradient(90deg, #0071e3, #00a8ff);
 }
 
 /* === Story Section (Two-Column Layout) === */
@@ -81,20 +77,20 @@
 
 .story-image img {
     width: 100%;
-    border-radius: 12px;
-    box-shadow: var(--shadow-strong);
+    border-radius: 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     transition: transform .4s ease, box-shadow .4s ease;
 }
 
 .story-text p {
     margin-bottom: 1rem;
     line-height: 1.8;
-    color: #555;
+    color: #4b5563; /* darker text on light background */
 }
 
 .story-image img:hover {
     transform: translateY(-4px);
-    box-shadow: 0 20px 35px rgba(0,0,0,.12);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
 }
 
 /* === Values Section (Card Layout) === */
@@ -105,17 +101,18 @@
 }
 
 .value-card {
-    background: var(--secondary-color);
+    background: #ffffff;
     padding: 2rem;
     text-align: center;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    border: 1px solid rgba(0,0,0,0.08);
     transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
 }
 
 .value-icon {
     font-size: 2.5rem;
-    color: var(--primary-color);
+    color: #ff6b35;
     margin-bottom: 1rem;
 }
 
@@ -123,6 +120,7 @@
     font-size: 1.4rem;
     margin-bottom: 0.5rem;
     font-weight: 600;
+    color: #1d1d1f;
 }
 
 /* === Responsive adjustments === */

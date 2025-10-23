@@ -5,6 +5,8 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import App from './App';
+import { ConfirmProvider } from './components/common/ConfirmDialog';
+
 import './index.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -15,7 +17,9 @@ root.render(
       <Router>
         <AuthProvider>
           <CartProvider>
-            <App />
+            <ConfirmProvider>
+              <App />
+            </ConfirmProvider>
           </CartProvider>
         </AuthProvider>
       </Router>

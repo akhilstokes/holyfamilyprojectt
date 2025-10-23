@@ -9,7 +9,7 @@
     font-size: 2.8rem;
     font-weight: 700;
     margin-bottom: 1rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--brand-dark));
+    background: linear-gradient(135deg, #ff6b35, #ff9f66);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -25,12 +25,12 @@
     width: 80px;
     height: 4px;
     border-radius: 4px;
-    background: linear-gradient(90deg, var(--primary-color), var(--brand-dark));
+    background: linear-gradient(90deg, #ff6b35, #ff9f66);
 }
 
 .contact-page > p {
     font-size: 1.1rem;
-    color: #666;
+    color: #4b5563; /* darker text on light background */
     max-width: 700px;
     margin: 0 auto 3rem auto;
 }
@@ -47,24 +47,24 @@
     align-items: center;
     justify-content: center;
     padding: 2.5rem 2rem;
-    background-color: var(--white-color);
-    border-radius: 12px;
-    box-shadow: var(--shadow-light);
+    background-color: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     text-decoration: none;
-    color: var(--text-color);
+    color: #1d1d1f;
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(0,0,0,0.08);
 }
 
 .contact-card:hover {
     transform: translateY(-8px);
-    box-shadow: var(--shadow-strong);
-    border-color: var(--primary-color);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+    border-color: #ff6b35;
 }
 
 .contact-icon {
     font-size: 3rem;
-    color: var(--primary-color);
+    color: #ff6b35;
     margin-bottom: 1.5rem;
 }
 
@@ -72,11 +72,11 @@
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: var(--text-color);
+    color: #1d1d1f;
 }
 
 .contact-card p {
     font-size: 1rem;
-    color: #555;
+    color: #6b7280;
     word-break: break-all;
 }

@@ -1,23 +1,37 @@
  
 const Barrel = require('../models/barrelModel');
+const { evaluateAndFlag } = require('../services/lumbDetectionService');
 
 // @desc    Add a new barrel to the system
 // @route   POST /api/barrels
 exports.addBarrel = async (req, res) => {
-    const {
-        barrelId,
-        capacity,
-        currentVolume = 0,
-        status = 'in-storage',
-        lastKnownLocation = '',
-        notes = '',
-        materialName = '',
-        batchNo = '',
-        manufactureDate,
-        expiryDate,
-        unit = 'L',
-    } = req.body;
     try {
+        let {
+            barrelId,
+            capacity,
+            currentVolume = 0,
+            status = 'in-storage',
+            lastKnownLocation = '',
+            notes = '',
+            materialName = '',
+            batchNo = '',
+            manufactureDate,
+            expiryDate,
+            unit = 'L',
+        } = req.body;
+
+        // Basic validation and normalization
+        barrelId = (barrelId || '').trim();
+        materialName = (materialName || '').trim();
+        batchNo = (batchNo || '').trim();
+        lastKnownLocation = (lastKnownLocation || '').trim();
+        unit = (unit || 'L').trim();
+        if (!barrelId) {
+            return res.status(400).json({ message: 'barrelId is required' });
+        }
+        const cap = Number(capacity);
+        capacity = Number.isFinite(cap) && cap >= 1 ? cap : 1;
+
         const newBarrel = new Barrel({
             barrelId,
             capacity,
@@ -30,12 +44,17 @@ exports.addBarrel = async (req, res) => {
             manufactureDate,
             expiryDate,
             unit,
-            lastUpdatedBy: req.user._id,
+            lastUpdatedBy: req.user?._id,
         });
+
         const savedBarrel = await newBarrel.save();
-        res.status(201).json(savedBarrel);
+        return res.status(201).json(savedBarrel);
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        if (error && (error.code === 11000 || error.code === 11001)) {
+            // Duplicate key error (unique index on barrelId)
+            return res.status(409).json({ message: 'Barrel ID already exists' });
+        }
+        return res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
@@ -125,5 +144,58 @@ exports.getAllBarrels = async (req, res) => {
         res.status(200).json(barrels);
     } catch (error) {
          res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Update base/empty weight; compute lumb% and flag if needed (Lab)
+// @route   PUT /api/barrels/:id/weights
+exports.updateWeights = async (req, res) => {
+    try {
+        const { baseWeight, emptyWeight } = req.body;
+        const barrel = await Barrel.findById(req.params.id);
+        if (!barrel) return res.status(404).json({ message: 'Barrel not found' });
+        if (typeof baseWeight === 'number') barrel.baseWeight = baseWeight;
+        if (typeof emptyWeight === 'number') barrel.emptyWeight = emptyWeight;
+
+        await evaluateAndFlag(barrel, { userId: req.user._id, threshold: 20 });
+        barrel.lastUpdatedBy = req.user._id;
+        const saved = await barrel.save();
+        return res.json(saved);
+    } catch (error) {
+        return res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Update current location (Field/Lab)
+// @route   PUT /api/barrels/:id/location
+exports.setLocation = async (req, res) => {
+    try {
+        const { currentLocation, lastKnownLocation } = req.body;
+        const barrel = await Barrel.findById(req.params.id);
+        if (!barrel) return res.status(404).json({ message: 'Barrel not found' });
+        if (currentLocation) barrel.currentLocation = currentLocation;
+        if (lastKnownLocation) barrel.lastKnownLocation = lastKnownLocation;
+        barrel.lastUpdatedBy = req.user._id;
+        const saved = await barrel.save();
+        return res.json(saved);
+    } catch (error) {
+        return res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Update condition (Manager/Admin)
+// @route   PUT /api/barrels/:id/condition
+exports.setCondition = async (req, res) => {
+    try {
+        const { condition, damageType } = req.body;
+        const barrel = await Barrel.findById(req.params.id);
+        if (!barrel) return res.status(404).json({ message: 'Barrel not found' });
+        if (condition) barrel.condition = condition;
+        if (damageType) barrel.damageType = damageType;
+        barrel.lastUpdatedBy = req.user._id;
+        const saved = await barrel.save();
+        return res.json(saved);
+    } catch (error) {
+        return res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };

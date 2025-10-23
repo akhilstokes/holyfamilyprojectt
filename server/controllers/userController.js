@@ -15,6 +15,29 @@ exports.listUsers = async (req, res) => {
 };
 
 /**
+ * @desc    List farmers (role 'user') for field staff selection
+ * @route   GET /api/users/farmers
+ */
+exports.listFarmers = async (req, res) => {
+    try {
+        const { search } = req.query;
+        const query = { role: 'user', status: { $ne: 'deleted' } };
+        if (search) {
+            const regex = new RegExp(search, 'i');
+            query.$or = [
+                { name: { $regex: regex } },
+                { email: { $regex: regex } },
+                { phoneNumber: { $regex: regex } },
+            ];
+        }
+        const farmers = await User.find(query, 'name email phoneNumber role').sort({ name: 1 }).limit(500);
+        res.json(farmers);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+/**
  * @desc    Submit a latex sell request
  * @route   POST /api/users/submit-bill
  */

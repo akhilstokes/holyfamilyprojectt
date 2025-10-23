@@ -30,9 +30,15 @@ const RubberCalculator = () => {
     });
 
     const handleInputChange = (field, value) => {
+        // Sanitize negatives for numeric fields used in calculators
+        const numericFields = new Set(['wetWeight','dryWeight','moistureContent','mass','volume','density','rubberWeight','pricePerKg','totalCost','length','width','height','diameter','radius']);
+        let v = value;
+        if (numericFields.has(field)) {
+            v = String(v).replace(/^-/, '');
+        }
         setFormData(prev => ({
             ...prev,
-            [field]: value
+            [field]: v
         }));
     };
 
@@ -143,8 +149,12 @@ const RubberCalculator = () => {
                 <input
                     type="number"
                     step="0.01"
+                    min="0"
+                    inputMode="decimal"
                     value={formData.wetWeight}
                     onChange={(e) => handleInputChange('wetWeight', e.target.value)}
+                    onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                    onWheel={(e)=>e.currentTarget.blur()}
                     placeholder="Enter wet weight"
                 />
             </div>
@@ -154,8 +164,12 @@ const RubberCalculator = () => {
                 <input
                     type="number"
                     step="0.01"
+                    min="0"
+                    inputMode="decimal"
                     value={formData.dryWeight}
                     onChange={(e) => handleInputChange('dryWeight', e.target.value)}
+                    onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                    onWheel={(e)=>e.currentTarget.blur()}
                     placeholder="Enter dry weight"
                 />
             </div>
@@ -190,8 +204,12 @@ const RubberCalculator = () => {
                 <input
                     type="number"
                     step="0.01"
+                    min="0"
+                    inputMode="decimal"
                     value={formData.mass}
                     onChange={(e) => handleInputChange('mass', e.target.value)}
+                    onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                    onWheel={(e)=>e.currentTarget.blur()}
                     placeholder="Enter mass"
                 />
             </div>
@@ -201,8 +219,12 @@ const RubberCalculator = () => {
                 <input
                     type="number"
                     step="0.001"
+                    min="0"
+                    inputMode="decimal"
                     value={formData.volume}
                     onChange={(e) => handleInputChange('volume', e.target.value)}
+                    onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                    onWheel={(e)=>e.currentTarget.blur()}
                     placeholder="Enter volume"
                 />
             </div>
@@ -233,8 +255,12 @@ const RubberCalculator = () => {
                 <input
                     type="number"
                     step="0.01"
+                    min="0"
+                    inputMode="decimal"
                     value={formData.rubberWeight}
                     onChange={(e) => handleInputChange('rubberWeight', e.target.value)}
+                    onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                    onWheel={(e)=>e.currentTarget.blur()}
                     placeholder="Enter weight"
                 />
             </div>
@@ -244,8 +270,12 @@ const RubberCalculator = () => {
                 <input
                     type="number"
                     step="0.01"
+                    min="0"
+                    inputMode="decimal"
                     value={formData.pricePerKg}
                     onChange={(e) => handleInputChange('pricePerKg', e.target.value)}
+                    onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                    onWheel={(e)=>e.currentTarget.blur()}
                     placeholder="Enter price per kg"
                 />
             </div>
@@ -290,8 +320,12 @@ const RubberCalculator = () => {
                         <input
                             type="number"
                             step="0.01"
+                            min="0"
+                            inputMode="decimal"
                             value={formData.length}
                             onChange={(e) => handleInputChange('length', e.target.value)}
+                            onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                            onWheel={(e)=>e.currentTarget.blur()}
                             placeholder="Enter length"
                         />
                     </div>
@@ -300,8 +334,12 @@ const RubberCalculator = () => {
                         <input
                             type="number"
                             step="0.01"
+                            min="0"
+                            inputMode="decimal"
                             value={formData.width}
                             onChange={(e) => handleInputChange('width', e.target.value)}
+                            onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                            onWheel={(e)=>e.currentTarget.blur()}
                             placeholder="Enter width"
                         />
                     </div>
@@ -314,8 +352,12 @@ const RubberCalculator = () => {
                     <input
                         type="number"
                         step="0.01"
+                        min="0"
+                        inputMode="decimal"
                         value={formData.radius}
                         onChange={(e) => handleInputChange('radius', e.target.value)}
+                        onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                        onWheel={(e)=>e.currentTarget.blur()}
                         placeholder="Enter radius"
                     />
                 </div>
@@ -327,8 +369,12 @@ const RubberCalculator = () => {
                     <input
                         type="number"
                         step="0.01"
+                        min="0"
+                        inputMode="decimal"
                         value={formData.height}
                         onChange={(e) => handleInputChange('height', e.target.value)}
+                        onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                        onWheel={(e)=>e.currentTarget.blur()}
                         placeholder="Enter height"
                     />
                 </div>

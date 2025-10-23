@@ -62,7 +62,7 @@ exports.createIntake = async (req, res) => {
       measuredDRC: measuredDRC ? Number(measuredDRC) : undefined,
       calculatedDRC: drc,
       dryKg: netKg * (drc / 100),
-      recordedBy: req.user.id
+      recordedBy: req.user._id
     });
 
     return res.status(201).json(intake);

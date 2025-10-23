@@ -93,3 +93,72 @@ exports.updateItem = async (req, res) => {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
+
+// ============ CRUD for manager verification ============
+// List all stock items
+exports.listItems = async (req, res) => {
+  try {
+    const items = await Stock.find({}).sort({ productName: 1 });
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// Create a new stock item
+exports.createItem = async (req, res) => {
+  try {
+    const { productName, quantityInLiters } = req.body;
+    if (!productName || typeof productName !== 'string') {
+      return res.status(400).json({ message: 'productName is required' });
+    }
+    const qty = Number(quantityInLiters ?? 0);
+    if (Number.isNaN(qty) || qty < 0) {
+      return res.status(400).json({ message: 'quantityInLiters must be a non-negative number' });
+    }
+    let existing = await Stock.findOne({ productName });
+    if (existing) {
+      return res.status(409).json({ message: 'Stock item already exists' });
+    }
+    const created = await Stock.create({ productName, quantityInLiters: qty });
+    res.status(201).json(created);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// Update stock item by id (set absolute quantity)
+exports.updateItemById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { productName, quantityInLiters } = req.body;
+    const update = {};
+    if (productName) update.productName = productName;
+    if (quantityInLiters !== undefined) {
+      const qty = Number(quantityInLiters);
+      if (Number.isNaN(qty) || qty < 0) {
+        return res.status(400).json({ message: 'quantityInLiters must be a non-negative number' });
+      }
+      update.quantityInLiters = qty;
+    }
+    update.lastUpdated = Date.now();
+    const doc = await Stock.findByIdAndUpdate(id, update, { new: true });
+    if (!doc) return res.status(404).json({ message: 'Item not found' });
+    res.json(doc);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// Delete stock item by id
+exports.deleteItemById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await Stock.findById(id);
+    if (!doc) return res.status(404).json({ message: 'Item not found' });
+    await doc.deleteOne();
+    res.json({ message: 'Deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};

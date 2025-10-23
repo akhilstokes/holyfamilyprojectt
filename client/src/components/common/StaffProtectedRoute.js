@@ -14,7 +14,7 @@ const StaffProtectedRoute = ({ children }) => {
     }
 
     if (user.role !== 'field_staff' && user.role !== 'admin') {
-        return <Navigate to="/user/home" />;
+        return <Navigate to="/user" />;
     }
 
     return children;

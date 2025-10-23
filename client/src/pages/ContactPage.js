@@ -3,7 +3,7 @@ import "./ContactPage.css";
 
 const ContactPage = () => {
     return (
-        <div className="contact-page">
+        <div className="contact-page brand-gradient">
             <h1>Contact Holy Family Polymers</h1>
             <p>
                 Have questions about our products, orders, or services? 

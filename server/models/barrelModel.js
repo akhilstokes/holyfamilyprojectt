@@ -8,6 +8,14 @@ const barrelSchema = new mongoose.Schema(
     currentVolume: { type: Number, default: 0, min: 0 }, // liters
     status: { type: String, enum: ['in-use', 'in-storage', 'disposed'], default: 'in-storage' },
 
+    // Additive fields for damage/repair workflow
+    baseWeight: { type: Number },
+    emptyWeight: { type: Number },
+    lumbPercent: { type: Number, default: 0, min: 0, max: 100 },
+    condition: { type: String, enum: ['ok', 'faulty', 'damaged', 'repair', 'lumb-removal', 'awaiting-approval', 'scrap'], default: 'ok' },
+    damageType: { type: String, enum: ['none', 'lumbed', 'physical', 'other'], default: 'none' },
+    currentLocation: { type: String, enum: ['factory', 'field', 'repair-bay', 'lumb-bay', 'scrap-yard', ''], default: 'factory' },
+
     // Material metadata for FEFO and search
     materialName: { type: String, default: '' },
     batchNo: { type: String, default: '' },

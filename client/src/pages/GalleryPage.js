@@ -14,7 +14,7 @@ const GalleryPage = () => {
   ];
 
   return (
-    <div className="gallery-container">
+    <div className="gallery-container brand-gradient">
       <h1>Gallery</h1>
       <div className="gallery-grid">
         {images.map((src, index) => (

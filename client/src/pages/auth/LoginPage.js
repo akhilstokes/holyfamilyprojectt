@@ -17,28 +17,79 @@ const LoginPage = () => {
     const { email, password } = formData;
     const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const validateForm = () => {
-        const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    const [fieldErrors, setFieldErrors] = useState({ email: '', password: '' });
+    const [showPassword, setShowPassword] = useState(false);
 
-        if (!email || !password) {
-            setError('Please enter both email and password.');
-            return false;
+    const validateEmail = (value) => {
+        if (!value) return 'Email is required';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Please enter a valid email address';
+        return '';
+    };
+
+    const validatePassword = (value) => {
+        if (!value) return 'Password is required';
+        if (value.length < 6) return 'Password must be at least 6 characters';
+        return '';
+    };
+
+    const validateForm = () => {
+        const emailError = validateEmail(email);
+        const passwordError = validatePassword(password);
+        
+        setFieldErrors({
+            email: emailError,
+            password: passwordError
+        });
+
+        return !emailError && !passwordError;
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        if (name === 'email') {
+            setFieldErrors(prev => ({
+                ...prev,
+                email: validateEmail(value)
+            }));
+        } else if (name === 'password') {
+            setFieldErrors(prev => ({
+                ...prev,
+                password: validatePassword(value)
+            }));
         }
-        if (!emailRegex.test(email)) {
-            setError('Please enter a valid email address.');
-            return false;
-        }
-        setError('');
-        return true;
     };
     
-    const navigatePostLogin = (role) => {
+    const navigatePostLogin = (loggedInUser) => {
+        // If LAB user, prefer lab dashboard; only honor returnTo if it's also a lab route
+        if (loggedInUser && loggedInUser.role === 'lab') {
+            if (returnTo && String(returnTo).startsWith('/lab')) {
+                navigate(returnTo, { replace: true });
+            } else {
+                navigate('/lab/dashboard', { replace: true });
+            }
+            return;
+        }
+        // Accountant users go to accountant module by default
+        if (loggedInUser && loggedInUser.role === 'accountant') {
+            navigate('/accountant/latex', { replace: true });
+            return;
+        }
         if (returnTo) {
             navigate(returnTo, { replace: true });
-        } else if (role === 'admin') {
-            navigate('/admin/home');
+            return;
+        }
+        // Redirect by role
+        if (loggedInUser && loggedInUser.role === 'admin') {
+            navigate('/admin/home', { replace: true });
+        } else if (loggedInUser && loggedInUser.role === 'manager') {
+            navigate('/manager/home', { replace: true });
+        } else if (loggedInUser && loggedInUser.role === 'delivery_staff') {
+            navigate('/delivery', { replace: true });
+        } else if (loggedInUser && loggedInUser.role === 'field_staff') {
+            navigate('/staff', { replace: true });
         } else {
-            navigate('/user/home');
+            navigate('/user', { replace: true });
         }
     };
 
@@ -46,9 +97,8 @@ const LoginPage = () => {
         try {
             setLoading(true);
             setError('');
-            
-            const result = await googleSignIn(credentialResponse.credential);
-            navigatePostLogin(result.user.role);
+            const res = await googleSignIn(credentialResponse.credential);
+            navigatePostLogin(res?.user);
         } catch (err) {
             setError('Google Sign-In failed. Please try again.');
         } finally {
@@ -63,8 +113,8 @@ const LoginPage = () => {
                 setLoading(true);
                 setError('');
                 
-                const result = await login(email, password);
-                navigatePostLogin(result.user.role);
+                const res = await login(email, password);
+                navigatePostLogin(res.user);
             } catch (err) {
                 setError(err.response?.data?.message || err.message || 'An error occurred during login.');
             } finally {
@@ -75,12 +125,14 @@ const LoginPage = () => {
     
 
     return (
-        <div className="auth-wrapper">
+        <div className="auth-wrapper no-showcase">
+            <div className="auth-grid">
             <div className="form-container">
+                <div className="top-progress" />
                 {/* Company Logo */}
                 <div className="logo-container">
                     <img 
-                        src="/images/logo.png" 
+                        src="/images/logo.svg" 
                         alt="Holy Family Polymers Logo" 
                         className="company-logo"
                     />
@@ -109,30 +161,54 @@ const LoginPage = () => {
                 )}
 
                 <form onSubmit={onSubmit}>
-                    <div className="input-group floating">
+                    <div className={`input-group floating has-status ${fieldErrors.email ? 'error' : ''}`}>
                         <input 
-                            className="form-input" 
+                            id="email"
+                            className={`form-input ${!fieldErrors.email && email ? 'valid' : ''}`} 
                             type="email" 
                             placeholder=" "
                             name="email" 
                             value={email} 
-                            onChange={onChange} 
+                            onChange={onChange}
+                            onBlur={handleBlur}
                             required 
                         />
-                        <label>Email Address</label>
+                        <label htmlFor="email">Email Address</label>
+                        <div className="helper-text">
+                            {fieldErrors.email || 'Use your registered email'}
+                        </div>
+                        {!fieldErrors.email && email && (
+                            <span className="input-status" aria-hidden>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </span>
+                        )}
                     </div>
                     
-                    <div className="input-group floating">
+                    <div className={`input-group floating has-status ${fieldErrors.password ? 'error' : ''}`}>
                         <input 
-                            className="form-input" 
-                            type="password" 
+                            id="password"
+                            className={`form-input ${!fieldErrors.password && password ? 'valid' : ''}`} 
+                            type={showPassword ? 'text' : 'password'} 
                             placeholder=" "
                             name="password" 
                             value={password} 
-                            onChange={onChange} 
+                            onChange={onChange}
+                            onBlur={handleBlur}
                             required 
                         />
-                        <label>Password</label>
+                        <label htmlFor="password">Password</label>
+                        <div className="helper-text">
+                            {fieldErrors.password || 'At least 6 characters'}
+                        </div>
+                        {!fieldErrors.password && password && password.length >= 6 && (
+                            <span className="input-status" aria-hidden>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </span>
+                        )}
                     </div>
                     
                     <button className="form-button" type="submit" disabled={loading}>
@@ -145,43 +221,17 @@ const LoginPage = () => {
                     <span>OR</span>
                 </div>
 
-                <div className="google-row">
+                <div className="google-row" style={{ width: '100%' }}>
                     <GoogleLogin
                         onSuccess={handleGoogleSignInSuccess}
                         onError={() => setError('Google Sign-In failed. Please try again.')}
                         disabled={loading}
                         theme="outline"
                         size="large"
-                        width="100%"
                     />
                 </div>
 
-                {/* Staff Login Entry Point */}
-                <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-                    <button
-                        type="button"
-                        onClick={() => navigate('/staff/login')}
-                        className="form-button staff"
-                        aria-label="Staff Login"
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.5rem',
-                            width: 'auto',
-                            padding: '0.75rem 1.5rem',
-                            fontSize: '0.95rem'
-                        }}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                            <path d="M7 9H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                            <circle cx="8.5" cy="13.5" r="1.5" fill="currentColor"/>
-                            <path d="M12 15c-1.2-1.6-4.8-1.6-6 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                        Staff Login
-                    </button>
-                </div>
+                {/* Staff Login Entry Point removed */}
 
                 <div className="auth-links">
                     <Link to="/forgot-password">
@@ -197,6 +247,7 @@ const LoginPage = () => {
                         </Link>
                     </span>
                 </div>
+            </div>
             </div>
         </div>
     );

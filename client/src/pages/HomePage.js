@@ -56,13 +56,7 @@ const HomePage = () => {
                             <p>View our manufacturing facilities, products, and team in action</p>
                         </Link>
                         
-                        <Link to="/administration" className="nav-card">
-                            <div className="nav-icon">
-                                <i className="fas fa-users-cog"></i>
-                            </div>
-                            <h3>Administration</h3>
-                            <p>Meet our leadership team and organizational structure</p>
-                        </Link>
+                        { /* Administration card removed */ }
                         
                         <Link to="/contact" className="nav-card">
                             <div className="nav-icon">
@@ -72,12 +66,11 @@ const HomePage = () => {
                             <p>Get in touch with us for inquiries, partnerships, or support</p>
                         </Link>
                         
-                        <Link to="/login" className="nav-card login-card">
+                        <Link to="/login" className="nav-card login-card" aria-label="Login">
                             <div className="nav-icon">
                                 <i className="fas fa-sign-in-alt"></i>
                             </div>
-                            <h3>Login</h3>
-                            <p>Access your account to manage orders, track shipments, and more</p>
+                            <h3>Login <span className="nav-cta" aria-hidden><i className="fas fa-arrow-right"></i></span></h3>
                         </Link>
                     </div>
                 </div>
@@ -201,7 +194,7 @@ const HomePage = () => {
                         <div className="footer-section">
                             <h4>Services</h4>
                             <ul>
-                                <li><Link to="/administration">Administration</Link></li>
+                                { /* Administration link removed */ }
                                 <li><Link to="/login">Login</Link></li>
                                 <li><Link to="/contact">Support</Link></li>
                             </ul>

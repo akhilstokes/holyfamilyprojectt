@@ -44,9 +44,11 @@ const InventoryPage = () => {
 
   const submitIssue = async () => {
     setMessage('');
-    if (!issue.title) { setMessage('Enter a title'); return; }
+    const title = (issue.title || '').trim();
+    const description = (issue.description || '').trim();
+    if (!title) { setMessage('Enter a title'); return; }
     try {
-      await reportIssue(issue);
+      await reportIssue({ ...issue, title, description });
       setIssue({ category: 'barrel', title: '', description: '' });
       setMessage('Issue reported');
     } catch (e) {
@@ -63,7 +65,19 @@ const InventoryPage = () => {
       <div className="card" style={{ marginBottom: 12 }}>
         <div className="card-header">Request Barrels</div>
         <div className="card-body" style={{ display: 'flex', gap: 8 }}>
-          <input type="number" value={reqQty} onChange={(e) => setReqQty(e.target.value)} className="form-control" placeholder="Quantity" style={{ width: 160 }} />
+          <input
+            type="number"
+            value={reqQty}
+            onChange={(e) => setReqQty(e.target.value.replace(/^-/, ''))}
+            className="form-control"
+            placeholder="Quantity"
+            style={{ width: 160 }}
+            step="1"
+            min="1"
+            inputMode="numeric"
+            onKeyDown={(evt)=>['e','E','+','-','.'].includes(evt.key) && evt.preventDefault()}
+            onWheel={(e)=>e.currentTarget.blur()}
+          />
           <button className="btn btn-primary" onClick={submitRequest}>Submit</button>
         </div>
       </div>
@@ -80,7 +94,7 @@ const InventoryPage = () => {
           </div>
           <div className="form-group"><label>Title</label><input className="form-control" value={issue.title} onChange={(e) => setIssue({ ...issue, title: e.target.value })} /></div>
           <div className="form-group"><label>Description</label><textarea className="form-control" rows={3} value={issue.description} onChange={(e) => setIssue({ ...issue, description: e.target.value })} /></div>
-          <button className="btn btn-primary" onClick={submitIssue}>Submit Issue</button>
+          <button className="btn btn-primary" onClick={submitIssue} disabled={!issue.title.trim()}>Submit Issue</button>
         </div>
       </div>
       <div className="card">

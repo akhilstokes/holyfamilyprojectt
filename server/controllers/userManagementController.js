@@ -1,6 +1,13 @@
 const User = require('../models/userModel');
 const UserActivity = require('../models/userActivityModel');
+const Attendance = require('../models/attendanceModel');
+const Leave = require('../models/leaveModel');
+const BillRequest = require('../models/billRequestModel');
+const DailyRate = require('../models/dailyRateModel');
+const LatexRequest = require('../models/latexRequestModel');
+const Barrel = require('../models/barrelModel');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 
 // Get all users with filtering and pagination
 const getAllUsers = async (req, res) => {
@@ -10,6 +17,7 @@ const getAllUsers = async (req, res) => {
             status, 
             search, 
             page = 1, 
+            
             limit = 20, 
             sortBy = 'createdAt', 
             sortOrder = 'desc' 
@@ -59,7 +67,7 @@ const getAllUsers = async (req, res) => {
         ]);
 
         // Log admin activity
-        await logUserActivity(req.user.id, 'view_dashboard', 'Viewed user management dashboard', req.ip, req.get('User-Agent'));
+        await logUserActivity(req.user._id, 'view_dashboard', 'Viewed user management dashboard', req.ip, req.get('User-Agent'));
 
         res.status(200).json({
             success: true,
@@ -163,7 +171,7 @@ const addUser = async (req, res) => {
         await newUser.save();
 
         // Log admin activity
-        await logUserActivity(req.user.id, 'add_user', `Added new ${role}: ${name}`, req.ip, req.get('User-Agent'), {
+        await logUserActivity(req.user._id, 'add_user', `Added new ${role}: ${name}`, req.ip, req.get('User-Agent'), {
             newUserId: newUser._id,
             newUserEmail: email
         });
@@ -207,7 +215,7 @@ const updateUserStatus = async (req, res) => {
         const oldStatus = user.status;
         user.status = status;
         user.statusUpdatedAt = new Date();
-        user.statusUpdatedBy = req.user.id;
+        user.statusUpdatedBy = req.user._id;
         
         if (reason) {
             user.statusReason = reason;
@@ -216,7 +224,7 @@ const updateUserStatus = async (req, res) => {
         await user.save();
 
         // Log admin activity
-        await logUserActivity(req.user.id, 'change_role', `Changed ${user.name}'s status from ${oldStatus} to ${status}`, req.ip, req.get('User-Agent'), {
+        await logUserActivity(req.user._id, 'change_role', `Changed ${user.name}'s status from ${oldStatus} to ${status}`, req.ip, req.get('User-Agent'), {
             targetUserId: user._id,
             oldStatus,
             newStatus: status,
@@ -261,12 +269,12 @@ const updateUserRole = async (req, res) => {
         const oldRole = user.role;
         user.role = role;
         user.roleUpdatedAt = new Date();
-        user.roleUpdatedBy = req.user.id;
+        user.roleUpdatedBy = req.user._id;
 
         await user.save();
 
         // Log admin activity
-        await logUserActivity(req.user.id, 'change_role', `Changed ${user.name}'s role from ${oldRole} to ${role}`, req.ip, req.get('User-Agent'), {
+        await logUserActivity(req.user._id, 'change_role', `Changed ${user.name}'s role from ${oldRole} to ${role}`, req.ip, req.get('User-Agent'), {
             targetUserId: user._id,
             oldRole,
             newRole: role
@@ -386,12 +394,12 @@ const deleteUser = async (req, res) => {
         // Soft delete by setting status to deleted
         user.status = 'deleted';
         user.deletedAt = new Date();
-        user.deletedBy = req.user.id;
+        user.deletedBy = req.user._id;
 
         await user.save();
 
         // Log admin activity
-        await logUserActivity(req.user.id, 'suspend_user', `Deleted user: ${user.name}`, req.ip, req.get('User-Agent'), {
+        await logUserActivity(req.user._id, 'suspend_user', `Deleted user: ${user.name}`, req.ip, req.get('User-Agent'), {
             targetUserId: user._id,
             targetUserEmail: user.email
         });
@@ -446,22 +454,22 @@ const bulkUserActions = async (req, res) => {
             case 'approve':
                 updateData.status = 'active';
                 updateData.statusUpdatedAt = timestamp;
-                updateData.statusUpdatedBy = req.user.id;
+                updateData.statusUpdatedBy = req.user._id;
                 break;
             case 'suspend':
                 updateData.status = 'suspended';
                 updateData.statusUpdatedAt = timestamp;
-                updateData.statusUpdatedBy = req.user.id;
+                updateData.statusUpdatedBy = req.user._id;
                 break;
             case 'activate':
                 updateData.status = 'active';
                 updateData.statusUpdatedAt = timestamp;
-                updateData.statusUpdatedBy = req.user.id;
+                updateData.statusUpdatedBy = req.user._id;
                 break;
             case 'delete':
                 updateData.status = 'deleted';
                 updateData.deletedAt = timestamp;
-                updateData.deletedBy = req.user.id;
+                updateData.deletedBy = req.user._id;
                 break;
         }
 
@@ -475,7 +483,7 @@ const bulkUserActions = async (req, res) => {
         );
 
         // Log admin activity
-        await logUserActivity(req.user.id, 'change_role', `Bulk ${action} action on ${userIds.length} users`, req.ip, req.get('User-Agent'), {
+        await logUserActivity(req.user._id, 'change_role', `Bulk ${action} action on ${userIds.length} users`, req.ip, req.get('User-Agent'), {
             action,
             userIds,
             reason
@@ -496,9 +504,70 @@ const bulkUserActions = async (req, res) => {
     }
 };
 
+// Admin dashboard high-level statistics
+const getAdminStats = async (req, res) => {
+    try {
+        // Users by role and status
+        const usersByRole = await User.aggregate([
+            { $group: { _id: '$role', count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ]);
+
+        const usersByStatus = await User.aggregate([
+            { $group: { _id: '$status', count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ]);
+
+        // Pending approvals / queues
+        const [
+            pendingBills,
+            pendingRates,
+            pendingLeaves,
+            pendingLatex,
+            disposalRequests,
+            unverifiedAttendance
+        ] = await Promise.all([
+            BillRequest.countDocuments({ status: { $in: ['pending', 'manager_approved'] } }),
+            DailyRate.countDocuments({ status: 'pending_approval' }),
+            Leave.countDocuments({ status: 'pending' }),
+            LatexRequest.countDocuments({ status: { $in: ['pending', 'processing'] } }),
+            Barrel.countDocuments({ disposalRequested: true }),
+            Attendance.countDocuments({ verified: { $ne: true } })
+        ]);
+
+        res.status(200).json({
+            success: true,
+            users: {
+                byRole: usersByRole,
+                byStatus: usersByStatus
+            },
+            queues: {
+                pendingBills,
+                pendingRates,
+                pendingLeaves,
+                pendingLatex,
+                disposalRequests,
+                unverifiedAttendance
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching admin stats:', error);
+        res.status(500).json({ success: false, message: 'Error fetching admin stats' });
+    }
+};
+
 // Helper function to log user activity
 const logUserActivity = async (userId, action, description, ipAddress, userAgent, metadata = {}) => {
     try {
+        // Only log activity if userId is provided (skip for system operations)
+        if (!userId) {
+            return;
+        }
+        // Skip logging if userId is not a valid ObjectId (e.g., built-in tokens)
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return;
+        }
+
         const activity = new UserActivity({
             user: userId,
             action,
@@ -531,7 +600,7 @@ const seedDemoStaff = async (req, res) => {
             });
         }
 
-        await logUserActivity(req.user.id, 'add_user', 'Seeded demo staff', req.ip, req.get('User-Agent'), { userId: user._id });
+        await logUserActivity(req.user._id, 'add_user', 'Seeded demo staff', req.ip, req.get('User-Agent'), { userId: user._id });
 
         return res.status(200).json({
             success: true,
@@ -553,7 +622,8 @@ module.exports = {
     updateUserRole,
     getUserActivityLogs,
     deleteUser,
-    bulkUserActions
+    bulkUserActions,
+    getAdminStats
 }; // seedDemoStaff intentionally not exported (demo data creation disabled)
 
 
