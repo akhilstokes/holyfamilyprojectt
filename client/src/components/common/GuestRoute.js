@@ -13,12 +13,17 @@ const GuestRoute = ({ children }) => {
         return <div>Loading...</div>;
     }
     
-    // If the user is authenticated, redirect unless forced to show guest page
+    // If the user is authenticated, redirect based on role unless forced to show guest page
     if (!force && isAuthenticated && user) {
-        if (user.role === 'admin') {
+        const role = user.role;
+        if (role === 'admin') {
             return <Navigate to="/admin/home" />;
+        } else if (role === 'manager') {
+            return <Navigate to="/manager/home" />;
+        } else if (role === 'field_staff') {
+            return <Navigate to="/staff" />;
         } else {
-            return <Navigate to="/user/home" />;
+            return <Navigate to="/user" />;
         }
     }
 

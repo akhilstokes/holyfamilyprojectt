@@ -1,15 +1,22 @@
 const Worker = require('../models/workerModel');
-const User = require('../models/userModel');
 const Attendance = require('../models/attendanceModel');
 const PayrollEntry = require('../models/payrollEntryModel');
 const SalarySummary = require('../models/salarySummaryModel');
 const WageTemplate = require('../models/wageTemplateModel');
 const WageHistory = require('../models/wageHistoryModel');
+const mongoose = require('mongoose');
+
+function isValidObjectId(id) {
+  return typeof id === 'string' && mongoose.Types.ObjectId.isValid(id);
+}
 
 // Set daily wage for a worker
 exports.setDailyWage = async (req, res) => {
   try {
     const { workerId } = req.params;
+    if (!isValidObjectId(workerId)) {
+      return res.status(400).json({ message: 'Invalid workerId' });
+    }
     const { dailyWage, effectiveDate, reason } = req.body;
 
     if (!dailyWage || dailyWage <= 0) {
@@ -55,6 +62,9 @@ exports.setDailyWage = async (req, res) => {
 exports.getDailyWage = async (req, res) => {
   try {
     const { workerId } = req.params;
+    if (!isValidObjectId(workerId)) {
+      return res.status(400).json({ message: 'Invalid workerId' });
+    }
 
     const worker = await Worker.findById(workerId)
       .populate('user', 'name email role staffId');
@@ -81,6 +91,9 @@ exports.getDailyWage = async (req, res) => {
 exports.calculateMonthlySalary = async (req, res) => {
   try {
     const { workerId } = req.params;
+    if (!isValidObjectId(workerId)) {
+      return res.status(400).json({ message: 'Invalid workerId' });
+    }
     const { year, month } = req.query;
 
     if (!year || !month || month < 1 || month > 12) {
@@ -164,6 +177,9 @@ exports.calculateMonthlySalary = async (req, res) => {
 exports.recordPayment = async (req, res) => {
   try {
     const { workerId } = req.params;
+    if (!isValidObjectId(workerId)) {
+      return res.status(400).json({ message: 'Invalid workerId' });
+    }
     const { year, month, amount, type, note } = req.body;
 
     if (!year || !month || !amount || !type) {
@@ -252,6 +268,9 @@ exports.recordPayment = async (req, res) => {
 exports.getPayrollHistory = async (req, res) => {
   try {
     const { workerId } = req.params;
+    if (!isValidObjectId(workerId)) {
+      return res.status(400).json({ message: 'Invalid workerId' });
+    }
     const { year, month, limit = 50 } = req.query;
 
     const worker = await Worker.findById(workerId).populate('user');
@@ -279,6 +298,9 @@ exports.getPayrollHistory = async (req, res) => {
 exports.getSalarySummary = async (req, res) => {
   try {
     const { workerId } = req.params;
+    if (!isValidObjectId(workerId)) {
+      return res.status(400).json({ message: 'Invalid workerId' });
+    }
     const { year, month } = req.query;
 
     if (!year || !month) {

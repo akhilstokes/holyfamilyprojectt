@@ -1,30 +1,98 @@
-// Validation utility functions
+// Enhanced validation utility functions with real-time feedback
 
-// Name validation (letters, spaces, and dots allowed)
-export const validateName = (name) => {
-    if (!name.trim()) {
-        return 'Name is required.';
+// Real-time validation state management
+export class ValidationState {
+    constructor() {
+        this.errors = {};
+        this.warnings = {};
+        this.isValidating = {};
+        this.validationTimers = {};
     }
-    // Only letters, spaces, and dots allowed
-    if (!/^[a-zA-Z\s.]+$/.test(name)) {
-        return 'Name must contain only letters, spaces, and dots (no numbers or other special characters).';
+
+    setError(field, error) {
+        this.errors[field] = error;
+        this.warnings[field] = null;
     }
-    if (name.length < 2) {
-        return 'Name must be at least 2 characters long.';
+
+    setWarning(field, warning) {
+        this.warnings[field] = warning;
+        this.errors[field] = null;
     }
-    if (name.length > 50) {
-        return 'Name must be less than 50 characters.';
+
+    clear(field) {
+        delete this.errors[field];
+        delete this.warnings[field];
+        delete this.isValidating[field];
     }
-    return '';
+
+    isValid(field) {
+        return !this.errors[field] && !this.warnings[field];
+    }
+
+    hasErrors() {
+        return Object.keys(this.errors).length > 0;
+    }
+
+    hasWarnings() {
+        return Object.keys(this.warnings).length > 0;
+    }
+
+    getFieldState(field) {
+        if (this.errors[field]) return 'error';
+        if (this.warnings[field]) return 'warning';
+        if (this.isValidating[field]) return 'validating';
+        return 'valid';
+    }
+}
+
+// Debounced validation for real-time feedback
+export const debounceValidation = (fn, delay = 300) => {
+    return (value, ...args) => {
+        return new Promise((resolve) => {
+            const timer = setTimeout(() => {
+                const result = fn(value, ...args);
+                resolve(result);
+            }, delay);
+        });
+    };
 };
 
-// Phone number validation with country code support
+// Name validation (letters and spaces only, no spaces allowed)
+export const validateName = (name) => {
+    if (!name || !name.trim()) {
+        return { valid: false, message: 'Name is required.', severity: 'error' };
+    }
+    
+    const trimmedName = name.trim();
+    
+    // Check for spaces - not allowed
+    if (trimmedName.includes(' ')) {
+        return { valid: false, message: 'Name cannot contain spaces.', severity: 'error' };
+    }
+    
+    // Only letters allowed (no numbers, special characters, or spaces)
+    if (!/^[a-zA-Z]+$/.test(trimmedName)) {
+        return { valid: false, message: 'Name must contain only letters (no numbers, spaces, or special characters).', severity: 'error' };
+    }
+    
+    if (trimmedName.length < 2) {
+        return { valid: false, message: 'Name must be at least 2 characters long.', severity: 'error' };
+    }
+    
+    if (trimmedName.length > 50) {
+        return { valid: false, message: 'Name must be less than 50 characters.', severity: 'warning' };
+    }
+    
+    return { valid: true, message: 'Name looks good!', severity: 'success' };
+};
+
+// Phone number validation for Indian numbers only
 export const validatePhoneNumber = (phone) => {
     if (!phone.trim()) {
         return 'Phone number is required.';
     }
     
-    // Check for spaces
+    // Check for spaces - not allowed
     if (phone.includes(' ')) {
         return 'Phone number cannot contain spaces.';
     }
@@ -37,32 +105,20 @@ export const validatePhoneNumber = (phone) => {
         return 'Phone number cannot be all zeros.';
     }
     
-    // Check for country code patterns
-    if (cleanPhone.startsWith('91') && cleanPhone.length === 12) {
-        // Indian number with country code: +91 9876543210
-        const numberWithoutCode = cleanPhone.substring(2);
-        if (!/^[6-9]\d{9}$/.test(numberWithoutCode)) {
-            return 'Invalid Indian mobile number format.';
-        }
-    } else if (cleanPhone.length === 10) {
-        // 10-digit number without country code
+    // Only accept 10-digit Indian mobile numbers
+    if (cleanPhone.length === 10) {
+        // Must start with 6, 7, 8, or 9 (Indian mobile number format)
         if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
-            return 'Please provide a valid 10-digit Indian mobile number.';
-        }
-    } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
-        // Number starting with 0
-        const numberWithoutZero = cleanPhone.substring(1);
-        if (!/^[6-9]\d{9}$/.test(numberWithoutZero)) {
-            return 'Please provide a valid 10-digit Indian mobile number.';
+            return 'Please provide a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).';
         }
     } else {
-        return 'Please provide a valid phone number (10 digits or +91 followed by 10 digits).';
+        return 'Please provide a valid 10-digit Indian mobile number.';
     }
     
     return '';
 };
 
-// Password validation (must contain alphanumeric and special characters, no spaces)
+// Password validation (must contain special characters, no spaces)
 export const validatePassword = (password) => {
     if (!password) {
         return 'Password is required.';
@@ -70,31 +126,15 @@ export const validatePassword = (password) => {
     if (password.length < 6) {
         return 'Password must be at least 6 characters long.';
     }
-    // Check for spaces
+    // Check for spaces - not allowed
     if (password.includes(' ')) {
         return 'Password cannot contain spaces.';
-    }
-    // Must contain at least one letter
-    if (!/(?=.*[a-zA-Z])/.test(password)) {
-        return 'Password must contain at least one letter.';
-    }
-    // Must contain at least one number
-    if (!/(?=.*\d)/.test(password)) {
-        return 'Password must contain at least one number.';
     }
     // Must contain at least one special character
     if (!/(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/.test(password)) {
         return 'Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?).';
     }
-    // Must contain at least one uppercase letter
-    if (!/(?=.*[A-Z])/.test(password)) {
-        return 'Password must contain at least one uppercase letter.';
-    }
-    // Must contain at least one lowercase letter
-    if (!/(?=.*[a-z])/.test(password)) {
-        return 'Password must contain at least one lowercase letter.';
-    }
-    // Only allow valid characters
+    // Only allow valid characters (letters, numbers, and special characters)
     if (!/^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/.test(password)) {
         return 'Password contains invalid characters.';
     }
@@ -206,8 +246,10 @@ export const validateForm = (formData, requiredFields = []) => {
     
     // Validate specific fields if present
     if (formData.name) {
-        const nameError = validateName(formData.name);
-        if (nameError) errors.name = nameError;
+        const nameResult = validateName(formData.name);
+        if (nameResult && nameResult.valid === false) {
+            errors.name = nameResult.message;
+        }
     }
     
     if (formData.email) {
@@ -238,8 +280,13 @@ export const validateUserRegistration = (formData) => {
     const requiredFields = ['name', 'email', 'phoneNumber'];
     if (formData.role !== 'field_staff') {
         requiredFields.push('password');
+        requiredFields.push('confirmPassword');
     }
-    return validateForm(formData, requiredFields);
+    const errors = validateForm(formData, requiredFields);
+    if (formData.role !== 'field_staff' && formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
+        errors.confirmPassword = 'Passwords do not match.';
+    }
+    return errors;
 };
 
 export const validateStaffRegistration = (formData) => {

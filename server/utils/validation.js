@@ -176,7 +176,7 @@ const validatePhoto = (file) => {
 
 // Role validation
 const validateRole = (role) => {
-    const validRoles = ['user', 'admin', 'field_staff', 'buyer'];
+    const validRoles = ['user', 'admin', 'manager', 'field_staff', 'buyer'];
     if (!role) {
         return 'Role is required.';
     }
@@ -207,6 +207,14 @@ module.exports = {
     validateRole,
     cleanPhoneNumber
 };
+
+
+
+
+
+
+
+
 
 
 

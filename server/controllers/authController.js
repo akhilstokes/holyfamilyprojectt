@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const Worker = require('../models/workerModel');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
@@ -9,34 +10,47 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Helper function to generate your app's token
 const generateToken = (id, role) => {
-    return jwt.sign({ id, role }, process.env.JWT_SECRET, {
+    const jwtSecret = process.env.JWT_SECRET || 'dev_insecure_jwt_secret_change_me';
+    if (!process.env.JWT_SECRET) {
+        // eslint-disable-next-line no-console
+        console.warn('[auth] JWT_SECRET is not set. Using an insecure development fallback.');
+    }
+    return jwt.sign({ id, role }, jwtSecret, {
         expiresIn: '30d',
     });
 };
 
 // --- Register a new user ---
 exports.register = async (req, res) => {
-    const { name, email, phoneNumber } = req.body;
+	const { name, email, phoneNumber } = req.body;
+	const passwordValue = req.body && req.body.password;
     try {
+		if (!passwordValue) {
+			return res.status(400).json({ message: 'Password is required' });
+		}
         // Check if user already exists
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: 'User with this email already exists' });
         }
 
-        // Clean phone number before creating user
-        const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+        // Validate and clean phone number before creating user
+        if (!phoneNumber) {
+            return res.status(400).json({ message: 'Phone number is required' });
+        }
+        const phoneStr = String(phoneNumber);
+        const cleanPhoneNumber = phoneStr.replace(/\D/g, '');
         const finalPhoneNumber = cleanPhoneNumber.startsWith('91') && cleanPhoneNumber.length === 12 
             ? cleanPhoneNumber.substring(2) 
             : cleanPhoneNumber.startsWith('0') 
                 ? cleanPhoneNumber.substring(1) 
                 : cleanPhoneNumber;
 
-        const user = await User.create({ 
+		const user = await User.create({ 
             name, 
             email, 
             phoneNumber: finalPhoneNumber, 
-            password 
+			password: passwordValue 
         });
 
         if (user) {
@@ -100,8 +114,12 @@ exports.register = async (req, res) => {
 
 // --- Register a new buyer ---
 exports.registerBuyer = async (req, res) => {
-    const { name, email, phoneNumber, password } = req.body;
+	const { name, email, phoneNumber } = req.body;
+	const passwordValue = req.body && req.body.password;
     try {
+		if (!passwordValue) {
+			return res.status(400).json({ message: 'Password is required' });
+		}
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: 'User with this email already exists' });
@@ -114,11 +132,11 @@ exports.registerBuyer = async (req, res) => {
                 ? cleanPhoneNumber.substring(1) 
                 : cleanPhoneNumber;
 
-        const user = await User.create({ 
+		const user = await User.create({ 
             name, 
             email, 
             phoneNumber: finalPhoneNumber, 
-            password,
+			password: passwordValue,
             role: 'buyer'
         });
 
@@ -262,6 +280,75 @@ exports.getNextStaffId = async (req, res) => {
 exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
+        // Built-in admin fallback (no registration required)
+        const defaultAdminEmail = (process.env.DEFAULT_ADMIN_EMAIL || 'admin@xyz.com').toLowerCase();
+        const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin@123';
+        const incomingEmail = String(email || '').trim().toLowerCase();
+        if (incomingEmail === defaultAdminEmail && password === defaultAdminPassword) {
+            const token = generateToken('builtin-admin', 'admin');
+            return res.json({
+                token,
+                user: {
+                    _id: 'builtin-admin',
+                    name: 'Admin',
+                    email: defaultAdminEmail,
+                    role: 'admin',
+                },
+            });
+        }
+        // Built-in manager fallback (no registration required)
+        const defaultManagerEmail = (process.env.DEFAULT_MANAGER_EMAIL || 'manger@xyz.com').toLowerCase();
+        const defaultManagerPassword = process.env.DEFAULT_MANAGER_PASSWORD || 'manger@123';
+        if (incomingEmail === defaultManagerEmail && password === defaultManagerPassword) {
+            const token = generateToken('builtin-manager', 'manager');
+            return res.json({
+                token,
+                user: {
+                    _id: 'builtin-manager',
+                    name: 'Manager',
+                    email: defaultManagerEmail,
+                    role: 'manager',
+                },
+            });
+        }
+        // Built-in delivery staff fallback (no registration required)
+        const defaultDeliveryEmail = (process.env.DEFAULT_DELIVERY_EMAIL || 'Delivery@xyz.com').toLowerCase();
+        const defaultDeliveryPassword = process.env.DEFAULT_DELIVERY_PASSWORD || 'Delivery@123';
+        if (incomingEmail === defaultDeliveryEmail && password === defaultDeliveryPassword) {
+            const token = generateToken('builtin-delivery', 'delivery_staff');
+            return res.json({
+                token,
+                user: {
+                    _id: 'builtin-delivery',
+                    name: 'Delivery Staff',
+                    email: defaultDeliveryEmail,
+                    role: 'delivery_staff',
+                },
+            });
+        }
+
+        // Built-in accountant fallback (no registration required)
+        const defaultAccountantEmail = (process.env.DEFAULT_ACCOUNTANT_EMAIL || 'Accountant@xyz.com').toLowerCase();
+        const defaultAccountantPassword = process.env.DEFAULT_ACCOUNTANT_PASSWORD || 'Accountant@123';
+        // Debug logs to help diagnose environment/config issues (remove in production)
+        try {
+            console.log('[login] incomingEmail=', incomingEmail, 'acctEmail=', defaultAccountantEmail);
+        } catch {}
+        if (incomingEmail === defaultAccountantEmail && password === defaultAccountantPassword) {
+            const token = generateToken('builtin-accountant', 'accountant');
+            try { console.log('[login] matched builtin accountant'); } catch {}
+            return res.json({
+                token,
+                user: {
+                    _id: 'builtin-accountant',
+                    name: 'Accountant',
+                    email: defaultAccountantEmail,
+                    role: 'accountant',
+                },
+            });
+        }
+        
+        // Normal user login via DB
         const user = await User.findOne({ email }).select('+password');
         if (user && (await user.matchPassword(password))) {
             const token = generateToken(user._id, user.role);
@@ -294,19 +381,66 @@ exports.staffLogin = async (req, res) => {
         const raw = String(staffId || '');
         const normalized = raw.trim().toUpperCase();
 
-        // Try exact match first
-        let user = await User.findOne({ staffId: normalized }).select('+password');
+        // Built-in default delivery staff login (no DB required)
+        const defaultDeliveryId = (process.env.DEFAULT_DELIVERY_STAFF_ID || 'STF-0000-001').toUpperCase();
+        const defaultDeliveryAlnum = defaultDeliveryId.replace(/[^A-Z0-9]/g, '');
+        if (normalized === defaultDeliveryId || normalized.replace(/[^A-Z0-9]/g,'') === defaultDeliveryAlnum) {
+            const token = generateToken('builtin-delivery', 'delivery_staff');
+            return res.json({
+                token,
+                user: {
+                    _id: 'builtin-delivery',
+                    name: 'Delivery Staff',
+                    email: process.env.DEFAULT_DELIVERY_STAFF_EMAIL || 'delivery@hfp.local',
+                    role: 'delivery_staff',
+                    staffId: defaultDeliveryId,
+                }
+            });
+        }
 
-        // If not found, attempt a relaxed match for legacy formatted IDs by stripping non-alphanumerics
+        // Build candidate variants
+        const alnum = normalized.replace(/[^A-Z0-9]/g, '');
+        const candidates = Array.from(new Set([normalized, alnum])).filter(Boolean);
+        const regexes = candidates.map(c => new RegExp(`^${c}$`, 'i'));
+
+        // Debug: trace lookup
+        console.log('[staffLogin] incoming:', raw, 'normalized:', normalized, 'candidates:', candidates);
+
+        // Try to find by any candidate (exact or case-insensitive) in Users
+        let user = await User.findOne({
+            $or: [
+                { staffId: { $in: candidates } },
+                ...regexes.map(r => ({ staffId: r }))
+            ]
+        }).select('+password');
+
+        // If user not found, attempt lookup in Worker and use its linked user
         if (!user) {
-            const alnum = normalized.replace(/[^A-Z0-9]/g, '');
-            if (alnum && alnum !== normalized) {
-                user = await User.findOne({ staffId: alnum }).select('+password');
+            const worker = await Worker.findOne({
+                $or: [
+                    { staffId: { $in: candidates } },
+                    ...regexes.map(r => ({ staffId: r }))
+                ]
+            }).lean();
+            if (worker && worker.user) {
+                user = await User.findById(worker.user).select('+password');
+                // If linked user exists but lacks staffId, sync it for future direct logins
+                if (user && !user.staffId) {
+                    try { await User.updateOne({ _id: user._id }, { $set: { staffId: worker.staffId } }); } catch {}
+                }
+            } else if (worker && !worker.user) {
+                return res.status(401).json({ message: 'Staff found but not activated for login. Please approve/link this staff user in Admin.' });
             }
         }
-        if (!user || user.role !== 'field_staff') {
+        if (!user) {
             return res.status(401).json({ message: 'Invalid Staff ID' });
         }
+        // Role guard: allow field_staff and delivery_staff to access staff portal
+        if (!(user.role === 'field_staff' || user.role === 'delivery_staff')) {
+            console.log('[staffLogin] role mismatch for', user.staffId, 'role:', user.role);
+            return res.status(403).json({ message: 'This Staff ID is not permitted for staff portal' });
+        }
+        console.log('[staffLogin] success for', user.staffId, 'role:', user.role, 'userId:', String(user._id));
         const token = generateToken(user._id, user.role);
         res.json({
             token,
@@ -439,7 +573,7 @@ exports.validateToken = async (req, res) => {
     try {
         // The token is already validated by the protect middleware
         // We just need to return the user info
-        const user = await User.findById(req.user.id).select('-password');
+        const user = await User.findById(req.user._id).select('-password');
         
         if (!user) {
             return res.status(401).json({ 
@@ -470,7 +604,7 @@ exports.validateToken = async (req, res) => {
 // --- Check if user registration is complete ---
 exports.checkRegistrationStatus = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('-password');
+        const user = await User.findById(req.user._id).select('-password');
         
         if (!user) {
             return res.status(404).json({ 

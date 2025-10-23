@@ -19,6 +19,42 @@ function atMidnight(dateStrOrDate) {
   return d;
 }
 
+// Manager: Submit rate update for admin approval
+exports.managerSubmitRate = async (req, res) => {
+  try {
+    const { effectiveDate, category, inr, usd, notes } = req.body;
+    if (!effectiveDate || !category || inr == null || usd == null) {
+      return res.status(400).json({ message: 'effectiveDate, category, inr, usd are required' });
+    }
+
+    const eff = atMidnight(effectiveDate);
+    const payload = {
+      effectiveDate: eff,
+      category: String(category).toUpperCase(),
+      inr,
+      usd,
+      createdBy: req.user?._id,
+      source: 'manager',
+      status: 'pending_approval',
+      managerNotes: notes || '',
+      submittedAt: new Date()
+    };
+
+    const doc = await DailyRate.findOneAndUpdate(
+      { effectiveDate: eff, category: payload.category },
+      { $set: payload },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return res.status(200).json({ 
+      message: 'Rate update submitted for admin approval', 
+      rate: doc 
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to submit rate update', error: err.message });
+  }
+};
+
 // Admin: Add or Update (up to 4 PM IST)
 exports.addOrUpdate = async (req, res) => {
   try {
@@ -50,6 +86,87 @@ exports.addOrUpdate = async (req, res) => {
     return res.status(200).json({ message: 'Saved successfully', rate: doc });
   } catch (err) {
     return res.status(500).json({ message: 'Failed to save rate', error: err.message });
+  }
+};
+
+// Admin: Get pending rate updates for approval
+exports.getPendingRateUpdates = async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    
+    const rates = await DailyRate.find({ status: 'pending_approval' })
+      .populate('createdBy', 'name email')
+      .sort({ submittedAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await DailyRate.countDocuments({ status: 'pending_approval' });
+
+    return res.status(200).json({
+      success: true,
+      rates,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch pending rates', error: err.message });
+  }
+};
+
+// Admin: Approve rate update
+exports.approveRateUpdate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminNotes } = req.body;
+
+    const rate = await DailyRate.findById(id);
+    if (!rate) return res.status(404).json({ message: 'Rate not found' });
+    
+    if (rate.status !== 'pending_approval') {
+      return res.status(400).json({ message: 'Only pending rates can be approved' });
+    }
+
+    rate.status = 'approved';
+    rate.adminNotes = adminNotes || '';
+    rate.approvedBy = req.user._id;
+    rate.approvedAt = new Date();
+    await rate.save();
+
+    return res.status(200).json({ 
+      message: 'Rate update approved successfully', 
+      rate 
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to approve rate', error: err.message });
+  }
+};
+
+// Admin: Reject rate update
+exports.rejectRateUpdate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminNotes } = req.body;
+
+    const rate = await DailyRate.findById(id);
+    if (!rate) return res.status(404).json({ message: 'Rate not found' });
+    
+    if (rate.status !== 'pending_approval') {
+      return res.status(400).json({ message: 'Only pending rates can be rejected' });
+    }
+
+    rate.status = 'rejected';
+    rate.adminNotes = adminNotes || '';
+    rate.approvedBy = req.user._id;
+    rate.approvedAt = new Date();
+    await rate.save();
+
+    return res.status(200).json({ 
+      message: 'Rate update rejected', 
+      rate 
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to reject rate', error: err.message });
   }
 };
 

@@ -8,6 +8,7 @@ const Navbar = () => {
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
+    const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
         const handler = (e) => {
@@ -17,6 +18,13 @@ const Navbar = () => {
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 10);
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
     const handleLogout = async () => {
@@ -29,7 +37,8 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="navbar">
+        <>
+        <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
             <div className="navbar-container">
                 {/* Logo */}
                 <Link to="/" className="navbar-logo">
@@ -39,7 +48,6 @@ const Navbar = () => {
                             alt="Company Logo" 
                             className="company-logo" 
                         />
-                        <span className="company-name">Holy Family Polymers</span>
                     </div>
                 </Link>
 
@@ -71,9 +79,7 @@ const Navbar = () => {
                         </NavLink>
                     </li>
                     <li className="nav-item">
-                        <NavLink to="/administration" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                            Administration
-                        </NavLink>
+                        {null}
                     </li>
                 </ul>
 
@@ -108,6 +114,8 @@ const Navbar = () => {
                 )}
             </div>
         </nav>
+        
+        </>
     );
 };
 

@@ -60,8 +60,12 @@ const SalesPage = () => {
   useEffect(() => { load(year); }, [year]);
 
   const onChange = (e) => {
-    const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: value }));
+    const { name, value, type } = e.target;
+    let v = value;
+    if (type === 'number' || name === 'amount') {
+      v = String(v).replace(/^-/, '');
+    }
+    setForm(f => ({ ...f, [name]: v }));
   };
 
   const onSubmit = async (e) => {
@@ -87,7 +91,7 @@ const SalesPage = () => {
       <form onSubmit={onSubmit} className="card" style={{ maxWidth: 520, marginBottom: 16 }}>
         <div className="card-body">
           <div className="form-group"><label>Date</label><input type="date" name="date" value={form.date} onChange={onChange} className="form-control" /></div>
-          <div className="form-group"><label>Amount</label><input type="number" step="0.01" name="amount" value={form.amount} onChange={onChange} className="form-control" /></div>
+          <div className="form-group"><label>Amount</label><input type="number" step="0.01" min="0" inputMode="decimal" onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()} onWheel={(e)=>e.currentTarget.blur()} name="amount" value={form.amount} onChange={onChange} className="form-control" /></div>
           <div className="form-group"><label>Notes</label><input name="notes" value={form.notes} onChange={onChange} className="form-control" /></div>
           <button className="btn btn-primary" type="submit">Add</button>
         </div>
@@ -97,7 +101,7 @@ const SalesPage = () => {
         <div className="card-body">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <label>Year</label>
-            <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="form-control" style={{ width: 120 }} />
+            <input type="number" min="1900" step="1" inputMode="numeric" onKeyDown={(evt)=>['e','E','+','-','.'].includes(evt.key) && evt.preventDefault()} onWheel={(e)=>e.currentTarget.blur()} value={year} onChange={(e) => setYear(Number(String(e.target.value).replace(/^-/, '')))} className="form-control" style={{ width: 120 }} />
           </div>
           <LineChart points={monthlyPoints} />
           {prediction && prediction.predictedNextYearTotal != null && (

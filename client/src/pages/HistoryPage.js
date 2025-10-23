@@ -3,7 +3,7 @@ import './HistoryPage.css';
 
 const HistoryPage = () => {
     return (
-        <div className="history-page">
+        <div className="history-page brand-gradient">
             <h1>Our History</h1>
             <p>This is the history page for Holy Family Polymers.</p>
         </div>

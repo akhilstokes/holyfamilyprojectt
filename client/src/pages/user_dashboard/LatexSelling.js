@@ -57,9 +57,21 @@ const LatexSelling = () => {
     };
 
     const handleInputChange = (field, value) => {
+        let v = value;
+        if (field === 'quantity' || field === 'drcPercentage') {
+            // strip leading minus for numeric inputs
+            v = String(v).replace(/^-/, '');
+        }
+        if (field === 'drcPercentage') {
+            const n = parseFloat(v);
+            if (!isNaN(n)) {
+                if (n < 0) v = '0';
+                if (n > 100) v = '100';
+            }
+        }
         setFormData(prev => ({
             ...prev,
-            [field]: value
+            [field]: v
         }));
     };
 
@@ -68,7 +80,7 @@ const LatexSelling = () => {
         const drc = parseFloat(formData.drcPercentage) || 0;
         const rate = marketRates.companyRate || 0;
         
-        if (quantity && drc && rate) {
+        if (quantity && rate) {
             // Payment = Quantity × DRC% × Company Rate
             return (quantity * (drc / 100) * rate).toFixed(2);
         }
@@ -137,8 +149,12 @@ const LatexSelling = () => {
                         <input
                             type="number"
                             step="0.01"
+                            min="0"
+                            inputMode="decimal"
                             value={formData.quantity}
                             onChange={(e) => handleInputChange('quantity', e.target.value)}
+                            onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                            onWheel={(e)=>e.currentTarget.blur()}
                             placeholder="Enter quantity in kg"
                             required
                         />
@@ -151,10 +167,13 @@ const LatexSelling = () => {
                             step="0.01"
                             min="0"
                             max="100"
+                            inputMode="decimal"
                             value={formData.drcPercentage}
                             onChange={(e) => handleInputChange('drcPercentage', e.target.value)}
-                            placeholder="Enter DRC %"
-                            required
+                            onKeyDown={(evt)=>['e','E','+','-'].includes(evt.key) && evt.preventDefault()}
+                            onWheel={(e)=>e.currentTarget.blur()}
+                            placeholder="Enter DRC % (optional)"
+                            required={false}
                         />
                     </div>
                 </div>
@@ -239,11 +258,14 @@ const LatexSelling = () => {
                         <p>No sell requests found</p>
                     </div>
                 ) : (
-                    requests.map((request) => (
-                        <div key={request.id} className="request-card">
+                    requests.map((request) => {
+                        const rid = request._id || request.id;
+                        const verified = request.status === 'VERIFIED';
+                        return (
+                        <div key={rid} className="request-card">
                             <div className="request-header">
                                 <div className="request-id">
-                                    <span>Request #{request.id}</span>
+                                    <span>Request #{rid}</span>
                                     <span className="request-date">
                                         {new Date(request.createdAt).toLocaleDateString()}
                                     </span>
@@ -263,7 +285,7 @@ const LatexSelling = () => {
                                 </div>
                                 <div className="detail-row">
                                     <span>DRC:</span>
-                                    <span>{request.drcPercentage}%</span>
+                                    <span>{request.drcPercentage ?? '-'}%</span>
                                 </div>
                                 <div className="detail-row">
                                     <span>Quality:</span>
@@ -273,10 +295,16 @@ const LatexSelling = () => {
                                     <span>Estimated Payment:</span>
                                     <span>₹{request.estimatedPayment}</span>
                                 </div>
-                                {request.actualPayment && (
+                                {request.marketRate != null && (
                                     <div className="detail-row">
-                                        <span>Actual Payment:</span>
-                                        <span>₹{request.actualPayment}</span>
+                                        <span>Market Rate Used:</span>
+                                        <span>₹{request.marketRate}/kg</span>
+                                    </div>
+                                )}
+                                {request.finalPayment != null && (
+                                    <div className="detail-row">
+                                        <span>Final Verified Amount:</span>
+                                        <span>₹{request.finalPayment}</span>
                                     </div>
                                 )}
                             </div>
@@ -289,15 +317,15 @@ const LatexSelling = () => {
                             )}
 
                             <div className="request-actions">
-                                {request.status === 'approved' && (
-                                    <button className="download-receipt-btn">
+                                {verified && (
+                                    <a className="download-receipt-btn" href={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/latex/invoice/${rid}`} target="_blank" rel="noreferrer">
                                         <i className="fas fa-download"></i>
-                                        Download Receipt
-                                    </button>
+                                        Download Invoice
+                                    </a>
                                 )}
                             </div>
                         </div>
-                    ))
+                    )})
                 )}
             </div>
         </div>

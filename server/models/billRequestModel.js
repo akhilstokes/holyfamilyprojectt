@@ -36,13 +36,17 @@ const billRequestSchema = new mongoose.Schema({
     }],
     status: {
         type: String,
-        enum: ['pending', 'approved', 'rejected', 'processing'],
+        enum: ['pending', 'manager_approved', 'manager_rejected', 'admin_approved', 'admin_rejected', 'processing'],
         default: 'pending'
     },
     adminNotes: {
         type: String,
         default: '',
         maxlength: 1000
+    },
+    expenseDate: {
+        type: Date,
+        required: true
     },
     submittedAt: {
         type: Date,
@@ -54,6 +58,25 @@ const billRequestSchema = new mongoose.Schema({
     approvedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    managerApprovedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    managerApprovedAt: {
+        type: Date
+    },
+    managerNotes: {
+        type: String,
+        default: '',
+        maxlength: 1000
+    },
+    adminApprovedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    adminApprovedAt: {
+        type: Date
     }
 }, {
     timestamps: true
@@ -67,7 +90,17 @@ billRequestSchema.index({ category: 1 });
 
 // Virtual for approval status
 billRequestSchema.virtual('isApproved').get(function() {
-    return this.status === 'approved';
+    return this.status === 'admin_approved';
+});
+
+// Virtual for manager approval status
+billRequestSchema.virtual('isManagerApproved').get(function() {
+    return this.status === 'manager_approved';
+});
+
+// Virtual for final approval status
+billRequestSchema.virtual('isFinalApproved').get(function() {
+    return this.status === 'admin_approved';
 });
 
 // Virtual for processing time
@@ -88,8 +121,14 @@ billRequestSchema.methods.getApprovalPercentage = function() {
 
 // Pre-save middleware to update timestamps
 billRequestSchema.pre('save', function(next) {
-    if (this.isModified('status') && (this.status === 'approved' || this.status === 'rejected')) {
-        this.processedAt = new Date();
+    if (this.isModified('status')) {
+        if (this.status === 'manager_approved' || this.status === 'manager_rejected') {
+            this.managerApprovedAt = new Date();
+        }
+        if (this.status === 'admin_approved' || this.status === 'admin_rejected') {
+            this.adminApprovedAt = new Date();
+            this.processedAt = new Date();
+        }
     }
     next();
 });

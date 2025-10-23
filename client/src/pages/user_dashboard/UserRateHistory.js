@@ -11,12 +11,10 @@ const UserRateHistory = () => {
     to: new Date().toISOString().split('T')[0]
   });
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const token = localStorage.getItem('token');
   const config = { headers: { Authorization: `Bearer ${token}` } };
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -35,6 +33,10 @@ const UserRateHistory = () => {
     }
   }, [dateRange, config]);
 
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   const formatDate = (date) => new Date(date).toLocaleDateString('en-IN');
   const formatPrice = (price) => `₹${price?.toLocaleString('en-IN') || 'N/A'}`;
 
@@ -52,7 +54,12 @@ const UserRateHistory = () => {
           <input
             type="date"
             value={dateRange.from}
-            onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+            max={todayStr}
+            onChange={(e) => {
+              const v = e.target.value;
+              const to = dateRange.to < v ? v : dateRange.to;
+              setDateRange({ from: v, to });
+            }}
           />
         </div>
         <div className="filter-group">
@@ -60,7 +67,13 @@ const UserRateHistory = () => {
           <input
             type="date"
             value={dateRange.to}
-            onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+            min={dateRange.from}
+            max={todayStr}
+            onChange={(e) => {
+              const v = e.target.value;
+              const to = v < dateRange.from ? dateRange.from : v;
+              setDateRange({ ...dateRange, to });
+            }}
           />
         </div>
         <button onClick={fetchData} className="btn-refresh">🔄 Refresh</button>

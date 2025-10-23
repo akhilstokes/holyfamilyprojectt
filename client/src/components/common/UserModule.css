@@ -4,10 +4,11 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    background: #6c5ce7; /* Purple background matching the design */
+    background: var(--surface-base);
     padding: 10px 16px; /* tighter vertical padding for stable height */
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(108, 92, 231, 0.18);
+    box-shadow: 0 2px 10px rgba(17, 24, 39, 0.08);
+    border: 1px solid var(--border-subtle);
     width: 100%; /* ensure full width inside header */
 }
 
@@ -26,9 +27,9 @@
 }
 
 .icon-btn {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    color: #ffffff;
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    color: #0f172a;
     font-size: 16px;
     padding: 0;
     border-radius: 12px; /* rounded-square tile */
@@ -40,11 +41,11 @@
     justify-content: center;
     width: 40px; /* consistent tile size */
     height: 40px;
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 0 rgba(0,0,0,0);
 }
 
 .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: color-mix(in oklab, var(--role-primary, #3b82f6) 10%, var(--surface-alt));
     transform: translateY(-1px);
 }
 
@@ -68,22 +69,22 @@
 /* Profile Section */
 .user-module-profile { display: flex; align-items: center; gap: 8px; }
 .profile-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.profile-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; overflow: hidden; }
+.profile-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--surface-alt); display: flex; align-items: center; justify-content: center; color: #0f172a; font-size: 16px; overflow: hidden; border: 1px solid var(--border-subtle); }
 .profile-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .profile-details { display: flex; flex-direction: column; }
-.profile-name { color: white; font-weight: 600; font-size: 13px; letter-spacing: 0.4px; }
+.profile-name { color: #0f172a; font-weight: 600; font-size: 13px; letter-spacing: 0.4px; }
 
 /* Profile Menu */
 .profile-menu { position: relative; }
-.profile-dropdown-btn { background: transparent; border: none; color: white; font-size: 16px; padding: 6px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
-.profile-dropdown-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.profile-dropdown-btn { background: transparent; border: none; color: #0f172a; font-size: 16px; padding: 6px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
+.profile-dropdown-btn:hover { background: var(--surface-alt); }
 .profile-dropdown { position: absolute; right: 0; top: calc(100% + 8px); min-width: 200px; background: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); padding: 8px; z-index: 1000; animation: dropdownFadeIn 0.2s ease-out; }
 @keyframes dropdownFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: #374151; text-decoration: none; font-weight: 500; font-size: 14px; transition: all 0.2s ease; border: none; background: none; width: 100%; text-align: left; cursor: pointer; }
 .dropdown-item:hover { background: #f3f4f6; color: #1f2937; }
 .dropdown-item i { width: 16px; text-align: center; color: #6b7280; }
-.logout-item { background: #6c5ce7; color: white; margin-top: 4px; font-weight: 600; }
-.logout-item:hover { background: #5a4fcf; color: white; }
+.logout-item { background: var(--role-primary, #3b82f6); color: white; margin-top: 4px; font-weight: 600; }
+.logout-item:hover { background: var(--role-dark, #1e40af); color: white; }
 .logout-item i { color: white; }
 
 /* Responsive */

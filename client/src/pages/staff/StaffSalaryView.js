@@ -1,29 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../context/AuthContext';
 
 const StaffSalaryView = () => {
-  const token = localStorage.getItem('token');
+  const { user, token, isAuthenticated, validateToken } = useAuth();
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const [activeTab, setActiveTab] = useState('template');
   const [salaryTemplate, setSalaryTemplate] = useState(null);
   const [salaryHistory, setSalaryHistory] = useState([]);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [currentMonth] = useState(new Date().getMonth() + 1);
-  const [loading] = useState(false);
-
-  useEffect(() => {
-    loadSalaryTemplate();
-    loadSalaryHistory();
-  }, [loadSalaryTemplate, loadSalaryHistory]);
-
-  useEffect(() => {
-    loadSalaryHistory();
-  }, [loadSalaryHistory, currentYear]);
 
   const loadSalaryTemplate = useCallback(async () => {
     try {
+      if (!token || !user?._id) return;
       const response = await fetch(`${base}/api/salary/template/${user._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -37,10 +27,11 @@ const StaffSalaryView = () => {
     } catch (error) {
       console.error('Failed to load salary template:', error);
     }
-  }, [base, token, user._id]);
+  }, [base, token, user?._id]);
 
   const loadSalaryHistory = useCallback(async () => {
     try {
+      if (!token || !user?._id) return;
       const response = await fetch(`${base}/api/salary/history/${user._id}?year=${currentYear}&limit=12`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -52,7 +43,23 @@ const StaffSalaryView = () => {
     } catch (error) {
       console.error('Failed to load salary history:', error);
     }
-  }, [base, token, user._id, currentYear]);
+  }, [base, token, user?._id, currentYear]);
+
+  useEffect(() => {
+    // Ensure token is valid/populated on initial mount
+    if (!isAuthenticated) {
+      validateToken?.();
+    }
+  }, [isAuthenticated, validateToken]);
+
+  useEffect(() => {
+    loadSalaryTemplate();
+    loadSalaryHistory();
+  }, [loadSalaryTemplate, loadSalaryHistory]);
+
+  useEffect(() => {
+    loadSalaryHistory();
+  }, [loadSalaryHistory, currentYear]);
 
   const downloadSalarySlip = async (salary) => {
     try {

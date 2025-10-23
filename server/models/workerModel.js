@@ -88,6 +88,21 @@ const workerSchema = new mongoose.Schema(
 
     // Audit
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    
+    // Soft deletion fields
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    deletionReason: { type: String, default: '' },
+    
+    // Status management
+    statusUpdatedAt: { type: Date, default: null },
+    statusUpdatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    statusReason: { type: String, default: '' },
+    
+    // Restoration fields
+    restoredAt: { type: Date, default: null },
+    restoredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );

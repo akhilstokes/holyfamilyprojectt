@@ -1,13 +1,16 @@
 const Rate = require("../models/rateModel");
 const axios = require('axios');
 const cheerio = require('cheerio');
+const mongoose = require('mongoose');
 
-// Admin: Add a new company rate with optional effectiveDate (calendar)
-// @route POST /api/rates/update
-// body: { companyRate: number, marketRate: number, effectiveDate?: 'YYYY-MM-DD', product?: 'latex60' }
+const ifValidId = (v) => (mongoose.Types.ObjectId.isValid(v) ? v : undefined);
+
+// Manager/Admin: Propose a new rate (goes to pending). Admin can later verify to publish
+// @route POST /api/rates/update (back-compat) or /api/rates/propose
+// body: { companyRate: number, marketRate: number, effectiveDate?: 'YYYY-MM-DD', product?: 'latex60', notes?: string }
 exports.updateRate = async (req, res) => {
   try {
-    const { marketRate, companyRate, source, effectiveDate, product } = req.body;
+    const { marketRate, companyRate, source, effectiveDate, product, notes } = req.body;
 
     if (marketRate == null || companyRate == null) {
       return res.status(400).json({ message: "Both marketRate and companyRate are required" });
@@ -19,14 +22,20 @@ exports.updateRate = async (req, res) => {
       source: source || 'manual',
       effectiveDate: effectiveDate ? new Date(effectiveDate) : new Date(),
       product: product || 'latex60',
+      status: 'pending',
+      ...(ifValidId(req.user?._id) ? { createdBy: req.user._id, updatedBy: req.user._id } : {}),
+      notes: notes || ''
     });
 
     await doc.save();
-    return res.status(201).json({ message: "Rate updated successfully", rate: doc });
+    return res.status(201).json({ message: "Rate proposed successfully (pending verification)", rate: doc });
   } catch (error) {
     return res.status(500).json({ message: "Error updating rate", error: error.message });
   }
 };
+
+// Alias for clarity
+exports.proposeRate = exports.updateRate;
 
 // Get the latest rate by product (default latex60)
 // @route GET /api/rates/latest?product=latex60
@@ -40,6 +49,76 @@ exports.getLatestRate = async (req, res) => {
     return res.json(rate);
   } catch (error) {
     return res.status(500).json({ message: "Error fetching latest rate", error: error.message });
+  }
+};
+
+// Public: Latest published rate only (visible to users/staff)
+// @route GET /api/rates/published/latest?product=latex60
+exports.getPublishedLatest = async (req, res) => {
+  try {
+    const product = req.query.product || 'latex60';
+    const rate = await Rate.findOne({ product, status: 'published' }).sort({ effectiveDate: -1, createdAt: -1 });
+    if (!rate) return res.status(404).json({ message: 'No published rates found' });
+    return res.json(rate);
+  } catch (error) {
+    return res.status(500).json({ message: 'Error fetching published latest rate', error: error.message });
+  }
+};
+
+// Admin/Manager: Edit a proposed rate (resets to pending)
+// @route PUT /api/rates/:id
+exports.editRate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { marketRate, companyRate, effectiveDate, product, notes } = req.body || {};
+    const rate = await Rate.findById(id);
+    if (!rate) return res.status(404).json({ message: 'Rate not found' });
+
+    if (marketRate != null) rate.marketRate = marketRate;
+    if (companyRate != null) rate.companyRate = companyRate;
+    if (effectiveDate) rate.effectiveDate = new Date(effectiveDate);
+    if (product) rate.product = product;
+    if (notes !== undefined) rate.notes = notes;
+    rate.status = 'pending';
+    if (ifValidId(req.user?._id)) rate.updatedBy = req.user._id;
+    rate.verifiedBy = null;
+    rate.verifiedAt = null;
+
+    await rate.save();
+    return res.json({ message: 'Rate updated (pending verification)', rate });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error editing rate', error: error.message });
+  }
+};
+
+// Admin: Verify and publish a pending rate
+// @route POST /api/rates/:id/verify
+exports.verifyRate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const rate = await Rate.findById(id);
+    if (!rate) return res.status(404).json({ message: 'Rate not found' });
+
+    rate.status = 'published';
+    if (ifValidId(req.user?._id)) rate.verifiedBy = req.user._id;
+    rate.verifiedAt = new Date();
+    await rate.save();
+
+    return res.json({ message: 'Rate verified and published', rate });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error verifying rate', error: error.message });
+  }
+};
+
+// Admin/Manager: List pending rates
+// @route GET /api/rates/pending?product=latex60
+exports.getPendingRates = async (req, res) => {
+  try {
+    const product = req.query.product || 'latex60';
+    const list = await Rate.find({ product, status: 'pending' }).sort({ effectiveDate: -1, createdAt: -1 });
+    return res.json(list);
+  } catch (error) {
+    return res.status(500).json({ message: 'Error fetching pending rates', error: error.message });
   }
 };
 

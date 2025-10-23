@@ -6,10 +6,7 @@ const StaffShiftSchedule = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        fetchShiftSchedule();
-    }, []);
-
+    // Define before useEffect to avoid "Cannot access before initialization"
     const fetchShiftSchedule = async () => {
         try {
             setLoading(true);
@@ -32,6 +29,11 @@ const StaffShiftSchedule = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchShiftSchedule();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);

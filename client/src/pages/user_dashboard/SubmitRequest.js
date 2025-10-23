@@ -1,81 +1,173 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import './LatexSelling.css'; // Reuse the CSS from LatexSelling
 
 const SubmitRequest = () => {
-    const [formData, setFormData] = useState({ latexVolume: '', drcPercentage: '' });
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
+    const [formData, setFormData] = useState({
+        quantity: '',
+        drcPercentage: '',
+        quality: 'Grade A',
+        location: '',
+        notes: ''
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { latexVolume, drcPercentage } = formData;
-    const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
-
-    const validateForm = () => {
-        // Clear previous messages
-        setError('');
-        setMessage('');
-
-        // Convert to numbers for checking
-        const numLatexVolume = parseFloat(latexVolume);
-        const numDrcPercentage = parseFloat(drcPercentage);
-
-        if (!latexVolume || !drcPercentage) {
-            setError("Please fill in all fields.");
-            return false;
-        }
-        if (isNaN(numLatexVolume) || isNaN(numDrcPercentage)) {
-            setError("Inputs must be valid numbers.");
-            return false;
-        }
-        if (numLatexVolume <= 0 || numDrcPercentage <= 0) {
-            setError("Values must be greater than zero.");
-            return false;
-        }
-        return true;
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
     };
 
-    const onSubmit = async e => {
-        e.preventDefault();
+    const calculateEstimatedPayment = () => {
+        const { quantity, drcPercentage } = formData;
+        const rate = 200; // Default rate, you might want to fetch this from API
 
-        if (!validateForm()) {
-            return; // Stop submission if validation fails
+        if (quantity && drcPercentage) {
+            return (quantity * (drcPercentage / 100) * rate).toFixed(2);
         }
+        return '0.00';
+    };
+
+    const handleSubmitRequest = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
 
         try {
-            const token = localStorage.getItem('token');
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-            const companyRate = 1.5; // Example rate
-            
-            // Send numbers to the backend, not strings
-            const submissionData = { 
-                latexVolume: parseFloat(latexVolume), 
-                drcPercentage: parseFloat(drcPercentage), 
-                companyRate 
-            };
+            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/latex/submit-request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    ...formData,
+                    estimatedPayment: calculateEstimatedPayment()
+                })
+            });
 
-            await axios.post('/api/users/submit-bill', submissionData, config);
-            setMessage('Your request has been submitted successfully!');
-            setFormData({ latexVolume: '', drcPercentage: '' }); // Clear form
-        } catch (err) {
-            setError(err.response?.data?.message || 'Submission failed. Please try again.');
+            const data = await response.json();
+
+            if (data.success) {
+                alert('Sell request submitted successfully!');
+                setFormData({
+                    quantity: '',
+                    drcPercentage: '',
+                    quality: 'Grade A',
+                    location: '',
+                    notes: ''
+                });
+            } else {
+                alert('Error submitting request: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error submitting request:', error);
+            alert('Error submitting request. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div>
-            <h2>Submit New Latex Sell Request</h2>
-            <div className="form-container" style={{maxWidth: '600px'}}>
-                 {error && <div className="error-message">{error}</div>}
-                 {message && <div style={{color: 'green', marginBottom: '20px', textAlign: 'center'}}>{message}</div>}
-                <form onSubmit={onSubmit}>
-                    <div className="input-group">
-                        <label>Latex Volume (in Liters)</label>
-                        <input className="form-input" type="number" name="latexVolume" value={latexVolume} onChange={onChange} />
+        <div className="activity-wrapper">
+            <div className="activity-header">
+                <h2>Submit Latex Sell Request</h2>
+            </div>
+
+            <div className="submit-request-section">
+                <p>Submit your latex for sale with quantity and DRC percentage</p>
+
+                <form onSubmit={handleSubmitRequest} className="sell-request-form">
+                    <div className="form-row">
+                        <div className="input-group">
+                            <label>Quantity (kg):</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                inputMode="decimal"
+                                value={formData.quantity}
+                                onChange={(e) => handleInputChange('quantity', e.target.value)}
+                                onKeyDown={(evt) => ['e', 'E', '+', '-'].includes(evt.key) && evt.preventDefault()}
+                                onWheel={(e) => e.currentTarget.blur()}
+                                placeholder="Enter quantity in kg"
+                                required
+                            />
+                        </div>
+
+                        <div className="input-group">
+                            <label>DRC Percentage (%):</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                inputMode="decimal"
+                                value={formData.drcPercentage}
+                                onChange={(e) => handleInputChange('drcPercentage', e.target.value)}
+                                onKeyDown={(evt) => ['e', 'E', '+', '-'].includes(evt.key) && evt.preventDefault()}
+                                onWheel={(e) => e.currentTarget.blur()}
+                                placeholder="Enter DRC % (optional)"
+                                required={false}
+                            />
+                        </div>
                     </div>
-                    <div className="input-group">
-                        <label>Dry Rubber Content (DRC %)</label>
-                        <input className="form-input" type="number" name="drcPercentage" value={drcPercentage} onChange={onChange} />
+
+                    <div className="form-row">
+                        <div className="input-group">
+                            <label>Quality Grade:</label>
+                            <select
+                                value={formData.quality}
+                                onChange={(e) => handleInputChange('quality', e.target.value)}
+                                required
+                            >
+                                <option value="Grade A">Grade A</option>
+                                <option value="Grade B">Grade B</option>
+                                <option value="Grade C">Grade C</option>
+                            </select>
+                        </div>
+
+                        <div className="input-group">
+                            <label>Location:</label>
+                            <input
+                                type="text"
+                                value={formData.location}
+                                onChange={(e) => handleInputChange('location', e.target.value)}
+                                placeholder="Enter your location"
+                                required
+                            />
+                        </div>
                     </div>
-                    <button className="form-button" type="submit">Submit Request</button>
+
+                    <div className="form-row">
+                        <div className="input-group full-width">
+                            <label>Notes (Optional):</label>
+                            <textarea
+                                value={formData.notes}
+                                onChange={(e) => handleInputChange('notes', e.target.value)}
+                                placeholder="Any additional notes..."
+                                rows="3"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-row">
+                        <div className="input-group">
+                            <label>Estimated Payment:</label>
+                            <div className="estimated-payment">
+                                ₹{calculateEstimatedPayment()}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="form-actions">
+                        <button
+                            type="submit"
+                            className="submit-btn"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Submitting...' : 'Submit Request'}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

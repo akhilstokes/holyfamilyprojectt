@@ -5,12 +5,12 @@
 
 /* === Sidebar === */
 .sidebar {
-    min-width: 200px;
-    max-width: 300px;
+    min-width: 240px;
+    max-width: 320px;
     width: auto;
-    /* Modern gradient + glass */
-    background: linear-gradient(180deg, #1f2937 0%, #0f172a 100%);
-    color: var(--white-color);
+    /* Use brand neutrals; role color drives accents */
+    background: var(--navy-850);
+    color: var(--slate-100);
     display: flex;
     flex-direction: column;
     padding: 1rem 0.25rem; /* tighter horizontal for rounded rail */
@@ -19,7 +19,7 @@
     position: sticky;
     top: 0;
     height: 100vh;
-    border-right: 1px solid rgba(255,255,255,0.06);
+    border-right: 1px solid var(--slate-800);
     box-shadow: 0 10px 30px rgba(2,6,23,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
     backdrop-filter: saturate(140%) blur(6px);
     -webkit-backdrop-filter: saturate(140%) blur(6px);
@@ -27,12 +27,17 @@
     border-bottom-right-radius: 14px;
 }
 
+/* allow hiding sidebar with a transform for small screens or when toggled */
+.sidebar--hidden {
+    transform: translateX(-110%);
+}
+
 .sidebar-header {
     padding: 0 1.5rem 1.5rem 1.5rem;
     font-size: 1.5rem;
     font-weight: 600;
-    color: var(--primary-color);
-    border-bottom: 1px solid #444;
+    color: var(--slate-100);
+    border-bottom: 1px solid var(--slate-800);
 }
 
 .sidebar-nav {
@@ -48,7 +53,7 @@
     display: flex;
     align-items: center;
     padding: 0.75rem 1rem;
-    color: #c7d2fe;
+    color: var(--slate-200);
     text-decoration: none;
     transition: background-color 0.2s, color 0.2s, transform 0.2s ease;
     border-left: 3px solid transparent;
@@ -57,17 +62,17 @@
 }
 
 .nav-item a:hover {
-    background: linear-gradient(90deg, rgba(99,102,241,0.18), rgba(99,102,241,0.06));
+    background: color-mix(in oklab, var(--role-primary) 18%, black);
     color: #ffffff;
     transform: translateX(2px);
 }
 
 .nav-item a.active {
-    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    background: var(--role-primary);
     color: #ffffff;
     font-weight: 600;
-    box-shadow: 0 6px 14px rgba(99,102,241,0.25);
-    border-left-color: #a78bfa;
+    box-shadow: 0 6px 14px color-mix(in oklab, var(--role-primary) 28%, transparent);
+    border-left-color: var(--role-secondary);
 }
 
 .nav-icon {
@@ -99,10 +104,10 @@
 }
 
 .dashboard-header {
-    background: linear-gradient(90deg, #f8fafc 0%, #eef2ff 100%);
+    background: var(--surface-base);
     padding: 1rem 2rem;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     height: 80px;
@@ -123,9 +128,12 @@
     font-weight: 500;
     padding: 8px 10px;
     border-radius: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
 }
 .profile-link:hover {
-    background: #f2f3f5;
+    background: var(--surface-alt);
 }
 .profile-link i { font-size: 1rem; }
 
@@ -136,8 +144,8 @@
     right: 0;
     top: calc(100% + 6px);
     min-width: 180px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.08);
     padding: 6px;
@@ -149,34 +157,31 @@
     gap: 8px;
     padding: 10px 12px;
     border-radius: 6px;
-    color: #111827;
+    color: var(--text-default);
     text-decoration: none;
 }
-.dropdown-item:hover { background: #f3f4f6; }
+.dropdown-item:hover { background: var(--surface-alt); }
 
 .logout-button {
-    background-color: #ef4444; /* red */
-    color: #ffffff;
-    border: none;
+    background: linear-gradient(135deg, var(--role-primary), var(--role-secondary));
+    color: var(--text-default);
+    border: 1px solid var(--role-primary);
     padding: 10px 20px;
     border-radius: 8px;
     font-family: 'Poppins', sans-serif;
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
-    box-shadow: 0 2px 6px rgba(239,68,68,0.35);
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 6px 14px color-mix(in oklab, var(--role-primary) 28%, transparent);
 }
 
-.logout-button:hover {
-    background-color: #dc2626;
-    box-shadow: 0 4px 10px rgba(239,68,68,0.45);
-}
+.logout-button:hover { filter: brightness(1.05); }
 
 .dashboard-content {
     flex-grow: 1;
     padding: 2rem;
-    background-color: var(--secondary-color);
+    background-color: var(--surface-base);
 }
 
 /* Content sections: cards and grid utilities */
@@ -223,8 +228,8 @@
     font-size: 14px; /* base font size down from default */
 }
 .sidebar {
-    min-width: 140px; /* slightly narrower to give content more room */
-    max-width: 200px;
+    min-width: 240px; /* widened per request */
+    max-width: 320px;
 }
 .sidebar-header {
     font-size: 1.05rem;
@@ -265,16 +270,16 @@
 /* Tablet tweaks */
 @media (max-width: 1024px) {
     .sidebar { 
-        min-width: 150px; 
-        max-width: 210px; 
+        min-width: 220px; 
+        max-width: 280px; 
     }
 }
 
 /* Mobile tweaks */
 @media (max-width: 768px) {
     .sidebar { 
-        min-width: 140px; 
-        max-width: 200px; 
+        min-width: 200px; 
+        max-width: 260px; 
     }
     .sidebar-header { font-size: 1rem; }
     .nav-item a { padding: 0.5rem 0.75rem; font-size: 0.85rem; }
@@ -286,8 +291,8 @@
 /* Small mobile tweaks */
 @media (max-width: 480px) {
     .sidebar { 
-        min-width: 120px; 
-        max-width: 180px; 
+        min-width: 180px; 
+        max-width: 220px; 
     }
     .sidebar-header { font-size: 0.9rem; }
     .nav-item a { padding: 0.4rem 0.6rem; font-size: 0.8rem; }

@@ -1,0 +1,135 @@
+.login-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  z-index: 1000;
+}
+
+.login-modal__dialog {
+  width: min(900px, 100%);
+  background: var(--surface-card);
+  color: var(--text-default);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+  position: relative;
+  padding: 28px;
+}
+
+.login-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-subtle);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.login-modal__title {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+.login-modal__subtitle {
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.login-modal__divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 12px 0 16px;
+}
+
+.login-modal__content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.login-modal__left {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+
+.google-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-modal__right {
+  border-left: 1px solid var(--border-subtle);
+  padding-left: 24px;
+}
+
+.login-form {
+  display: grid;
+  gap: 12px;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.form-field input {
+  width: 100%;
+  background: var(--surface-card);
+  color: var(--text-default);
+  border: 1px solid var(--border-default);
+}
+.form-field input.invalid {
+  outline: 2px solid var(--danger, #c40016);
+}
+
+.login-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.login-actions .links {
+  display: grid;
+  gap: 4px;
+}
+.login-btn {
+  min-width: 130px;
+}
+
+.link-like {
+  background: transparent;
+  color: var(--accent, #3b82f6);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Teal pill style for Staff Login */
+.staff-btn {
+  background: linear-gradient(180deg, #22d3ee, #14b8a6);
+  border-color: transparent;
+  color: #001b27;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+}
+.staff-btn:hover {
+  filter: brightness(1.05);
+}
+
+@media (max-width: 760px) {
+  .login-modal__content { grid-template-columns: 1fr; }
+  .login-modal__right { border-left: none; padding-left: 0; }
+}

@@ -3,6 +3,9 @@ const SalaryTemplate = require('../models/salaryTemplateModel');
 const User = require('../models/userModel');
 const PayrollEntry = require('../models/payrollEntryModel');
 const SalarySummary = require('../models/salarySummaryModel');
+const Notification = require('../models/Notification');
+const sendEmail = require('../utils/sendEmail');
+const mongoose = require('mongoose');
 
 // Create or update salary template for a staff member
 exports.createSalaryTemplate = async (req, res) => {
@@ -34,7 +37,7 @@ exports.createSalaryTemplate = async (req, res) => {
     }
 
     // Check if staff is admin or field_staff (not daily wage worker)
-    if (staff.role === 'user' || staff.role === 'buyer') {
+    if (staff.role === 'user') {
       return res.status(400).json({ message: 'Salary template can only be created for admin or field staff' });
     }
 
@@ -71,10 +74,50 @@ exports.createSalaryTemplate = async (req, res) => {
   }
 };
 
+// Simple payslip HTML endpoint
+exports.getPayslip = async (req, res) => {
+  try {
+    const { salaryId } = req.params;
+    const sal = await Salary.findById(salaryId).populate('staff', 'name email role staffId');
+    if (!sal) return res.status(404).send('Payslip not found');
+
+    const html = `<!doctype html>
+    <html><head><meta charset="utf-8" /><title>Payslip ${sal.month}/${sal.year}</title>
+    <style>body{font-family:Arial,Helvetica,sans-serif;color:#111;padding:24px} h1{font-size:18px;margin:0 0 12px} table{width:100%;border-collapse:collapse;margin-top:12px} th,td{border:1px solid #ccc;padding:8px;text-align:left} .right{text-align:right}</style>
+    </head><body>
+    <h1>Holy Family Polymers - Payslip</h1>
+    <div>Employee: <b>${sal.staff?.name || '-'}</b> (${sal.staff?.staffId || sal.staff?._id})</div>
+    <div>Period: <b>${sal.month}/${sal.year}</b></div>
+    <div>Status: <b>${sal.status}</b></div>
+    <table>
+      <thead><tr><th>Description</th><th class="right">Amount (₹)</th></tr></thead>
+      <tbody>
+        <tr><td>Basic + Allowances + Bonus + Overtime</td><td class="right">${sal.grossSalary ?? '-'}</td></tr>
+        <tr><td>Provident Fund</td><td class="right">${sal.providentFund || 0}</td></tr>
+        <tr><td>Professional Tax</td><td class="right">${sal.professionalTax || 0}</td></tr>
+        <tr><td>Income Tax</td><td class="right">${sal.incomeTax || 0}</td></tr>
+        <tr><td>Other Deductions</td><td class="right">${sal.otherDeductions || 0}</td></tr>
+        <tr><td><b>Net Salary</b></td><td class="right"><b>${sal.netSalary ?? '-'}</b></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px">Payment Method: ${sal.paymentMethod || '-'} ${sal.paymentReference ? (' | Ref: ' + sal.paymentReference) : ''}</div>
+    <div>Date: ${sal.paymentDate ? new Date(sal.paymentDate).toLocaleString() : '-'}</div>
+    </body></html>`;
+
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(html);
+  } catch (e) {
+    return res.status(500).send('Failed to render payslip');
+  }
+};
+
 // Get salary template for a staff member
 exports.getSalaryTemplate = async (req, res) => {
   try {
     const { staffId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(staffId)) {
+      return res.status(400).json({ message: 'Invalid staff id' });
+    }
 
     const salaryTemplate = await SalaryTemplate.findOne({ 
       staff: staffId, 
@@ -123,6 +166,9 @@ exports.generateMonthlySalary = async (req, res) => {
   try {
     const { staffId } = req.params;
     const { year, month, bonus, overtime, notes } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(staffId)) {
+      return res.status(400).json({ message: 'Invalid staff id' });
+    }
 
     // Validate inputs
     if (!year || !month || month < 1 || month > 12) {
@@ -199,6 +245,9 @@ exports.getMonthlySalary = async (req, res) => {
   try {
     const { staffId } = req.params;
     const { year, month } = req.query;
+    if (!mongoose.Types.ObjectId.isValid(staffId)) {
+      return res.status(400).json({ message: 'Invalid staff id' });
+    }
 
     if (!year || !month) {
       return res.status(400).json({ message: 'Year and month are required' });
@@ -320,6 +369,29 @@ exports.paySalary = async (req, res) => {
       createdBy: req.user._id
     });
 
+    // Notify staff
+    try {
+      await Notification.create({
+        userId: salary.staff._id,
+        role: 'staff',
+        title: 'Salary Paid',
+        message: `Your salary for ${salary.month}/${salary.year} has been paid. Net: ₹${salary.netSalary}`,
+        link: '/staff/salary',
+        meta: { salaryId: salary._id, month: salary.month, year: salary.year }
+      });
+    } catch (_) {}
+
+    // Email staff (if email available)
+    try {
+      if (salary.staff?.email) {
+        await sendEmail({
+          email: salary.staff.email,
+          subject: 'HFP: Salary Paid',
+          message: `Hello ${salary.staff.name || ''},\n\nYour salary for ${salary.month}/${salary.year} has been paid.\nNet Amount: ₹${salary.netSalary}\nMethod: ${paymentMethod}${paymentReference ? `\nReference: ${paymentReference}` : ''}.\n\nThank you.`,
+        });
+      }
+    } catch (_) {}
+
     res.json({
       message: 'Salary marked as paid successfully',
       data: salary
@@ -335,6 +407,9 @@ exports.getSalaryHistory = async (req, res) => {
   try {
     const { staffId } = req.params;
     const { year, limit = 12 } = req.query;
+    if (!mongoose.Types.ObjectId.isValid(staffId)) {
+      return res.status(400).json({ message: 'Invalid staff id' });
+    }
 
     let query = { staff: staffId };
     if (year) {
@@ -439,6 +514,30 @@ exports.getSalarySummary = async (req, res) => {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import LeaveHistory from '../../components/common/LeaveHistory';
+import LeaveHistoryModal from '../../components/common/LeaveHistoryModal';
 
 const StaffLeave = () => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -7,6 +9,17 @@ const StaffLeave = () => {
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  
+  // Get minimum allowed date (today)
+  const minDate = new Date().toISOString().split('T')[0];
+  
+  // Get maximum allowed date (2 years from now)
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 2);
+  const maxDateStr = maxDate.toISOString().split('T')[0];
 
   const load = async () => {
     try {
@@ -20,8 +33,49 @@ const StaffLeave = () => {
 
   useEffect(() => { load(); }, []);
 
+  // Validation functions
+  const validateDates = () => {
+    const errors = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!form.startDate) {
+      errors.startDate = 'Start date is required';
+    } else {
+      const startDate = new Date(form.startDate);
+      if (startDate < today) errors.startDate = 'Start date cannot be in the past';
+      const maxFuture = new Date(); maxFuture.setFullYear(maxFuture.getFullYear() + 2);
+      if (startDate > maxFuture) errors.startDate = 'Start date too far in future';
+    }
+
+    if (!form.endDate) {
+      errors.endDate = 'End date is required';
+    } else {
+      const endDate = new Date(form.endDate);
+      if (endDate < today) errors.endDate = 'End date cannot be in the past';
+      const maxFuture = new Date(); maxFuture.setFullYear(maxFuture.getFullYear() + 2);
+      if (endDate > maxFuture) errors.endDate = 'End date too far in future';
+    }
+
+    if (form.startDate && form.endDate) {
+      const start = new Date(form.startDate);
+      const end = new Date(form.endDate);
+      if (end < start) errors.endDate = 'End date cannot be earlier than start date';
+      
+      // For half day leave, start and end date must be the same
+      if (form.dayType === 'half' && start.toDateString() !== end.toDateString()) {
+        errors.endDate = 'Half day leave must be for a single day only';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const apply = async (e) => {
     e.preventDefault();
+    setError(''); setValidationErrors({});
+    if (!validateDates()) return;
     try {
       setSaving(true);
       const res = await fetch(`${base}/api/leave/apply`, {
@@ -32,7 +86,12 @@ const StaffLeave = () => {
       if (res.ok) {
         setForm({ leaveType: 'casual', dayType: 'full', startDate: '', endDate: '', reason: '' });
         await load();
+      } else {
+        const errorData = await res.json().catch(()=>({}));
+        setError(errorData.message || 'Failed to apply leave');
       }
+    } catch (err) {
+      setError('Failed to apply leave. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -45,7 +104,16 @@ const StaffLeave = () => {
 
   return (
     <div style={{ padding: 16 }}>
-      <h2>Leave Management</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 style={{ margin: 0 }}>Field Staff Leave Management</h2>
+        <button 
+          className="btn btn-outline-primary"
+          onClick={() => setShowHistoryModal(true)}
+        >
+          📋 View Leave History
+        </button>
+      </div>
+      {error && <div style={{ color: 'crimson', marginTop: 8 }}>{error}</div>}
       <form onSubmit={apply} style={{ maxWidth: 640, marginTop: 12 }}>
         <div className="form-row" style={{ display:'flex', gap:12 }}>
           <div className="form-group" style={{ flex:1 }}>
@@ -58,25 +126,59 @@ const StaffLeave = () => {
           </div>
           <div className="form-group" style={{ flex:1 }}>
             <label>Day Type</label>
-            <select className="form-control" value={form.dayType} onChange={(e)=>setForm({ ...form, dayType: e.target.value })}>
+            <select className="form-control" value={form.dayType} onChange={(e)=>{
+              const dayType = e.target.value;
+              setForm((prev) => {
+                let endDate = prev.endDate;
+                // For half day leave, set end date to start date
+                if (dayType === 'half' && prev.startDate) {
+                  endDate = prev.startDate;
+                }
+                return { ...prev, dayType, endDate };
+              });
+            }}>
               <option value="full">Full Day</option>
               <option value="half">Half Day</option>
             </select>
           </div>
           <div className="form-group" style={{ flex:1 }}>
-            <label>Start Date</label>
-            <input type="date" className="form-control" value={form.startDate} onChange={(e)=>setForm({ ...form, startDate: e.target.value })} />
+            <label>Start Date *</label>
+            <input type="date" className="form-control" value={form.startDate} min={minDate} max={maxDateStr}
+              onChange={(e)=>{
+                const startDate = e.target.value;
+                setForm((prev)=>{
+                  let endDate = prev.endDate;
+                  // If end date is before start date, set end date to start date
+                  if (endDate && startDate && new Date(endDate) < new Date(startDate)) {
+                    endDate = startDate;
+                  }
+                  // For half day leave, automatically set end date to start date
+                  if (prev.dayType === 'half' && startDate) {
+                    endDate = startDate;
+                  }
+                  return { ...prev, startDate, endDate };
+                });
+                if (validationErrors.startDate) setValidationErrors(prev=>({ ...prev, startDate: '' }));
+                if (validationErrors.endDate) setValidationErrors(prev=>({ ...prev, endDate: '' }));
+              }}
+              style={{ borderColor: validationErrors.startDate ? '#dc3545' : '' }}
+            />
+            {validationErrors.startDate && <div style={{ color: '#dc3545', fontSize: 12 }}>{validationErrors.startDate}</div>}
           </div>
           <div className="form-group" style={{ flex:1 }}>
-            <label>End Date</label>
-            <input type="date" className="form-control" value={form.endDate} onChange={(e)=>setForm({ ...form, endDate: e.target.value })} />
+            <label>End Date *</label>
+            <input type="date" className="form-control" value={form.endDate} min={form.startDate || minDate} max={maxDateStr}
+              onChange={(e)=>{ setForm((prev)=>({ ...prev, endDate: e.target.value })); if (validationErrors.endDate) setValidationErrors(prev=>({ ...prev, endDate: '' })); }}
+              style={{ borderColor: validationErrors.endDate ? '#dc3545' : '' }}
+            />
+            {validationErrors.endDate && <div style={{ color: '#dc3545', fontSize: 12 }}>{validationErrors.endDate}</div>}
           </div>
         </div>
         <div className="form-group">
           <label>Reason</label>
           <textarea className="form-control" value={form.reason} onChange={(e)=>setForm({ ...form, reason: e.target.value })} />
         </div>
-        <button className="btn btn-primary" type="submit" disabled={saving}>Apply</button>
+        <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Submitting...' : 'Apply'}</button>
       </form>
 
       <div style={{ marginTop: 24 }}>
@@ -115,10 +217,14 @@ const StaffLeave = () => {
           </table>
         )}
       </div>
+
+      {/* Leave History Modal */}
+      <LeaveHistoryModal 
+        isOpen={showHistoryModal} 
+        onClose={() => setShowHistoryModal(false)} 
+      />
     </div>
   );
 };
 
 export default StaffLeave;
-
-

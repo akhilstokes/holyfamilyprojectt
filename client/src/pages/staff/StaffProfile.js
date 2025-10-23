@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import '../delivery/DeliveryTheme.css';
 
 function DocsList({ token, onAdd, onRemove }) {
   const [docs, setDocs] = useState([]);
@@ -19,7 +21,7 @@ function DocsList({ token, onAdd, onRemove }) {
       }
     };
     load();
-  }, [token]);
+  }, [token, base]);
 
   const add = async () => {
     // If file chosen, upload it first to get URL
@@ -117,6 +119,7 @@ const StaffProfile = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [photoUploading, setPhotoUploading] = useState(false);
   const token = localStorage.getItem('token');
+  const location = useLocation();
 
   useEffect(() => {
     const fetchWorker = async () => {
@@ -184,6 +187,18 @@ const StaffProfile = () => {
       fetchWorker();
     }
   }, [user, token]);
+
+  // React to query parameters for view/tab routing from header menu
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view');
+    const tab = params.get('tab');
+    if (view === '1' || view === 'true') {
+      setShowStaffInfo(true);
+    }
+    if (tab === 'documents') setActiveTab('documents');
+    if (tab === 'health') setActiveTab('health');
+  }, [location.search]);
 
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -682,7 +697,7 @@ const StaffProfile = () => {
                 className="form-control"
                 defaultValue={worker?.health?.bloodGroup||''}
                 onBlur={(e)=>validateAndMaybeUpdate('health.bloodGroup', e.target.value, { health: { ...worker?.health, bloodGroup: e.target.value } })}
-                onChange={()=> fieldErrors['health.bloodGroup'] && setFieldErrors((p)=>({ ...p, ['health.bloodGroup']: '' }))}
+                onChange={()=> fieldErrors['health.bloodGroup'] && setFieldErrors((p)=>({ ...p, 'health.bloodGroup': '' }))}
               />
               {fieldErrors['health.bloodGroup'] ? <div className="text-danger" style={{ fontSize: 12 }}>{fieldErrors['health.bloodGroup']}</div> : null}
             </div>

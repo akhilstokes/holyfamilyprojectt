@@ -5,8 +5,9 @@ function LiveRateView() {
   const [rate, setRate] = useState(null);
 
   useEffect(() => {
+    const API = process.env.REACT_APP_API_URL || '';
     axios
-      .get("/api/rates/latest")
+      .get(`${API}/api/rates/published/latest`)
       .then((res) => setRate(res.data))
       .catch((err) => console.error(err));
   }, []);
@@ -25,19 +26,9 @@ function LiveRateView() {
           </thead>
           <tbody>
             <tr>
-              <td>{new Date(rate.effectiveDate || rate.createdAt).toLocaleDateString("en-IN")}</td>
-              <td>
-                {typeof rate.marketRate === "number"
-                  ? `₹${rate.marketRate.toLocaleString("en-IN")}`
-                  : typeof rate.rate === "number"
-                  ? `₹${rate.rate.toLocaleString("en-IN")}`
-                  : "-"}
-              </td>
-              <td>
-                {typeof rate.companyRate === "number"
-                  ? `₹${rate.companyRate.toLocaleString("en-IN")}`
-                  : "-"}
-              </td>
+              <td>{new Date(rate.effectiveDate || rate.createdAt).toLocaleDateString('en-IN')}</td>
+              <td>{rate.marketRate ?? '-'}</td>
+              <td>{rate.companyRate ?? '-'}</td>
             </tr>
           </tbody>
         </table>

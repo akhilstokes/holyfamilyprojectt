@@ -74,7 +74,7 @@ const StaffRegisterPage = () => {
   };
 
   return (
-    <div className="auth-wrapper staff-theme">
+    <div className="auth-wrapper dark-theme no-showcase">
       <div className="form-container">
         {/* Company Logo */}
         <div className="logo-container">
@@ -141,7 +141,6 @@ const StaffRegisterPage = () => {
         </form>
         <div className="auth-links">
           <span>Already staff? <Link to="/staff/login">Login here</Link></span>
-          <span><Link to="/auth/select">Back to selection</Link></span>
         </div>
       </div>
     </div>

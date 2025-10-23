@@ -25,6 +25,62 @@ exports.protect = async (req, res, next) => {
             
             // Verify the token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            // Support built-in admin token (id: 'builtin-admin')
+            if (decoded && decoded.id === 'builtin-admin') {
+                req.user = { _id: 'builtin-admin', name: 'Admin', email: process.env.DEFAULT_ADMIN_EMAIL || 'admin@xyz.com', role: 'admin' };
+                return next();
+            }
+            // Support built-in manager token (id: 'builtin-manager')
+            if (decoded && decoded.id === 'builtin-manager') {
+                req.user = { _id: 'builtin-manager', name: 'Manager', email: process.env.DEFAULT_MANAGER_EMAIL || 'manger@xyz.com', role: 'manager' };
+                return next();
+            }
+            // Support built-in delivery staff token (id: 'builtin-delivery')
+            if (decoded && decoded.id === 'builtin-delivery') {
+                // Try to resolve to a real DB user to ensure a valid ObjectId downstream
+                let userDoc = null;
+                const email = process.env.DEFAULT_DELIVERY_EMAIL || 'delivery+builtin@local';
+                const staffId = process.env.DEFAULT_DELIVERY_STAFFID || 'STF-2025-005';
+                userDoc = await User.findOne({ email }).select('-password');
+                if (!userDoc) userDoc = await User.findOne({ role: 'delivery_staff' }).select('-password');
+                if (!userDoc) {
+                    // Auto-provision a minimal user
+                    try {
+                        userDoc = await User.create({
+                            name: 'Delivery Staff',
+                            email,
+                            role: 'delivery_staff',
+                            staffId
+                        });
+                    } catch (_) { /* ignore creation errors */ }
+                }
+                if (userDoc) { req.user = userDoc; return next(); }
+                // Fallback placeholder
+                req.user = { _id: 'builtin-delivery', staffId, name: 'Delivery Staff', email, role: 'delivery_staff' };
+                return next();
+            }
+            // Support built-in accountant token (id: 'builtin-accountant')
+            if (decoded && decoded.id === 'builtin-accountant') {
+                let userDoc = null;
+                const email = process.env.DEFAULT_ACCOUNTANT_EMAIL || 'accountant+builtin@local';
+                const staffId = process.env.DEFAULT_ACCOUNTANT_STAFFID || 'ACC01';
+                userDoc = await User.findOne({ email }).select('-password');
+                if (!userDoc) userDoc = await User.findOne({ role: 'accountant' }).select('-password');
+                if (!userDoc) {
+                    try {
+                        userDoc = await User.create({
+                            name: 'Accountant',
+                            email,
+                            role: 'accountant',
+                            staffId
+                        });
+                    } catch (_) { /* ignore creation errors */ }
+                }
+                if (userDoc) { req.user = userDoc; return next(); }
+                req.user = { _id: 'builtin-accountant', staffId, name: 'Accountant', email, role: 'accountant' };
+                return next();
+            }
             
             // Check if user exists
             const user = await User.findById(decoded.id).select('-password');
@@ -59,4 +115,34 @@ exports.admin = (req, res, next) => {
     } else {
         res.status(403).json({ message: 'Not authorized as an admin' });
     }
+};
+
+exports.adminOrManager = (req, res, next) => {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'manager')) {
+        return next();
+    }
+    return res.status(403).json({ message: 'Not authorized. Manager or Admin required.' });
+};
+
+exports.adminManagerAccountant = (req, res, next) => {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'manager' || req.user.role === 'accountant')) {
+        return next();
+    }
+    return res.status(403).json({ message: 'Not authorized. Admin, Manager, or Accountant required.' });
+};
+
+// Allow only Lab staff
+exports.labOnly = (req, res, next) => {
+    if (req.user && req.user.role === 'lab') {
+        return next();
+    }
+    return res.status(403).json({ message: 'Not authorized. Lab staff required.' });
+};
+
+// Allow Field staff (mapped as delivery_staff or field)
+exports.fieldOnly = (req, res, next) => {
+    if (req.user && (req.user.role === 'delivery_staff' || req.user.role === 'field')) {
+        return next();
+    }
+    return res.status(403).json({ message: 'Not authorized. Field staff required.' });
 };

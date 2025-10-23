@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -9,13 +10,14 @@ const userSchema = new mongoose.Schema({
         minlength: [2, "Name must be at least 2 characters long."],
         maxlength: [50, "Name must be less than 50 characters."],
         validate: {
-            validator: function(name) {
+            validator: function (name) {
                 // Only letters, spaces, and dots allowed
                 return /^[a-zA-Z\s.]+$/.test(name);
             },
             message: "Name must contain only letters, spaces, and dots (no numbers or special characters)."
         }
     },
+
     email: {
         type: String,
         required: [true, "Please provide an email."],
@@ -27,156 +29,147 @@ const userSchema = new mongoose.Schema({
             "Please provide a valid email address."
         ]
     },
+
     phoneNumber: {
         type: String,
         required: [true, "Please provide a phone number."],
         trim: true,
         validate: {
-            validator: function(phone) {
-                // Remove all non-digit characters
-                const cleanPhone = phone.replace(/\D/g, '');
-                
-                // Check if it's all zeros
-                if (/^0+$/.test(cleanPhone)) {
-                    return false;
-                }
-                
-                // Validate different phone number formats
+            validator: function (phone) {
+                const cleanPhone = phone.replace(/\D/g, ''); // remove non-digits
+
+                // Reject all zeros
+                if (/^0+$/.test(cleanPhone)) return false;
+
+                // +91 with country code
                 if (cleanPhone.startsWith('91') && cleanPhone.length === 12) {
-                    // Indian number with country code: +91 9876543210
-                    const numberWithoutCode = cleanPhone.substring(2);
-                    return /^[6-9]\d{9}$/.test(numberWithoutCode);
-                } else if (cleanPhone.length === 10) {
-                    // 10-digit number without country code
-                    return /^[6-9]\d{9}$/.test(cleanPhone);
-                } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
-                    // Number starting with 0
-                    const numberWithoutZero = cleanPhone.substring(1);
-                    return /^[6-9]\d{9}$/.test(numberWithoutZero);
+                    return /^[6-9]\d{9}$/.test(cleanPhone.substring(2));
                 }
-                
+
+                // 10-digit number without country code
+                if (cleanPhone.length === 10) {
+                    return /^[6-9]\d{9}$/.test(cleanPhone);
+                }
+
+                // Number with leading 0
+                if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
+                    return /^[6-9]\d{9}$/.test(cleanPhone.substring(1));
+                }
+
                 return false;
             },
             message: "Please provide a valid 10-digit Indian mobile number (can include +91 country code)."
         }
     },
+
     location: {
         type: String,
         trim: true,
         maxlength: 100,
         default: ''
     },
+
     password: {
         type: String,
         required: [true, "Please provide a password."],
         minlength: [6, "Password must be at least 6 characters long."],
+        select: false,
         validate: {
-            validator: function(password) {
-                // Allow bypass for staff; staff will use staffId as initial password
-                if (this && this.role === 'field_staff') {
-                    return true;
-                }
-                // No spaces allowed
-                if (password.includes(' ')) {
-                    return false;
-                }
-                // Must contain at least one uppercase letter
-                if (!/(?=.*[A-Z])/.test(password)) {
-                    return false;
-                }
-                // Must contain at least one lowercase letter
-                if (!/(?=.*[a-z])/.test(password)) {
-                    return false;
-                }
-                // Must contain at least one number
-                if (!/(?=.*\d)/.test(password)) {
-                    return false;
-                }
-                // Must contain at least one special character
-                if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(password)) {
-                    return false;
-                }
-                // Only allow valid characters
-                if (!/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/.test(password)) {
-                    return false;
-                }
+            validator: function (password) {
+                // Allow field staff and pre-hashed (bcrypt) passwords during programmatic creation
+                if (this && (this.role === 'staff' || this.role === 'field_staff' || this.role === 'lab')) return true;
+                if (typeof password === 'string' && password.startsWith('$2')) return true; // bcrypt hash
+
+                if (password.includes(' ')) return false; // no spaces
+                if (!/(?=.*[A-Z])/.test(password)) return false; // uppercase
+                if (!/(?=.*[a-z])/.test(password)) return false; // lowercase
+                if (!/(?=.*\d)/.test(password)) return false; // number
+                if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(password)) return false; // special char
+                if (!/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/.test(password)) return false; // valid chars only
+
                 return true;
             },
-            message: "Password must contain at least one uppercase letter, one lowercase letter, one number, one special character, and no spaces."
-        },
-        select: false
+            message: "Password must contain uppercase, lowercase, number, special character, and no spaces."
+        }
     },
+
     role: {
         type: String,
-        enum: ['user', 'admin', 'field_staff', 'buyer'],
+        enum: ['user', 'admin', 'manager', 'accountant', 'field_staff', 'delivery_staff', 'lab', 'lab_manager', 'lab_staff'],
         default: 'user'
     },
+
     staffId: {
         type: String,
         unique: true,
         sparse: true,
         trim: true,
         validate: {
-            validator: function(staffId) {
-                // If staffId is provided, it should be valid format
-                if (!staffId) return true; // Allow empty for non-staff
+            validator: function (staffId) {
+                if (!staffId) return true; // allow empty if not staff
                 return /^[A-Z0-9]{5,12}$/.test(staffId);
             },
             message: "Staff ID must be 5-12 characters long and contain only uppercase letters and numbers."
         }
     },
+
     status: {
         type: String,
         enum: ['active', 'pending', 'suspended', 'deleted'],
         default: 'active'
     },
+
     statusReason: { type: String, default: '' },
     statusUpdatedAt: Date,
     statusUpdatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
     roleUpdatedAt: Date,
     roleUpdatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
     deletedAt: Date,
     deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
     isPhoneVerified: {
         type: Boolean,
         default: false
     },
+
     passwordResetToken: String,
-    passwordResetExpires: Date,
+    passwordResetExpires: Date
+
+    ,
+    // Per-user sell barrels allowance (0 or undefined means unlimited)
+    sellAllowance: { type: Number, default: 0, min: 0 },
+    sellAllowanceUpdatedAt: Date,
+    sellAllowanceSetBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 
 }, { timestamps: true });
 
-// Pre-save middleware to hash the password before saving
-userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) {
-        return next();
-    }
+// Pre-save middleware: hash password
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) return next();
+    // If password already appears hashed (bcrypt), keep as is
+    if (typeof this.password === 'string' && this.password.startsWith('$2')) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
 });
 
-// Instance method to compare entered password with the hashed password
-userSchema.methods.matchPassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
+// Compare entered password with hashed password
+userSchema.methods.matchPassword = async function (enteredPassword) {
+    return bcrypt.compare(enteredPassword, this.password);
 };
 
-// In userModel.js, before module.exports
-const crypto = require('crypto');
-
-// Method to generate and hash password reset token
-userSchema.methods.getResetPasswordToken = function() {
-    // Generate token
+// Generate and hash reset password token
+userSchema.methods.getResetPasswordToken = function () {
     const resetToken = crypto.randomBytes(20).toString('hex');
 
-    // Hash token and set to resetPasswordToken field
     this.passwordResetToken = crypto
         .createHash('sha256')
         .update(resetToken)
         .digest('hex');
 
-    // Set expire time (e.g., 10 minutes)
-    this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+    this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 mins
 
     return resetToken;
 };

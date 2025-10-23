@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import './DashboardLayout.css';
 import { useAuth } from '../context/AuthContext';
@@ -16,94 +16,82 @@ const StaffDashboardLayout = ({ children }) => {
     }
   };
 
-  // Global numeric-only guard for staff dashboard pages
-  useEffect(() => {
-    const keydownHandler = (e) => {
-      const el = e.target;
-      if (!el || el.tagName !== 'INPUT' || el.type !== 'number') return;
-      const allowedControlKeys = ['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Tab'];
-      if (e.ctrlKey || e.metaKey) return;
-      const allowNegative = el.hasAttribute('data-allow-negative');
-      const invalidKeys = allowNegative ? ['e','E','+'] : ['e','E','+','-'];
-      if (invalidKeys.includes(e.key)) { e.preventDefault(); return; }
-      if (e.key.length === 1) {
-        const isDigit = /[0-9]/.test(e.key);
-        const isDot = e.key === '.';
-        const isMinus = e.key === '-';
-        const stepAttr = el.getAttribute('step');
-        const allowsDecimal = stepAttr === null || stepAttr === 'any' || /\./.test(stepAttr);
-        if (isMinus && allowNegative) {
-          const selectionStart = el.selectionStart ?? 0;
-          const value = el.value || '';
-          if (selectionStart !== 0 || value.includes('-')) {
-            e.preventDefault();
-          }
-          return;
-        }
-        if (!isDigit && !(isDot && allowsDecimal)) {
-          if (!allowedControlKeys.includes(e.key)) e.preventDefault();
-        }
-      }
-    };
-    const pasteHandler = (e) => {
-      const el = e.target;
-      if (!el || el.tagName !== 'INPUT' || el.type !== 'number') return;
-      const text = (e.clipboardData || window.clipboardData)?.getData('text');
-      if (typeof text !== 'string') return;
-      const stepAttr = el.getAttribute('step');
-      const allowsDecimal = stepAttr === null || stepAttr === 'any' || /\./.test(stepAttr);
-      const allowNegative = el.hasAttribute('data-allow-negative');
-      let sanitized = allowsDecimal ? text.replace(/[^0-9.\-]/g, '') : text.replace(/[^0-9\-]/g, '');
-      if (!allowNegative) {
-        sanitized = sanitized.replace(/-/g, '');
-      } else {
-        sanitized = sanitized.replace(/-/g, '');
-        sanitized = (text.trim().startsWith('-') ? '-' : '') + sanitized;
-      }
-      if (sanitized !== text) {
-        e.preventDefault();
-        const start = el.selectionStart, end = el.selectionEnd;
-        const value = el.value || '';
-        el.value = value.slice(0, start) + sanitized + value.slice(end);
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    };
-    document.addEventListener('keydown', keydownHandler, true);
-    document.addEventListener('paste', pasteHandler, true);
-    return () => {
-      document.removeEventListener('keydown', keydownHandler, true);
-      document.removeEventListener('paste', pasteHandler, true);
-    };
-  }, []);
-
   return (
     <div className="dashboard-container">
-      <aside className="sidebar sidebar--flush-left">
-        <div className="sidebar-header">Staff</div>
+      <aside className="sidebar">
+        <div className="sidebar-header">Staff Panel</div>
         <ul className="sidebar-nav">
           <li className="nav-item">
-            <button className="logout-button w-100" onClick={handleLogout}>Logout</button>
+            <NavLink to="/staff/profile">
+              <i className="fas fa-user nav-icon"></i> Profile
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/operations">
+              <i className="fas fa-clipboard-check nav-icon"></i> Operations
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/operations/upload-document">
+              <i className="fas fa-file-upload nav-icon"></i> Upload Document
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/attendance">
+              <i className="fas fa-user-clock nav-icon"></i> Attendance
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/salary">
+              <i className="fas fa-wallet nav-icon"></i> Salary
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/leave">
+              <i className="fas fa-calendar-days nav-icon"></i> Leave
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/shift-schedule">
+              <i className="fas fa-clock nav-icon"></i> Shift Schedule
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/operations/add-barrel">
+              <i className="fas fa-oil-can nav-icon"></i> Add Barrel
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/operations/trip-km">
+              <i className="fas fa-road nav-icon"></i> Log Trip KM
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/inventory">
+              <i className="fas fa-warehouse nav-icon"></i> Inventory
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/weigh-latex">
+              <i className="fas fa-weight nav-icon"></i> Weigh Latex
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/dispatch-barrels">
+              <i className="fas fa-truck-loading nav-icon"></i> Dispatch Barrels
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/staff/return-barrels">
+              <i className="fas fa-undo nav-icon"></i> Return Barrels
+            </NavLink>
           </li>
         </ul>
       </aside>
       <div className="main-content-wrapper">
         <header className="dashboard-header">
-          <div>Staff Panel</div>
-          <nav className="top-nav">
-            <NavLink to="/staff/profile">Profile</NavLink>
-            <NavLink to="/staff/operations">Operations</NavLink>
-            <NavLink to="/staff/operations/upload-document">Upload Document</NavLink>
-            <NavLink to="/staff/attendance">Attendance</NavLink>
-            <NavLink to="/staff/salary">Salary</NavLink>
-            <NavLink to="/staff/leave">Leave</NavLink>
-            <NavLink to="/staff/shift-schedule">Shift Schedule</NavLink>
-            <NavLink to="/staff/operations/add-barrel">Add Barrel</NavLink>
-            <NavLink to="/staff/operations/trip-km">Log Trip KM</NavLink>
-            <NavLink to="/staff/inventory">Inventory</NavLink>
-            <NavLink to="/staff/weigh-latex">Weigh Latex</NavLink>
-            <NavLink to="/staff/dispatch-barrels">Dispatch Barrels</NavLink>
-            <NavLink to="/staff/return-barrels">Return Barrels</NavLink>
-          </nav>
+          <div>Staff</div>
+          <button className="btn btn-sm btn-outline-secondary" onClick={handleLogout}>Logout</button>
         </header>
         <main className="dashboard-content">{children}</main>
       </div>
