@@ -1,3 +1,7 @@
+# Root package.json to avoid conflicts
+package.json
+package-lock.json
+
 # Dependencies
 node_modules/
 client/node_modules/
@@ -38,3 +42,6 @@ Thumbs.db
 # Playwright
 playwright-report/
 test-results/
+
+# Selenium tests
+nodejs-selenium-sample/
