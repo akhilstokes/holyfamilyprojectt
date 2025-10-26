@@ -442,10 +442,58 @@ export const commonValidationRules = {
   }
 };
 
-export default {
+// Compatibility wrappers / convenience helpers
+// These functions are used by several pages (e.g. RegisterPage) which expect
+// small helper functions with specific return shapes.
+export const validateName = (value) => {
+  const err = validators.name(value, 'Name');
+  if (err) return { valid: false, message: err };
+  return { valid: true };
+};
+
+export const validateEmail = (value) => {
+  // Return a string error when invalid, null when valid (matches existing validators.email)
+  return validators.email(value);
+};
+
+export const validatePhoneNumber = (value) => {
+  // validators.phone returns null when valid, or an error string when invalid
+  return validators.phone(value);
+};
+
+export const validatePassword = (value) => {
+  // Return a string error when invalid, null when valid
+  return validators.password(value);
+};
+
+export const validateUserRegistration = (formData = {}) => {
+  // Use the common userRegistration rules and return the errors object
+  const result = validateForm(formData, commonValidationRules.userRegistration);
+  return result.errors || {};
+};
+
+export const cleanPhoneNumber = (phone = '') => {
+  // Strip non-digits and normalize to last 10 digits (Indian mobile)
+  const digits = (phone || '').toString().replace(/\D/g, '');
+  if (!digits) return '';
+  // If number contains country code like 91 or +91, take last 10 digits
+  if (digits.length > 10) return digits.slice(-10);
+  return digits;
+};
+
+const validationExport = {
   validationPatterns,
   validators,
   validateForm,
   validateField,
-  commonValidationRules
+  commonValidationRules,
+  // include compatibility helpers in default export as well
+  validateName,
+  validateEmail,
+  validatePhoneNumber,
+  validatePassword,
+  validateUserRegistration,
+  cleanPhoneNumber
 };
+
+export default validationExport;

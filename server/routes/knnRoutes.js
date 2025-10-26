@@ -53,3 +53,4 @@ router.post('/detect-anomaly', protect, authorize(['admin']), detectAnomaly);
 router.get('/metrics/:modelType', protect, authorize(['admin']), getModelMetrics);
 
 module.exports = router;
+

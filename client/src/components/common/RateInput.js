@@ -102,3 +102,4 @@ const RateInput = ({
 };
 
 export default RateInput;
+
