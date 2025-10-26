@@ -5,11 +5,11 @@ const LabDashboard = () => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
+  const navigate = useNavigate();
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState('');
   const [notifs, setNotifs] = useState([]);
   const [unread, setUnread] = useState(0);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const load = async () => {
@@ -33,12 +33,25 @@ const LabDashboard = () => {
   useEffect(() => {
     const loadNotifs = async () => {
       try {
+        // Check if user is authenticated before making the request
+        if (!token) {
+          console.log('No authentication token found, skipping notifications');
+          setNotifs([]);
+          setUnread(0);
+          return;
+        }
+
         const res = await fetch(`${base}/api/notifications?limit=10`, { headers });
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data?.notifications) ? data.notifications : (Array.isArray(data) ? data : []);
           setNotifs(list);
           setUnread(Number(data?.unread || (list.filter(n=>!n.read).length)));
+        } else if (res.status === 401) {
+          // Unauthorized - user needs to login
+          console.log('User not authenticated, redirecting to login');
+          navigate('/login');
+          return;
         } else {
           setNotifs([]);
           setUnread(0);
@@ -51,7 +64,7 @@ const LabDashboard = () => {
     loadNotifs();
     const id = setInterval(loadNotifs, 30000);
     return () => clearInterval(id);
-  }, [base, headers]);
+  }, [base, headers, token, navigate]);
 
   const markRead = async (id) => {
     try {
@@ -63,20 +76,46 @@ const LabDashboard = () => {
     } catch {}
   };
 
-  const buildCheckInUrl = (meta) => {
-    const params = new URLSearchParams();
-    if (meta?.sampleId) params.set('sampleId', meta.sampleId);
-    if (meta?.customer) params.set('customerName', meta.customer);
-    if (meta?.barrelCount) params.set('barrelCount', meta.barrelCount);
-    if (meta?.receivedAt) params.set('receivedAt', meta.receivedAt);
-    // Add barrel IDs if available in meta
-    if (meta?.barrels && Array.isArray(meta.barrels)) {
-      meta.barrels.forEach((barrel, idx) => {
-        if (barrel?.barrelId) params.set(`barrel_${idx}`, barrel.barrelId);
-        if (barrel?.liters) params.set(`liters_${idx}`, barrel.liters);
-      });
+  const buildNotificationUrl = (notification) => {
+    const { title, meta, link } = notification;
+    
+    // If notification has a specific link, use it
+    if (link) {
+      return link;
     }
-    return `/lab/check-in?${params.toString()}`;
+    
+    // Route based on notification title/type
+    if (title?.toLowerCase().includes('pickup scheduled') || title?.toLowerCase().includes('sample')) {
+      // For sample/pickup related notifications, go to sample check-in with data
+      const params = new URLSearchParams();
+      if (meta?.sampleId) params.set('sampleId', meta.sampleId);
+      if (meta?.customer) params.set('customerName', meta.customer);
+      if (meta?.barrelCount) params.set('barrelCount', meta.barrelCount);
+      if (meta?.receivedAt) params.set('receivedAt', meta.receivedAt);
+      // Add barrel IDs if available in meta
+      if (meta?.barrels && Array.isArray(meta.barrels)) {
+        meta.barrels.forEach((barrel, idx) => {
+          if (barrel?.barrelId) params.set(`barrel_${idx}`, barrel.barrelId);
+          if (barrel?.liters) params.set(`liters_${idx}`, barrel.liters);
+        });
+      }
+      return `/lab/check-in?${params.toString()}`;
+    }
+    
+    if (title?.toLowerCase().includes('delivery')) {
+      // For delivery notifications, go to delivery tasks
+      return '/delivery/tasks';
+    }
+    
+    if (title?.toLowerCase().includes('drc') || title?.toLowerCase().includes('analysis')) {
+      // For DRC/analysis notifications, go to DRC update
+      const params = new URLSearchParams();
+      if (meta?.sampleId) params.set('sampleId', meta.sampleId);
+      return `/lab/drc-update?${params.toString()}`;
+    }
+    
+    // Default fallback - go to lab dashboard
+    return '/lab/dashboard';
   };
 
   return (
@@ -144,7 +183,7 @@ const LabDashboard = () => {
                   <div style={{ display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end' }}>
                     {n.link && (
                       <button className="btn" onClick={() => {
-                        const url = buildCheckInUrl(n.meta);
+                        const url = buildNotificationUrl(n);
                         navigate(url);
                       }}>Open</button>
                     )}

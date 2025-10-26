@@ -5,6 +5,15 @@ const mongoose = require('mongoose');
 // Helper function to resolve a valid staff ObjectId from req.user
 async function resolveStaffObjectId(authUser) {
     try {
+        // Handle built-in tokens that have string IDs
+        if (authUser?._id && typeof authUser._id === 'string' && authUser._id.startsWith('builtin-')) {
+            if (authUser.staffId) {
+                const userDoc = await User.findOne({ staffId: authUser.staffId }).select('_id');
+                if (userDoc?._id) return userDoc._id;
+            }
+            return null;
+        }
+        
         if (authUser?._id && mongoose.isValidObjectId(authUser._id)) {
             return new mongoose.Types.ObjectId(authUser._id);
         }

@@ -47,6 +47,11 @@ const StaffDashboardLayout = ({ children }) => {
             </NavLink>
           </li>
           <li className="nav-item">
+            <NavLink to="/staff/salary-management">
+              <i className="fas fa-calculator nav-icon"></i> Salary Management
+            </NavLink>
+          </li>
+          <li className="nav-item">
             <NavLink to="/staff/leave">
               <i className="fas fa-calendar-days nav-icon"></i> Leave
             </NavLink>

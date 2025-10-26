@@ -13,6 +13,10 @@ router.get("/latex/today", rateController.getLatexToday);
 // Anyone can view latest rate (by product)
 router.get("/latest", rateController.getLatestRate);
 
+// Company rate endpoint for billing
+router.get("/company", rateController.getCompanyRate);
+router.put("/company", protect, adminOrManager, rateController.updateCompanyRate);
+
 // Latest published rate (visible to end users/staff)
 router.get("/published/latest", rateController.getPublishedLatest);
 

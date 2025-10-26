@@ -419,3 +419,5 @@ const StockHistory = ({ productName = null }) => {
 export default StockHistory;
 
 
+
+

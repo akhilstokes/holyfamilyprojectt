@@ -44,6 +44,7 @@ router.put('/admin/requests/:id', protect, adminManagerAccountant, updateLatexRe
 router.put('/collect/:id', protect, collectLatex); // collection by authorized staff (broad protect for now)
 router.put('/test/:id', protect, recordTestResult); // lab/yard staff records DRC
 router.put('/admin/calc/:id', protect, adminManagerAccountant, accountantCalculate); // accountant calculates
+router.put('/admin/calc-company-rate/:id', protect, adminManagerAccountant, accountantCalculateWithCompanyRate); // accountant calculates with company rate
 router.put('/admin/verify/:id', protect, adminOrManager, managerVerify); // manager verifies
 router.get('/invoice/:id', protect, getInvoice); // invoice retrieval
 // Accountant pending queue for samples

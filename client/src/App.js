@@ -16,6 +16,7 @@ import AdminDashboardLayout from "./layouts/AdminDashboardLayout";
 import ManagerProtectedRoute from "./components/common/ManagerProtectedRoute";
 import ManagerDashboardLayout from "./layouts/ManagerDashboardLayout";
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
+import ManagerHome from "./pages/manager/ManagerHome";
 import ManagerLiveLocations from "./pages/manager/DeliveryLiveMap";
 import LiveCheckins from "./pages/manager/LiveCheckins";
 import PendingLeaves from "./pages/manager/PendingLeaves";
@@ -25,6 +26,7 @@ import ManagerShifts from "./pages/manager/ManagerShifts";
 import ManagerLatexBilling from "./pages/manager/ManagerLatexBilling";
 import ManagerRateUpdate from "./pages/manager/ManagerRateUpdate";
 import ManagerWages from "./pages/manager/ManagerWages";
+import ManagerStaffSalary from "./pages/manager/ManagerStaffSalary";
 import ManagerStock from "./pages/manager/ManagerStock";
 import ManagerChemicalHistory from "./pages/manager/ManagerChemicalHistory";
 import ManagerSellRequests from "./pages/manager/ManagerSellRequests";
@@ -55,6 +57,7 @@ import AccountantProtectedRoute from "./components/common/AccountantProtectedRou
 import AccountantDashboardLayout from "./layouts/AccountantDashboardLayout";
 import AccountantLatexVerify from "./pages/accountant/AccountantLatexVerify";
 import AccountantWages from "./pages/accountant/AccountantWages";
+import AccountantSalaryManagement from "./pages/accountant/AccountantSalaryManagement";
 import AccountantStockMonitor from "./pages/accountant/AccountantStockMonitor";
 import AccountantAttendance from "./pages/accountant/AccountantAttendance";
 import AccountantAttendanceMark from "./pages/accountant/AccountantAttendanceMark";
@@ -97,6 +100,7 @@ import StaffDashboard from "./pages/user_dashboard/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
 import StaffAttendance from "./pages/staff/StaffAttendance";
 import StaffSalary from "./pages/staff/StaffSalary";
+import StaffSalaryManagement from "./pages/staff/StaffSalaryManagement";
 import StaffLeave from "./pages/staff/StaffLeave";
 import StaffShiftSchedule from "./pages/staff/StaffShiftSchedule";
 import MySchedule from "./pages/staff/MySchedule";
@@ -699,6 +703,16 @@ function App() {
         }
       />
       <Route
+        path="/staff/salary-management"
+        element={
+          <StaffProtectedRoute>
+            <StaffDashboardLayout>
+              <StaffSalaryManagement />
+            </StaffDashboardLayout>
+          </StaffProtectedRoute>
+        }
+      />
+      <Route
         path="/staff/salary/daily"
         element={
           <StaffProtectedRoute>
@@ -1025,6 +1039,16 @@ function App() {
         }
       />
       <Route
+        path="/manager/staff-salary"
+        element={
+          <ManagerProtectedRoute>
+            <ManagerDashboardLayout>
+              <ManagerStaffSalary />
+            </ManagerDashboardLayout>
+          </ManagerProtectedRoute>
+        }
+      />
+      <Route
         path="/manager/stock"
         element={
           <ManagerProtectedRoute>
@@ -1254,6 +1278,16 @@ function App() {
           <AccountantProtectedRoute>
             <AccountantDashboardLayout>
               <AccountantLatexVerify />
+            </AccountantDashboardLayout>
+          </AccountantProtectedRoute>
+        }
+      />
+      <Route
+        path="/accountant/salary"
+        element={
+          <AccountantProtectedRoute>
+            <AccountantDashboardLayout>
+              <AccountantSalaryManagement />
             </AccountantDashboardLayout>
           </AccountantProtectedRoute>
         }

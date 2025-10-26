@@ -46,6 +46,7 @@ const ManagerDashboardLayout = ({ children }) => {
           <li className="nav-item"><NavLink to="/manager/latex-billing">Latex Billing</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/rates">Set Live Rate</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/wages">Wages</NavLink></li>
+          <li className="nav-item"><NavLink to="/manager/staff-salary">Staff Salary</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/stock">Stock</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/chem-requests">Chemical Requests</NavLink></li>
         </ul>

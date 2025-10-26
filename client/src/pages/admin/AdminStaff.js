@@ -12,6 +12,12 @@ const AdminStaff = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [emailTaken, setEmailTaken] = useState(false);
+  
+  // Enhanced filtering and search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [showStaffIdOnly, setShowStaffIdOnly] = useState(false);
 
   // Helpers
   const noSpaces = (v) => String(v || '').replace(/\s+/g, '');
@@ -149,6 +155,55 @@ const AdminStaff = () => {
 
   useEffect(() => { load(); }, []);
 
+  // Enhanced filtering functions
+  const getFilteredStaff = () => {
+    let filtered = [...rows];
+    
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(staff => 
+        (staff.name || '').toLowerCase().includes(term) ||
+        (staff.email || '').toLowerCase().includes(term) ||
+        (staff.staffId || '').toLowerCase().includes(term) ||
+        (staff.phone || '').includes(term)
+      );
+    }
+    
+    // Role filter
+    if (roleFilter !== 'all') {
+      filtered = filtered.filter(staff => {
+        const role = (staff.role || 'field_staff').toLowerCase();
+        return role.includes(roleFilter);
+      });
+    }
+    
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(staff => {
+        const status = staff.status || 'sent';
+        return status === statusFilter;
+      });
+    }
+    
+    return filtered;
+  };
+
+  const getStaffStats = () => {
+    const stats = {
+      total: rows.length,
+      field: rows.filter(r => (r.role || '').includes('field')).length,
+      lab: rows.filter(r => (r.role || '').includes('lab')).length,
+      delivery: rows.filter(r => (r.role || '').includes('delivery')).length,
+      accountant: rows.filter(r => (r.role || '').includes('accountant')).length,
+      manager: rows.filter(r => (r.role || '').includes('manager')).length,
+      active: rows.filter(r => (r.status || '') === 'active').length,
+      pending: rows.filter(r => (r.status || '') === 'verified').length,
+      approved: rows.filter(r => (r.status || '') === 'approved').length
+    };
+    return stats;
+  };
+
   // Validation functions
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -200,8 +255,10 @@ const AdminStaff = () => {
     const isLab = form.role === 'lab';
     const isDelivery = form.role === 'delivery';
     const isAccountant = form.role === 'accountant';
+    const isManager = form.role === 'manager';
     const patternField = /^HFP\d{2}$/; // e.g., HFP01 (Field/Lab default)
     const patternAccountant = /^ACC\d{2}$/; // e.g., ACC01
+    const patternManager = /^MGR\d{2}$/; // e.g., MGR01
     const patternDelivery = /^[A-Z]{3}-\d{4}-\d{3}$/; // e.g., STF-2025-005
     if (!id) {
       errors.staffId = 'Staff ID is required';
@@ -209,6 +266,8 @@ const AdminStaff = () => {
       errors.staffId = 'For Field/Lab Staff, use format HFP01 (5 characters)';
     } else if (isAccountant && !patternAccountant.test(id)) {
       errors.staffId = 'For Accountant, use format ACC01 (5 characters)';
+    } else if (isManager && !patternManager.test(id)) {
+      errors.staffId = 'For Manager, use format MGR01 (5 characters)';
     } else if (isDelivery && !patternDelivery.test(id)) {
       errors.staffId = 'For Delivery Staff, use format STF-2025-005';
     }
@@ -217,7 +276,7 @@ const AdminStaff = () => {
       errors.staffId = 'Staff ID must not contain spaces';
     }
     // Role validation
-    if (!['field','lab','delivery','accountant'].includes(form.role)) {
+    if (!['field','lab','delivery','accountant','manager'].includes(form.role)) {
       errors.role = 'Select a valid role';
     }
     
@@ -247,6 +306,7 @@ const AdminStaff = () => {
         role: (form.role === 'lab') ? 'lab_staff' 
             : (form.role === 'delivery') ? 'delivery_staff' 
             : (form.role === 'accountant') ? 'accountant' 
+            : (form.role === 'manager') ? 'manager'
             : 'field_staff'
       });
       setSuccess('Invitation sent successfully.');
@@ -267,20 +327,226 @@ const AdminStaff = () => {
     setValidationErrors({});
   };
 
+  const stats = getStaffStats();
+  const filteredStaff = getFilteredStaff();
+
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h2>Staff Management</h2>
-        <a 
-          href="/admin/staff-records" 
-          className="btn btn-primary"
-          style={{ textDecoration: 'none' }}
-        >
-          Manage Staff Records
-        </a>
+        <div>
+          <h2>Staff Management</h2>
+          <p style={{ margin: '8px 0 0 0', color: '#64748b' }}>View and manage all staff with their IDs</p>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <a 
+            href="/admin/staff-records" 
+            className="btn btn-outline"
+            style={{ textDecoration: 'none' }}
+          >
+            Staff Records
+          </a>
+          <button 
+            className="btn btn-primary" 
+            onClick={load}
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
       </div>
+      
       {error && <div style={{ color: 'tomato', marginTop: 8 }}>{error}</div>}
       {success && <div style={{ color: 'limegreen', marginTop: 8 }}>{success}</div>}
+
+      {/* Staff Statistics */}
+      <div className="dash-card" style={{ padding: 20, marginBottom: 20 }}>
+        <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>Staff Overview</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
+          <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f8fafc', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 4 }}>Total Staff</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#1e293b' }}>{stats.total}</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f0f9ff', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 4 }}>Field Staff</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#3b82f6' }}>{stats.field}</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f0fdf4', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 4 }}>Lab Staff</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#16a34a' }}>{stats.lab}</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#fef3c7', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 4 }}>Delivery Staff</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#d97706' }}>{stats.delivery}</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f0f9ff', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 4 }}>Accountant</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#3b82f6' }}>{stats.accountant}</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#fef3c7', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 4 }}>Manager</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#d97706' }}>{stats.manager}</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f0fdf4', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 4 }}>Active</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#16a34a' }}>{stats.active}</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#fef2f2', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 4 }}>Pending</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#dc2626' }}>{stats.pending}</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f0f9ff', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 4 }}>Approved</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#3b82f6' }}>{stats.approved}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Filtering Controls */}
+      <div className="dash-card" style={{ padding: 20, marginBottom: 20 }}>
+        <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>Filter & Search Staff</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, color: '#374151' }}>
+              Search Staff
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by name, email, staff ID, or phone..."
+              style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+            />
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, color: '#374151' }}>
+              Filter by Role
+            </label>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+            >
+              <option value="all">All Roles</option>
+              <option value="field">Field Staff</option>
+              <option value="lab">Lab Staff</option>
+              <option value="delivery">Delivery Staff</option>
+              <option value="accountant">Accountant</option>
+              <option value="manager">Manager</option>
+            </select>
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, color: '#374151' }}>
+              Filter by Status
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+            >
+              <option value="all">All Status</option>
+              <option value="sent">Pending Invite</option>
+              <option value="verified">Waiting Approval</option>
+              <option value="approved">Approved</option>
+              <option value="active">Active</option>
+              <option value="suspended">Deactivated</option>
+            </select>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'end' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={showStaffIdOnly}
+                onChange={(e) => setShowStaffIdOnly(e.target.checked)}
+              />
+              <span style={{ fontSize: 14, color: '#374151' }}>Show Staff IDs Only</span>
+            </label>
+          </div>
+        </div>
+        
+        <div style={{ marginTop: 16, padding: 12, backgroundColor: '#f8fafc', borderRadius: 6 }}>
+          <div style={{ fontSize: 14, color: '#64748b' }}>
+            Showing {filteredStaff.length} of {rows.length} staff members
+            {searchTerm && ` matching "${searchTerm}"`}
+            {roleFilter !== 'all' && ` in ${roleFilter} role`}
+            {statusFilter !== 'all' && ` with ${statusFilter} status`}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Staff ID Summary */}
+      <div className="dash-card" style={{ padding: 20, marginBottom: 20 }}>
+        <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>Staff ID Summary</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+          {['field', 'lab', 'delivery', 'accountant', 'manager'].map(role => {
+            const roleStaff = rows.filter(r => (r.role || '').includes(role));
+            const withIds = roleStaff.filter(r => r.staffId);
+            const withoutIds = roleStaff.filter(r => !r.staffId);
+            
+            return (
+              <div key={role} style={{ 
+                padding: 16, 
+                backgroundColor: '#f8fafc', 
+                borderRadius: 8,
+                border: '1px solid #e2e8f0'
+              }}>
+                <h4 style={{ margin: '0 0 12px 0', color: '#1e293b', textTransform: 'capitalize' }}>
+                  {role === 'field' ? 'Field Staff' : 
+                   role === 'lab' ? 'Lab Staff' : 
+                   role === 'delivery' ? 'Delivery Staff' : 
+                   role === 'accountant' ? 'Accountant' :
+                   'Manager'} ({roleStaff.length})
+                </h4>
+                
+                {withIds.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: '#64748b', marginBottom: 6 }}>
+                      ✅ With Staff IDs ({withIds.length})
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {withIds.slice(0, 5).map(staff => (
+                        <span 
+                          key={staff._id}
+                          style={{ 
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                            padding: '2px 6px',
+                            backgroundColor: '#dcfce7',
+                            color: '#16a34a',
+                            borderRadius: 4,
+                            border: '1px solid #16a34a'
+                          }}
+                        >
+                          {staff.staffId}
+                        </span>
+                      ))}
+                      {withIds.length > 5 && (
+                        <span style={{ fontSize: 11, color: '#64748b' }}>
+                          +{withIds.length - 5} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {withoutIds.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginBottom: 6 }}>
+                      ❌ Missing Staff IDs ({withoutIds.length})
+                    </div>
+                    <div style={{ fontSize: 11, color: '#dc2626' }}>
+                      {withoutIds.slice(0, 3).map(staff => staff.name).join(', ')}
+                      {withoutIds.length > 3 && ` +${withoutIds.length - 3} more`}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <form onSubmit={onInviteSubmit} style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', marginTop: 12 }}>
         <div>
@@ -307,6 +573,7 @@ const AdminStaff = () => {
             <option value="lab">Lab Staff</option>
             <option value="delivery">Delivery Staff</option>
             <option value="accountant">Accountant</option>
+            <option value="manager">Manager</option>
           </select>
           {validationErrors.role && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{validationErrors.role}</div>}
         </div>
@@ -315,6 +582,7 @@ const AdminStaff = () => {
             {(() => {
               if (form.role === 'delivery') return 'Staff ID (e.g., STF-2025-005) *';
               if (form.role === 'accountant') return 'Staff ID (e.g., ACC01) *';
+              if (form.role === 'manager') return 'Staff ID (e.g., MGR01) *';
               return 'Staff ID (HFP01) *';
             })()}
           </label><br />
@@ -323,7 +591,7 @@ const AdminStaff = () => {
               type="text"
               value={form.staffId}
               onChange={(e)=>setForm({ ...form, staffId: noSpaces(e.target.value.toUpperCase()) })}
-              placeholder={form.role === 'delivery' ? 'STF-2025-005' : (form.role === 'accountant' ? 'ACC01' : 'HFP01')}
+              placeholder={form.role === 'delivery' ? 'STF-2025-005' : (form.role === 'accountant' ? 'ACC01' : (form.role === 'manager' ? 'MGR01' : 'HFP01'))}
               required
               maxLength={form.role === 'delivery' ? 13 : 5}
               style={{ flex:1, borderColor: validationErrors.staffId ? '#dc3545' : '' }}
@@ -332,7 +600,7 @@ const AdminStaff = () => {
             {form.role !== 'delivery' && (
               <button type="button" className="btn btn-outline" onClick={()=>{
                 // Generate next available ID by role prefix
-                const prefix = form.role === 'accountant' ? 'ACC' : 'HFP';
+                const prefix = form.role === 'accountant' ? 'ACC' : (form.role === 'manager' ? 'MGR' : 'HFP');
                 const all = [...rows, ...staffUsers];
                 let max = 0;
                 all.forEach(u=>{
@@ -444,7 +712,10 @@ const AdminStaff = () => {
               <div style={{ marginBottom: 6 }}><strong>Phone:</strong> <span style={{ color: '#111' }}>{form.phone}</span></div>
               <div style={{ marginBottom: 6 }}><strong>Address:</strong> <span style={{ color: '#111' }}>{form.address}</span></div>
               <div style={{ marginBottom: 6 }}><strong>Role:</strong> <span style={{ color: '#111' }}>{
-                form.role === 'lab' ? 'Lab Staff' : (form.role === 'delivery' ? 'Delivery Staff' : (form.role === 'accountant' ? 'Accountant' : 'Field Staff'))
+                form.role === 'lab' ? 'Lab Staff' : 
+                (form.role === 'delivery' ? 'Delivery Staff' : 
+                (form.role === 'accountant' ? 'Accountant' : 
+                (form.role === 'manager' ? 'Manager' : 'Field Staff')))
               }</span></div>
               <div><strong>Staff ID:</strong> <span style={{ color: '#111' }}>{(form.staffId || '').toUpperCase()}</span></div>
             </div>
@@ -532,14 +803,14 @@ const AdminStaff = () => {
         </div>
       )}
 
-      <h3 style={{ marginTop: 32, marginBottom: 16 }}>All Staff Invitations</h3>
+      <h3 style={{ marginTop: 32, marginBottom: 16 }}>All Staff ({filteredStaff.length} shown)</h3>
       <div style={{ marginTop: 8, overflowX: 'auto' }}>
-        <table className="dashboard-table" style={{ minWidth: 900 }}>
+        <table className="dashboard-table" style={{ minWidth: 1000 }}>
           <thead>
             <tr>
+              <th style={{ width: '120px' }}>Staff ID</th>
               <th>Name</th>
               <th>Email</th>
-              <th>Staff ID</th>
               <th>Role</th>
               <th>Phone</th>
               <th>Status</th>
@@ -547,10 +818,30 @@ const AdminStaff = () => {
             </tr>
           </thead>
           <tbody>
-            {rows.map(r => (
+            {filteredStaff.map(r => (
               <tr key={r._id || r.id || r.email} style={{ 
                 backgroundColor: r.status === 'verified' ? '#fff3cd' : 'transparent' 
               }}>
+                <td>
+                  <div style={{ 
+                    fontFamily: 'monospace', 
+                    backgroundColor: r.staffId ? '#e8f5e8' : '#fef2f2', 
+                    padding: '6px 8px', 
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    textAlign: 'center',
+                    color: r.staffId ? '#16a34a' : '#dc2626',
+                    border: r.staffId ? '1px solid #16a34a' : '1px solid #dc2626'
+                  }}>
+                    {r.staffId || 'NO ID'}
+                  </div>
+                  {r.staffId && (
+                    <div style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', marginTop: '2px' }}>
+                      {r.staffId.length} chars
+                    </div>
+                  )}
+                </td>
                 <td>
                   <div>
                     <strong>{r.name || '-'}</strong>
@@ -564,22 +855,13 @@ const AdminStaff = () => {
                 <td>{r.email || '-'}</td>
                 <td>
                   <span style={{ 
-                    fontFamily: 'monospace', 
-                    backgroundColor: '#e8f5e8', 
-                    padding: '2px 6px', 
-                    borderRadius: '3px',
-                    fontSize: '12px'
-                  }}>
-                    {r.staffId || '-'}
-                  </span>
-                </td>
-                <td>
-                  <span style={{ 
                     textTransform: 'capitalize',
                     color: r.role === 'field_staff' ? '#0B6E4F' : 
                            r.role === 'delivery_staff' ? '#ff6b35' : 
                            r.role === 'lab_staff' ? '#6c5ce7' : 
-                           r.role === 'accountant_staff' ? '#0ea5e9' : '#666'
+                           r.role === 'accountant' ? '#0ea5e9' : 
+                           r.role === 'manager' ? '#8b5cf6' : '#666',
+                    fontWeight: '500'
                   }}>
                     {(r.role || 'field_staff').replace('_', ' ')}
                   </span>
@@ -606,7 +888,14 @@ const AdminStaff = () => {
                       <span style={{ 
                         color: color, 
                         fontWeight: 'bold',
-                        fontSize: '13px'
+                        fontSize: '13px',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        backgroundColor: color === '#ffc107' ? '#fef3c7' :
+                                        color === '#ff6b35' ? '#fed7aa' :
+                                        color === '#28a745' ? '#dcfce7' :
+                                        color === '#dc3545' ? '#fef2f2' :
+                                        color === '#6c757d' ? '#f3f4f6' : '#f8fafc'
                       }}>
                         {label}
                       </span>
@@ -650,12 +939,56 @@ const AdminStaff = () => {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && !loading && (
-              <tr><td colSpan={7} style={{ textAlign: 'center', color: '#9aa' }}>No staff found.</td></tr>
+            {filteredStaff.length === 0 && !loading && (
+              <tr><td colSpan={7} style={{ textAlign: 'center', color: '#9aa', padding: '40px' }}>
+                {rows.length === 0 ? 'No staff found.' : 'No staff match the current filters.'}
+              </td></tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Staff IDs Only View */}
+      {showStaffIdOnly && (
+        <div className="dash-card" style={{ padding: 20, marginBottom: 20 }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>Staff IDs Quick Reference</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            {filteredStaff.map(staff => (
+              <div 
+                key={staff._id} 
+                style={{ 
+                  padding: 12, 
+                  backgroundColor: staff.staffId ? '#f0fdf4' : '#fef2f2',
+                  borderRadius: 8,
+                  border: staff.staffId ? '1px solid #16a34a' : '1px solid #dc2626',
+                  textAlign: 'center'
+                }}
+              >
+                <div style={{ 
+                  fontFamily: 'monospace', 
+                  fontSize: 16, 
+                  fontWeight: '700',
+                  color: staff.staffId ? '#16a34a' : '#dc2626',
+                  marginBottom: 4
+                }}>
+                  {staff.staffId || 'NO ID'}
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>
+                  {staff.name || 'Unknown'}
+                </div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                  {(staff.role || 'field_staff').replace('_', ' ')}
+                </div>
+              </div>
+            ))}
+          </div>
+          {filteredStaff.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>
+              No staff match the current filters.
+            </div>
+          )}
+        </div>
+      )}
 
       <h3 style={{ marginTop: 28 }}>Staff Users</h3>
       <div style={{ marginTop: 8, overflowX: 'auto' }}>

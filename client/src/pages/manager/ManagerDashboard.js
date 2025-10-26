@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,21 +31,27 @@ const ManagerDashboard = () => {
 
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const token = localStorage.getItem('token');
-  const config = { headers: { Authorization: `Bearer ${token}` } };
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     setLoading(true);
     setError('');
     
     try {
-      // Load attendance data
-      const [attendanceRes, attendanceStatsRes, billsRes, ratesRes, stockRes] = await Promise.all([
-        axios.get(`${base}/api/workers/attendance/summary/today`, config),
-        axios.get(`${base}/api/workers/attendance/stats`, config),
-        axios.get(`${base}/api/bills/manager/pending`, config),
-        axios.get(`${base}/api/daily-rates/admin/pending`, config),
-        axios.get(`${base}/api/stock/summary`, config)
-      ]);
+      // Load data with staggered requests to avoid rate limiting
+      const attendanceRes = await axios.get(`${base}/api/workers/attendance/summary/today`, config);
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+      
+      const attendanceStatsRes = await axios.get(`${base}/api/workers/attendance/stats`, config);
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+      
+      const billsRes = await axios.get(`${base}/api/bills/manager/pending`, config);
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+      
+      const ratesRes = await axios.get(`${base}/api/daily-rates/admin/pending`, config);
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+      
+      const stockRes = await axios.get(`${base}/api/stock/summary`, config);
 
       setDashboardData({
         attendance: {
@@ -72,34 +78,59 @@ const ManagerDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [base, config]);
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+    // Reload dashboard data every 5 minutes to avoid rate limiting
+    const interval = setInterval(loadDashboardData, 300000);
+    return () => clearInterval(interval);
+  }, [loadDashboardData]);
 
   useEffect(() => {
     const loadNotifs = async () => {
       try {
+        // Check if user is authenticated before making the request
+        if (!token) {
+          console.log('No authentication token found, skipping notifications');
+          setNotifs([]);
+          setUnread(0);
+          return;
+        }
+
         const res = await fetch(`${base}/api/notifications?limit=10`, { headers: config });
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data?.notifications) ? data.notifications : (Array.isArray(data) ? data : []);
           setNotifs(list);
           setUnread(Number(data?.unread || (list.filter(n=>!n.read).length)));
+        } else if (res.status === 401) {
+          // Unauthorized - user needs to login
+          console.log('User not authenticated, redirecting to login');
+          navigate('/login');
+          return;
+        } else if (res.status === 429) {
+          // Rate limited - don't spam console, just skip this update
+          console.log('Notifications rate limited, will retry later');
+          return;
         } else {
           setNotifs([]);
           setUnread(0);
         }
-      } catch {
+      } catch (error) {
+        // Only log non-rate-limit errors
+        if (!error.message?.includes('429')) {
+          console.error('Error loading notifications:', error);
+        }
         setNotifs([]);
         setUnread(0);
       }
     };
     loadNotifs();
-    const id = setInterval(loadNotifs, 30000);
+    // Reduced frequency to avoid rate limiting (every 2 minutes instead of 30 seconds)
+    const id = setInterval(loadNotifs, 120000);
     return () => clearInterval(id);
-  }, [base, config]);
+  }, [base, config, token, navigate]);
 
   const markRead = async (id) => {
     try {

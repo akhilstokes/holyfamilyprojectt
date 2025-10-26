@@ -53,7 +53,7 @@
     display: flex;
     align-items: center;
     padding: 0.75rem 1rem;
-    color: var(--slate-200);
+    color: var(--slate-100); /* improved contrast for better readability */
     text-decoration: none;
     transition: background-color 0.2s, color 0.2s, transform 0.2s ease;
     border-left: 3px solid transparent;
@@ -225,18 +225,19 @@
 
 /* === Compact, refined sizing for better density === */
 .dashboard-container {
-    font-size: 14px; /* base font size down from default */
+    font-size: 15px; /* improved base font size for better readability */
 }
 .sidebar {
     min-width: 240px; /* widened per request */
     max-width: 320px;
 }
 .sidebar-header {
-    font-size: 1.05rem;
+    font-size: 1.2rem; /* improved header font size for better visibility */
 }
 .nav-item a {
-    padding: 0.55rem 0.85rem; /* slightly tighter padding */
-    font-size: 0.9rem; /* smaller link text */
+    padding: 0.65rem 1rem; /* improved padding for better touch targets */
+    font-size: 1rem; /* improved readability for navigation text */
+    font-weight: 500; /* slightly bolder for better readability */
 }
 .sidebar .nav-item i,
 .nav-icon {
@@ -263,8 +264,8 @@
 }
 .dashboard-content {
     padding: 1.5rem; /* modest padding while allowing more space */
-    font-size: 0.95rem; /* smaller content font */
-    line-height: 1.45;
+    font-size: 1rem; /* improved content font size for better readability */
+    line-height: 1.5;
 }
 
 /* Tablet tweaks */

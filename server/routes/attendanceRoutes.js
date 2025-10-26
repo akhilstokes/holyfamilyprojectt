@@ -13,10 +13,12 @@ router.get('/history', protect, attendanceController.getAttendanceHistory);
 router.get('/all', protect, adminManagerAccountant, attendanceController.getAllAttendance);
 router.get('/today-all', protect, adminManagerAccountant, attendanceController.getTodayAttendanceAll);
 router.get('/analytics', protect, adminManagerAccountant, attendanceController.getAttendanceAnalytics);
+router.get('/summary/week', protect, adminManagerAccountant, attendanceController.getWeeklySummary);
 router.post('/:id/approve', protect, adminManagerAccountant, attendanceController.approveAttendance);
 // Admin/Manager/Accountant explicit mark
 router.post('/admin/mark', protect, adminManagerAccountant, attendanceController.adminMarkAttendance);
 
 module.exports = router;
+
 
 

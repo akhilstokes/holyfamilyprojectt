@@ -48,3 +48,39 @@ exports.sampleCheckIn = async (req, res) => {
     return res.status(500).json({ message: 'Failed to check in sample', error: e.message });
   }
 };
+
+// Get pending samples for lab processing
+exports.getPendingSamples = async (req, res) => {
+  try {
+    const pendingSamples = await SellRequest.find({ status: 'DELIVERED_TO_LAB' })
+      .populate('user', 'name email phone')
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    return res.json(pendingSamples);
+  } catch (e) {
+    return res.status(500).json({ message: 'Failed to load pending samples', error: e.message });
+  }
+};
+
+// Get samples processed today
+exports.getTodaySamples = async (req, res) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const todaySamples = await SellRequest.find({ 
+      status: 'TESTED', 
+      testedAt: { $gte: startOfDay, $lte: endOfDay } 
+    })
+      .populate('user', 'name email phone')
+      .sort({ testedAt: -1 })
+      .lean();
+    
+    return res.json(todaySamples);
+  } catch (e) {
+    return res.status(500).json({ message: 'Failed to load today samples', error: e.message });
+  }
+};

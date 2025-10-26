@@ -91,7 +91,13 @@ const LabDRCUpdate = () => {
     try {
       const params = new URLSearchParams(window.location.search);
       const pre = params.get('customer');
+      const sampleId = params.get('sampleId');
       if (pre) setCustomerName(pre);
+      if (sampleId) {
+        // If sampleId is provided, we can highlight or pre-select the relevant sample
+        // The sample will appear in the queue once it's loaded
+        console.log('Sample ID from check-in:', sampleId);
+      }
     } catch (_) {}
   }, []);
 

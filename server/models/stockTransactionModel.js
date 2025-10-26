@@ -266,3 +266,5 @@ stockTransactionSchema.statics.getCurrentStock = async function(productName) {
 module.exports = mongoose.model('StockTransaction', stockTransactionSchema);
 
 
+
+
