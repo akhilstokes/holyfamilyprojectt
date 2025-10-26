@@ -628,3 +628,4 @@ function getUserFrequency(userId) {
   // Simplified user frequency
   return Math.random() * 20;
 }
+

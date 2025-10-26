@@ -123,3 +123,4 @@ export const useValidation = (initialData = {}, validationRules = {}) => {
 };
 
 export default useValidation;
+

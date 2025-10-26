@@ -14,8 +14,8 @@ const ManagerCompleted = () => {
 
   const [attendance, setAttendance] = useState({ pending: [], verified: [] });
   const [leaves, setLeaves] = useState({ pending: [], recent: [] });
-  const [userComplaints, setUserComplaints] = useState([]);
-  const [userRequests, setUserRequests] = useState([]);
+  const [issuesStaff, setIssuesStaff] = useState([]);
+  const [issuesUsers, setIssuesUsers] = useState([]);
 
   const tabs = useMemo(() => ([
     { id: 'staff', label: 'Staff' },
@@ -41,30 +41,24 @@ const ManagerCompleted = () => {
         recent: []
       });
 
-
-      // Load user complaints
-      try {
-        const complaintsRes = await fetch(`${API}/api/complaints/all`, { headers: authHeaders() });
-        if (complaintsRes.ok) {
-          const complaintsData = await complaintsRes.json();
-          setUserComplaints(Array.isArray(complaintsData) ? complaintsData : (Array.isArray(complaintsData?.data) ? complaintsData.data : []));
-        }
-      } catch (e) {
-        console.error('Failed to load user complaints:', e);
-        setUserComplaints([]);
-      }
-
-      // Load user requests (latex requests, barrel requests, etc.)
-      try {
-        const requestsRes = await fetch(`${API}/api/latex/admin/requests`, { headers: authHeaders() });
-        if (requestsRes.ok) {
-          const requestsData = await requestsRes.json();
-          setUserRequests(Array.isArray(requestsData) ? requestsData : (Array.isArray(requestsData?.data) ? requestsData.data : []));
-        }
-      } catch (e) {
-        console.error('Failed to load user requests:', e);
-        setUserRequests([]);
-      }
+      let staffIssues = [];
+      let userIssues = [];
+      const tryJson = async (res) => {
+        const ct = res.headers.get('content-type') || '';
+        return ct.includes('application/json') ? res.json() : res.text().then(() => ([]));
+      };
+      let r1 = await fetch(`${API}/api/requests/issues/pending?role=staff`, { headers: authHeaders() });
+      if (!r1.ok) r1 = await fetch(`${API}/api/requests/issues?status=pending&role=staff`, { headers: authHeaders() });
+      if (!r1.ok) r1 = await fetch(`${API}/api/requests/issues/admin/pending?role=staff`, { headers: authHeaders() });
+      const j1 = await tryJson(r1);
+      staffIssues = Array.isArray(j1?.data) ? j1.data : (Array.isArray(j1?.items) ? j1.items : (Array.isArray(j1) ? j1 : []));
+      let r2 = await fetch(`${API}/api/requests/issues/pending?role=customer`, { headers: authHeaders() });
+      if (!r2.ok) r2 = await fetch(`${API}/api/requests/issues?status=pending&role=customer`, { headers: authHeaders() });
+      if (!r2.ok) r2 = await fetch(`${API}/api/requests/issues/admin/pending?role=customer`, { headers: authHeaders() });
+      const j2 = await tryJson(r2);
+      userIssues = Array.isArray(j2?.data) ? j2.data : (Array.isArray(j2?.items) ? j2.items : (Array.isArray(j2) ? j2 : []));
+      setIssuesStaff(staffIssues);
+      setIssuesUsers(userIssues);
     } catch (e) {
       setError('Failed to load data.');
     } finally {
@@ -116,42 +110,21 @@ const ManagerCompleted = () => {
     } catch { alert('Failed to reject leave'); }
   };
 
-
-  const updateComplaint = async (id, status, resolution = '') => {
+  const resolveIssue = async (id, status) => {
     try {
       setError('');
-      const res = await fetch(`${API}/api/complaints/${id}`, { 
-        method: 'PUT', 
-        headers: authHeaders(), 
-        body: JSON.stringify({ status, resolution }) 
-      });
+      let res = await fetch(`${API}/api/requests/issues/${id}/resolve`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ resolved: status === 'resolved' }) });
+      if (!res.ok) {
+        res = await fetch(`${API}/api/requests/issues/${id}/status`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ status }) });
+      }
       if (!res.ok) {
         const ct = res.headers.get('content-type') || '';
         const errText = ct.includes('application/json') ? (await res.json())?.message : await res.text();
-        throw new Error(errText || `Complaint update failed (${res.status})`);
+        throw new Error(errText || `Issue update failed (${res.status})`);
       }
       await load();
     } catch (e) {
       setError((e?.message || 'Failed to update complaint').replace(/<[^>]*>/g, ''));
-    }
-  };
-
-  const updateRequest = async (id, status, notes = '') => {
-    try {
-      setError('');
-      const res = await fetch(`${API}/api/latex/admin/requests/${id}`, { 
-        method: 'PUT', 
-        headers: authHeaders(), 
-        body: JSON.stringify({ status, notes }) 
-      });
-      if (!res.ok) {
-        const ct = res.headers.get('content-type') || '';
-        const errText = ct.includes('application/json') ? (await res.json())?.message : await res.text();
-        throw new Error(errText || `Request update failed (${res.status})`);
-      }
-      await load();
-    } catch (e) {
-      setError((e?.message || 'Failed to update request').replace(/<[^>]*>/g, ''));
     }
   };
 
@@ -228,107 +201,11 @@ const ManagerCompleted = () => {
         </div>
       );
     }
-    // Users tab - Display user complaints and requests
+    // Users tab placeholder (for future: user issues/requests)
     return (
-      <div className="dash-card" style={{ display:'grid', gap:16 }}>
+      <div className="dash-card" style={{ display:'grid', gap:12 }}>
         <h3 style={{ margin:0 }}>Users</h3>
-        
-        {/* User Complaints Section */}
-        <div>
-          <h4 style={{ margin:'8px 0' }}>User Complaints</h4>
-          {userComplaints.length === 0 ? <div className="no-data">No user complaints</div> : (
-            <table className="dashboard-table">
-              <thead>
-                <tr><th>User</th><th>Title</th><th>Category</th><th>Priority</th><th>Status</th><th>Reported</th><th>Actions</th></tr>
-              </thead>
-              <tbody>
-                {userComplaints.slice(0, 10).map(complaint => (
-                  <tr key={complaint._id}>
-                    <td>{complaint.reportedByName || '-'}</td>
-                    <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {complaint.title || '-'}
-                    </td>
-                    <td style={{ textTransform: 'capitalize' }}>{complaint.category || '-'}</td>
-                    <td>
-                      <span className={`badge ${complaint.priority === 'urgent' ? 'badge-danger' : 
-                        complaint.priority === 'high' ? 'badge-warning' : 
-                        complaint.priority === 'medium' ? 'badge-info' : 'badge-secondary'}`}>
-                        {complaint.priority?.toUpperCase() || 'MEDIUM'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${complaint.status === 'resolved' ? 'badge-success' : 
-                        complaint.status === 'in_progress' ? 'badge-info' : 
-                        complaint.status === 'closed' ? 'badge-secondary' : 'badge-warning'}`}>
-                        {complaint.status?.toUpperCase() || 'OPEN'}
-                      </span>
-                    </td>
-                    <td>{complaint.reportedAt ? new Date(complaint.reportedAt).toLocaleDateString('en-IN') : '-'}</td>
-                    <td>
-                      {complaint.status === 'open' && (
-                        <>
-                          <button onClick={() => updateComplaint(complaint._id, 'in_progress')} style={{ marginRight: 4 }}>Start</button>
-                          <button onClick={() => updateComplaint(complaint._id, 'resolved')}>Resolve</button>
-                        </>
-                      )}
-                      {complaint.status === 'in_progress' && (
-                        <button onClick={() => updateComplaint(complaint._id, 'resolved')}>Resolve</button>
-                      )}
-                      {complaint.status === 'resolved' && (
-                        <button onClick={() => updateComplaint(complaint._id, 'closed')}>Close</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* User Requests Section */}
-        <div>
-          <h4 style={{ margin:'8px 0' }}>User Requests</h4>
-          {userRequests.length === 0 ? <div className="no-data">No user requests</div> : (
-            <table className="dashboard-table">
-              <thead>
-                <tr><th>User</th><th>Type</th><th>Quantity</th><th>Amount</th><th>Status</th><th>Submitted</th><th>Actions</th></tr>
-              </thead>
-              <tbody>
-                {userRequests.slice(0, 10).map(request => (
-                  <tr key={request._id}>
-                    <td>{request.user?.name || '-'}</td>
-                    <td>Latex Sell</td>
-                    <td>{request.quantity ? `${request.quantity}kg` : '-'}</td>
-                    <td>{request.estimatedPayment ? `₹${request.estimatedPayment.toLocaleString()}` : '-'}</td>
-                    <td>
-                      <span className={`badge ${request.status === 'approved' ? 'badge-success' : 
-                        request.status === 'processing' ? 'badge-info' : 
-                        request.status === 'paid' ? 'badge-success' : 
-                        request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}`}>
-                        {request.status?.toUpperCase() || 'PENDING'}
-                      </span>
-                    </td>
-                    <td>{request.createdAt ? new Date(request.createdAt).toLocaleDateString('en-IN') : '-'}</td>
-                    <td>
-                      {request.status === 'pending' && (
-                        <>
-                          <button onClick={() => updateRequest(request._id, 'approved')} style={{ marginRight: 4 }}>Approve</button>
-                          <button onClick={() => updateRequest(request._id, 'rejected')}>Reject</button>
-                        </>
-                      )}
-                      {request.status === 'approved' && (
-                        <button onClick={() => updateRequest(request._id, 'processing')}>Process</button>
-                      )}
-                      {request.status === 'processing' && (
-                        <button onClick={() => updateRequest(request._id, 'paid')}>Mark Paid</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <div className="no-data">User issues/requests view coming soon. Tell me which items to include.</div>
       </div>
     );
   };

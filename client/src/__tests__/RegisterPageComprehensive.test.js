@@ -717,3 +717,4 @@ describe('RegisterPage Comprehensive Tests', () => {
     });
   });
 });
+

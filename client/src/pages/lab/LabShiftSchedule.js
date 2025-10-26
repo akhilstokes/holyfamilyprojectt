@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import '../staff/StaffShiftSchedule.css';
 
 const LabShiftSchedule = () => {
@@ -8,7 +8,7 @@ const LabShiftSchedule = () => {
   const base = process.env.REACT_APP_API_URL || '';
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-  const fetchShiftSchedule = async () => {
+  const fetchShiftSchedule = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -26,9 +26,9 @@ const LabShiftSchedule = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [base, token]);
 
-  useEffect(() => { fetchShiftSchedule(); }, []);
+  useEffect(() => { fetchShiftSchedule(); }, [fetchShiftSchedule]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

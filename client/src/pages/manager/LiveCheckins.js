@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { listAttendance } from '../../services/adminService';
 
 const iso = (d) => new Date(d).toISOString().slice(0, 10);
@@ -9,7 +9,7 @@ const LiveCheckins = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
       const data = await listAttendance({ from: today, to: today, limit: 500 });
@@ -22,7 +22,7 @@ const LiveCheckins = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [today]);
 
   useEffect(() => { load(); }, [load]);
 

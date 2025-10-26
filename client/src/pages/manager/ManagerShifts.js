@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 
 const iso = (d) => new Date(d).toISOString().slice(0,10);
 
@@ -13,7 +13,9 @@ const weekStartOf = (dateStr) => {
 const ManagerShifts = () => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  const headers = useMemo(() => (
+    token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+  ), [token]);
   const today = useMemo(() => iso(new Date()), []);
   const [weekStart, setWeekStart] = useState(weekStartOf(today));
   const [form, setForm] = useState({ morningStart: '09:00', morningEnd: '13:00', eveningStart: '13:30', eveningEnd: '18:00', what: 'collection' });
@@ -41,7 +43,7 @@ const ManagerShifts = () => {
     return ah * 60 + am < bh * 60 + bm;
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
       const res = await fetch(`${base}/api/schedules/by-week?weekStart=${weekStart}&group=${encodeURIComponent(group)}`, { headers });
@@ -53,10 +55,10 @@ const ManagerShifts = () => {
       setOverrides(Array.isArray(data.overrides) ? data.overrides : []);
     } catch (e) { setError(e?.message || 'Failed to load'); }
     finally { setLoading(false); }
-  };
+  }, [base, headers, weekStart, group]);
 
-  // Load schedule when week or group changes. Do not depend on `load` to avoid reloading on each render.
-  useEffect(() => { load(); }, [weekStart, group]);
+  // Load schedule when week or group changes.
+  useEffect(() => { load(); }, [load]);
 
   // Map UI group to backend user role for listing
   const roleForGroup = (g) => {

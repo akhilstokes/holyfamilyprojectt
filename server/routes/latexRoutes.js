@@ -12,6 +12,7 @@ const {
     collectLatex,
     recordTestResult,
     accountantCalculate,
+    accountantCalculateWithCompanyRate,
     managerVerify,
     getInvoice,
     listPendingTests,
