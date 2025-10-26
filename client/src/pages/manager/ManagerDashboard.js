@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const ManagerDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,9 @@ const ManagerDashboard = () => {
       alerts: []
     }
   });
+  const [notifs, setNotifs] = useState([]);
+  const [unread, setUnread] = useState(0);
+  const navigate = useNavigate();
 
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const token = localStorage.getItem('token');
@@ -73,6 +77,39 @@ const ManagerDashboard = () => {
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  useEffect(() => {
+    const loadNotifs = async () => {
+      try {
+        const res = await fetch(`${base}/api/notifications?limit=10`, { headers: config });
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data?.notifications) ? data.notifications : (Array.isArray(data) ? data : []);
+          setNotifs(list);
+          setUnread(Number(data?.unread || (list.filter(n=>!n.read).length)));
+        } else {
+          setNotifs([]);
+          setUnread(0);
+        }
+      } catch {
+        setNotifs([]);
+        setUnread(0);
+      }
+    };
+    loadNotifs();
+    const id = setInterval(loadNotifs, 30000);
+    return () => clearInterval(id);
+  }, [base, config]);
+
+  const markRead = async (id) => {
+    try {
+      const res = await fetch(`${base}/api/notifications/${id}/read`, { method: 'PATCH', headers: config });
+      if (res.ok) {
+        setNotifs(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
+        setUnread(u => Math.max(0, u - 1));
+      }
+    } catch {}
+  };
 
   if (loading) {
     return (
@@ -274,35 +311,52 @@ const ManagerDashboard = () => {
         </button>
       </div>
 
-      {/* Recent Activity */}
-      <div className="dash-card">
-        <h4 style={{ marginTop: 0 }}>Quick Actions</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-          <button 
-            className="btn btn-outline" 
-            onClick={() => window.location.href = '/manager/attendance/verification'}
-          >
-            Verify GPS Records
-          </button>
-          <button 
-            className="btn btn-outline" 
-            onClick={() => window.location.href = '/manager/leaves'}
-          >
-            Review Leave Requests
-          </button>
-          <button 
-            className="btn btn-outline" 
-            onClick={() => window.location.href = '/manager/rates/submit'}
-          >
-            Submit Rate Update
-          </button>
-          <button 
-            className="btn btn-outline" 
-            onClick={() => window.location.href = '/manager/reports/attendance'}
-          >
-            Attendance Report
-          </button>
+      {/* Notifications Section */}
+      <div className="dash-card" style={{ padding: 16 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <h4 style={{ marginTop: 0 }}>Recent Notifications</h4>
+          <span style={{ color:'#64748b', fontSize:12 }}>Unread: {unread}</span>
         </div>
+        {notifs.length === 0 ? (
+          <div style={{ color:'#94a3b8' }}>No notifications</div>
+        ) : (
+          <ul style={{ listStyle:'none', padding:0, margin:0, display:'grid', gap:8 }}>
+            {notifs.slice(0, 5).map(n => (
+              <li key={n._id} style={{
+                border:'1px solid #e2e8f0', borderRadius:8, padding:12, background: n.read ? '#fff' : '#f8fafc'
+              }}>
+                <div style={{ display:'flex', justifyContent:'space-between', gap:12 }}>
+                  <div>
+                    <div style={{ fontWeight:600 }}>{n.title || 'Update'}</div>
+                    <div style={{ color:'#475569', fontSize:14 }}>{n.message}</div>
+                    {n.meta && (
+                      <div style={{ marginTop:6, display:'flex', gap:8, flexWrap:'wrap', color:'#64748b', fontSize:12 }}>
+                        {Object.entries(n.meta).map(([k,v]) => (
+                          <span key={k}><strong>{k}:</strong> {String(v)}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ color:'#94a3b8', fontSize:12, marginTop:6 }}>{new Date(n.createdAt).toLocaleString()}</div>
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end' }}>
+                    {n.link && (
+                      <button className="btn" onClick={() => {
+                        if (n.link.startsWith('http')) {
+                          window.open(n.link, '_blank');
+                        } else {
+                          navigate(n.link);
+                        }
+                      }}>Open</button>
+                    )}
+                    {!n.read && (
+                      <button className="btn-secondary" onClick={()=>markRead(n._id)}>Mark Read</button>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

@@ -11,8 +11,8 @@ const adminRateLimiter = rateLimiter(60 * 1000, 300);
 router.post('/', protect, ctrl.createSellRequest);
 router.get('/my', protect, ctrl.listMySellRequests);
 
-// Admin/Manager - with generous rate limiting
-router.get('/admin/all', protect, adminOrManager, adminRateLimiter, ctrl.listAllSellRequests);
+// Admin/Manager/Accountant - with generous rate limiting
+router.get('/admin/all', protect, adminManagerAccountant, adminRateLimiter, ctrl.listAllSellRequests);
 
 // Lab
 router.get('/lab/pending', protect, ctrl.listLabPendingSellRequests);
@@ -26,6 +26,7 @@ router.put('/:id/assign-delivery', protect, adminOrManager, ctrl.assignDeliveryS
 router.put('/:id/collect', protect, ctrl.markCollected);
 
 // Delivery staff
+router.get('/delivery/my-assigned', protect, ctrl.listAssignedForDelivery);
 router.put('/:id/deliver-to-lab', protect, ctrl.markDeliveredToLab);
 
 // Lab

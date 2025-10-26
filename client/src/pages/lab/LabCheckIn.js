@@ -1,19 +1,55 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const LabCheckIn = () => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const [form, setForm] = useState({ sampleId: '', customerName: '', batch: '', quantityLiters: '', receivedAt: '', notes: '', barrelCount: 0 });
+  const [form, setForm] = useState({ sampleId: '', customerName: '', quantityLiters: '', receivedAt: '', notes: '', barrelCount: 0 });
   const [barrels, setBarrels] = useState([]); // [{barrelId, liters}]
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [validation, setValidation] = useState({});
+  const navigate = useNavigate();
 
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
   };
+
+  // Prefill from URL params if present
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const sampleId = params.get('sampleId');
+      const customerName = params.get('customerName');
+      const barrelCount = params.get('barrelCount');
+      const receivedAt = params.get('receivedAt');
+      const patch = {};
+      if (sampleId) patch.sampleId = sampleId;
+      if (customerName) patch.customerName = customerName;
+      if (barrelCount != null) patch.barrelCount = Number(barrelCount) || 0;
+      if (receivedAt) patch.receivedAt = receivedAt;
+      if (Object.keys(patch).length) setForm(f => ({ ...f, ...patch }));
+
+      // Handle barrel data from URL params
+      const barrelsData = [];
+      for (let i = 0; params.has(`barrel_${i}`); i++) {
+        const barrelId = params.get(`barrel_${i}`);
+        const liters = params.get(`liters_${i}`);
+        if (barrelId) {
+          barrelsData.push({
+            barrelId,
+            liters: liters ? Number(liters) : ''
+          });
+        }
+      }
+      if (barrelsData.length) {
+        setBarrels(barrelsData);
+        setForm(f => ({ ...f, barrelCount: barrelsData.length }));
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     const n = Number(form.barrelCount) || 0;
@@ -52,6 +88,10 @@ const LabCheckIn = () => {
       setMessage('Sample checked in successfully');
       setForm({ sampleId: '', customerName: '', batch: '', quantityLiters: '', receivedAt: '', notes: '', barrelCount: 0 });
       setBarrels([]);
+      // Redirect to DRC update page after successful check-in
+      setTimeout(() => {
+        navigate(`/lab/drc-update?sampleId=${encodeURIComponent(form.sampleId)}`);
+      }, 1500);
     } catch (e2) {
       setError(e2?.message || 'Failed to check in');
     } finally {
@@ -76,7 +116,6 @@ const LabCheckIn = () => {
       <form onSubmit={onSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
         <label>Barrel ID<input name="sampleId" placeholder="Enter Barrel/Sample ID" value={form.sampleId} onChange={onChange} style={{ borderColor: validation.sampleId? '#dc3545':'' }} /></label>
         <label>Customer Name<input name="customerName" placeholder="Buyer/Customer name" value={form.customerName} onChange={onChange} /></label>
-        <label>Batch<input name="batch" placeholder="Batch/Reference" value={form.batch} onChange={onChange} /></label>
         <label>Quantity (Liters)<input type="number" step="any" min={0.01} name="quantityLiters" placeholder="e.g. 120" value={form.quantityLiters} onChange={onChange} style={{ borderColor: validation.quantityLiters? '#dc3545':'' }} /></label>
         <label>Received At<input type="datetime-local" name="receivedAt" value={form.receivedAt} onChange={onChange} /></label>
         <label style={{ gridColumn: '1 / -1' }}>Notes<textarea name="notes" placeholder="Optional notes" value={form.notes} onChange={onChange} rows={3} /></label>

@@ -1,5 +1,30 @@
 const LabSample = require('../models/labSampleModel');
+const SellRequest = require('../models/sellRequestModel');
 
+// Lab dashboard summary KPIs
+exports.getSummary = async (req, res) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const pendingCount = await SellRequest.countDocuments({ status: 'DELIVERED_TO_LAB' });
+    const testedToday = await SellRequest.find({ status: 'TESTED', testedAt: { $gte: startOfDay, $lte: endOfDay } })
+      .select('drcPct')
+      .lean();
+    const doneToday = testedToday.length;
+    const avgDrcToday = doneToday > 0
+      ? Math.round((testedToday.reduce((sum, d) => sum + (Number(d.drcPct) || 0), 0) / doneToday) * 100) / 100
+      : 0;
+
+    return res.json({ pendingCount, doneToday, avgDrcToday });
+  } catch (e) {
+    return res.status(500).json({ message: 'Failed to load summary' });
+  }
+};
+
+// Accept lab samples into the lab inventory
 exports.sampleCheckIn = async (req, res) => {
   try {
     const { sampleId, customerName, supplier, batch, quantityLiters, receivedAt, notes, barrelCount, barrels } = req.body || {};

@@ -90,6 +90,10 @@ app.use('/api/complaints', require('./routes/complaintRoutes'));
 app.use('/api/stock-history', require('./routes/stockHistoryRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/shifts', require('./routes/shiftRoutes'));
+app.use('/api/salary', require('./routes/salaryRoutes'));
+app.use('/api/daily-wage', require('./routes/dailyWageRoutes'));
+app.use('/api/monthly-wage', require('./routes/monthlyWageRoutes'));
+app.use('/api/unified-salary', require('./routes/unifiedSalaryRoutes'));
 
 // New dashboard routes
 app.use('/api/staff-dashboard', require('./routes/staffDashboard'));
@@ -100,18 +104,31 @@ app.use('/api/user-dashboard', require('./routes/userDashboard'));
 // Optional notifications endpoint (placeholder controller inline)
 app.post('/api/notifications/staff-trip-event', async (req, res) => {
     try {
-        const { userId, title, message, link, meta } = req.body || {};
-        if (!userId && !meta?.userEmail) {
-            return res.json({ ok: true });
-        }
+        const { userId, title, message, link, meta, targetRole } = req.body || {};
         const Notification = require('./models/Notification');
+        const User = require('./models/userModel');
+
+        // If a specific userId is provided, notify that user
         if (userId) {
             await Notification.create({ userId, title: title || 'Trip Update', message: message || 'Status changed', link, meta });
+            return res.json({ ok: true });
         }
-        // TODO: optionally map email to userId if only email provided
-        res.json({ ok: true });
+
+        // Broadcast to role (e.g., lab)
+        if (targetRole) {
+            const role = String(targetRole).toLowerCase();
+            const users = await User.find({ role: role.includes('lab') ? 'lab' : role, status: 'active' }).select('_id').lean();
+            if (users.length) {
+                const docs = users.map(u => ({ userId: u._id, title: title || 'Update', message: message || 'Status changed', link, meta }));
+                await Notification.insertMany(docs);
+            }
+            return res.json({ ok: true, delivered: users.length });
+        }
+
+        // Fallback: if only meta.userEmail provided, skip for now
+        return res.json({ ok: true });
     } catch (e) {
-        res.json({ ok: false });
+        res.json({ ok: false, error: e?.message || 'error' });
     }
 });
 

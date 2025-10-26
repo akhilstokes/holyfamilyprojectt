@@ -63,6 +63,26 @@ exports.listMySellRequests = async (req, res) => {
   }
 };
 
+// Delivery Staff: list my assigned sell requests
+exports.listAssignedForDelivery = async (req, res) => {
+  try {
+    const userId = await resolveUserId(req.user);
+    if (!userId) return res.json([]);
+    const items = await SellRequest.find({
+      assignedDeliveryStaffId: userId,
+      status: { $in: ['DELIVER_ASSIGNED', 'COLLECTED'] }
+    })
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .limit(100)
+      .populate('farmerId', 'name email phoneNumber')
+      .lean();
+    return res.json({ records: items });
+  } catch (e) {
+    console.error('listAssignedForDelivery error:', e);
+    return res.status(500).json({ message: 'Failed to load assignments' });
+  }
+};
+
 // Manager: assign field staff
 exports.assignFieldStaff = async (req, res) => {
   try {
@@ -125,8 +145,33 @@ exports.markCollected = async (req, res) => {
 exports.markDeliveredToLab = async (req, res) => {
   try {
     const { id } = req.params;
+    // Validate id format
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid request id' });
+    }
+
+    // Load document
     const doc = await SellRequest.findById(id);
     if (!doc) return res.status(404).json({ message: 'Request not found' });
+
+    // Prevent duplicate/invalid transitions
+    if (doc.status === 'DELIVERED_TO_LAB' || doc.status === 'TESTED' || doc.status === 'ACCOUNT_CALCULATED' || doc.status === 'VERIFIED') {
+      return res.status(409).json({ message: 'Request already delivered to lab or beyond' });
+    }
+
+    // Ensure only assigned delivery staff can perform this
+    const userId = await resolveUserId(req.user);
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    if (!doc.assignedDeliveryStaffId || String(doc.assignedDeliveryStaffId) !== String(userId)) {
+      return res.status(403).json({ message: 'Not assigned to you' });
+    }
+
+    // Enforce allowed current statuses
+    if (!['DELIVER_ASSIGNED', 'COLLECTED'].includes(doc.status)) {
+      return res.status(400).json({ message: `Invalid status transition from ${doc.status}` });
+    }
+
+    // Update
     doc.deliveredAt = new Date();
     doc.status = 'DELIVERED_TO_LAB';
     await doc.save();
@@ -251,6 +296,7 @@ exports.listAllSellRequests = async (req, res) => {
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit))
       .populate('farmerId', 'name email')
+      .populate('assignedDeliveryStaffId', 'name email')
       .lean();
     const total = await SellRequest.countDocuments(q);
     return res.json({ records: items, total, page: Number(page), totalPages: Math.ceil(total / Number(limit)) });

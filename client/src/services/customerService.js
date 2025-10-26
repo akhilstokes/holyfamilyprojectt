@@ -140,7 +140,12 @@ export const getRequests = async (params = {}) => {
 export const createSellBarrelIntake = async ({ name, phone, barrelCount, notes, location, locationAccuracy }) => {
   const token = localStorage.getItem('token');
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
-  const payload = { name, phone, barrelCount: Number(barrelCount), notes };
+  const payload = { 
+    customerName: name, 
+    customerPhone: phone, 
+    barrelCount: Number(barrelCount), 
+    notes 
+  };
   
   // Add location data if provided
   if (location && locationAccuracy !== undefined) {
@@ -174,4 +179,19 @@ export const setUserSellAllowance = async (userId, allowance) => {
   const body = { allowance: Number(allowance) };
   const res = await axios.put(`${API}/api/delivery/barrels/allowance/${userId}`, body, { headers });
   return res.data; // { success, userId, allowance, used, remaining }
+};
+
+// Company barrels currently assigned to the logged-in user
+export const getMyCompanyBarrelsCount = async () => {
+  const token = localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  try {
+    const res = await axios.get(`${API}/api/barrels/my-assigned`, { headers });
+    const data = res.data || {};
+    if (typeof data.count === 'number') return data.count;
+    if (Array.isArray(data.records)) return data.records.length;
+    return 0;
+  } catch {
+    return 0;
+  }
 };

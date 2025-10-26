@@ -33,10 +33,12 @@ const AccountantDashboardLayout = ({ children }) => {
       <aside className={`sidebar sidebar--flush-left ${sidebarOpen ? '' : 'sidebar--hidden'}`}>
         <div className="sidebar-header">Accountant</div>
         <ul className="sidebar-nav">
+          <li className="nav-item"><NavLink to="/accountant">Dashboard</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/latex">Verify Latex Billing</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/wages">Auto Wages</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/stock">Stock Monitor</NavLink></li>
-          <li className="nav-item"><NavLink to="/accountant/attendance">Attendance</NavLink></li>
+          <li className="nav-item"><NavLink to="/accountant/my-attendance">My Attendance</NavLink></li>
+          <li className="nav-item"><NavLink to="/accountant/mark-attendance">Mark Attendance</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/leave">Leave</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/salaries">Salaries</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/payments">Bill Payments</NavLink></li>

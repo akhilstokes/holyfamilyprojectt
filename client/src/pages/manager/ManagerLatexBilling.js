@@ -47,6 +47,34 @@ const ManagerLatexBilling = () => {
       setError('');
       const res = await fetch(`${base}/api/latex/admin/verify/${id}`, { method: 'PUT', headers });
       if (!res.ok) throw new Error(`Verify failed (${res.status})`);
+
+      // Get the updated request data to extract user info
+      const updatedRes = await fetch(`${base}/api/latex/admin/requests/${id}`, { headers });
+      const updatedData = await updatedRes.json();
+
+      // Notify user after successful verification
+      try {
+        await fetch(`${base}/api/notifications/staff-trip-event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            title: 'Invoice Generated',
+            message: `Your latex billing invoice has been generated and is ready for payment`,
+            link: '/user/billing',
+            meta: {
+              invoiceId: String(id),
+              customerName: updatedData?.user?.name || 'Customer',
+              calculatedAmount: updatedData?.calculatedAmount,
+              invoiceNumber: updatedData?.invoiceNumber,
+              requestId: id
+            },
+            userId: updatedData?.user?._id
+          })
+        });
+      } catch (e) {
+        console.warn('Failed to notify user:', e);
+      }
+
       await load();
     } catch (e) { setError(e?.message || 'Verify failed'); }
   };

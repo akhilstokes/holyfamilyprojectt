@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { validateBarrelForm } from '../../utils/adminValidations';
 
 function AdminCreateBarrel() {
+  const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const MATERIAL_OPTIONS = ['Latex', 'Ammonia', 'Acetic Acid', 'Water', 'Other'];
   const [form, setForm] = useState({
@@ -100,6 +102,14 @@ function AdminCreateBarrel() {
       }
 
       setSuccess(data);
+      // Redirect manager to allocation page with prefilled query
+      const q = new URLSearchParams({
+        barrelId: data?.barrelId || form.barrelId || '',
+        mfg: form.manufactureDate || '',
+        exp: form.expiryDate || ''
+      }).toString();
+      navigate(`/manager/barrel-allocation?${q}`);
+
       setForm({
         barrelId: '', 
         materialName: '', 

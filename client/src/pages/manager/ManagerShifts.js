@@ -22,11 +22,14 @@ const ManagerShifts = () => {
   const [error, setError] = useState('');
   const [repeatCount, setRepeatCount] = useState(1); // weeks to repeat
   const [conflicts, setConflicts] = useState([]);
-  const [group, setGroup] = useState('field'); // 'field' | 'warehouse' | 'delivery' | 'lab' | 'admin'
+  const [group, setGroup] = useState('field'); // 'field' | 'delivery' | 'lab' | 'accountant' | 'company'
   const [staffOptions, setStaffOptions] = useState([]); // [{value:_id,label:'Name (staffId/email)'}]
   // Day override state
   const [overrides, setOverrides] = useState([]); // [{date, staff, shiftType}]
   const [ov, setOv] = useState({ date: '', staff: '', shiftType: 'Morning' });
+  // Inline assign state
+  const [assigningIdx, setAssigningIdx] = useState(-1);
+  const [infoMsg, setInfoMsg] = useState('');
   // Helpers
   const onlyDigits = (v) => String(v || '').replace(/\D+/g, '');
   const noSpaces = (v) => String(v || '').replace(/\s+/g, '');
@@ -52,16 +55,17 @@ const ManagerShifts = () => {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, [weekStart, group, load]);
+  // Load schedule when week or group changes. Do not depend on `load` to avoid reloading on each render.
+  useEffect(() => { load(); }, [weekStart, group]);
 
   // Map UI group to backend user role for listing
   const roleForGroup = (g) => {
     switch (g) {
       case 'field': return 'field_staff';
       case 'delivery': return 'delivery_staff';
-      case 'lab': return 'lab';
-      case 'warehouse': return 'staff';
-      case 'admin': return 'admin';
+      case 'lab': return 'lab_staff';
+      case 'accountant': return 'accountant';
+      case 'company': return 'staff'; // company staff
       default: return '';
     }
   };
@@ -142,9 +146,14 @@ const ManagerShifts = () => {
         throw new Error('Please resolve conflicts before saving');
       }
       const upsertOne = async (ws) => {
-        const body = { weekStart: ws, ...form, assignments, group };
-        const res = await fetch(`${base}/api/schedules?group=${encodeURIComponent(group)}`, { method: 'POST', headers, body: JSON.stringify(body) });
-        if (!res.ok) throw new Error(`Save failed for ${ws} (${res.status})`);
+        const normalizedGroup = group === 'lab' ? 'lab' : 'field';
+        const body = { weekStart: ws, ...form, assignments, group: normalizedGroup };
+        const res = await fetch(`${base}/api/schedules?group=${encodeURIComponent(normalizedGroup)}`, { method: 'POST', headers, body: JSON.stringify(body) });
+        if (!res.ok) {
+          let msg = `Save failed for ${ws} (${res.status})`;
+          try { const j = await res.json(); if (j?.message) msg = j.message; } catch (_) {}
+          throw new Error(msg);
+        }
       };
       // Repeat for N weeks (including current)
       const n = Math.max(1, Number(repeatCount) || 1);
@@ -169,6 +178,36 @@ const ManagerShifts = () => {
   const addAssignment = () => setAssignments((s) => [...s, { staff: '', shiftType: 'Morning' }]);
   const setAssignment = (i, key, value) => setAssignments((s) => s.map((it, idx) => idx === i ? { ...it, [key]: key === 'staff' ? noSpaces(value) : value } : it));
   const removeAssignment = (i) => setAssignments((s) => s.filter((_, idx) => idx !== i));
+
+  const assignNow = async (i) => {
+    try {
+      setInfoMsg('');
+      const row = assignments[i];
+      if (!row || !row.staff) { setError('Select a staff before assigning'); return; }
+      if (!row.shiftType || (row.shiftType !== 'Morning' && row.shiftType !== 'Evening')) { setError('Select a valid shift'); return; }
+      // basic time validation
+      if (!isTimeLt(form.morningStart, form.morningEnd)) { setError('Morning time range invalid'); return; }
+      if (!isTimeLt(form.eveningStart, form.eveningEnd)) { setError('Evening time range invalid'); return; }
+      const timeWindow = row.shiftType === 'Morning' ? `${form.morningStart} - ${form.morningEnd}` : `${form.eveningStart} - ${form.eveningEnd}`;
+      const label = staffOptions.find(o=>o.value===row.staff)?.label || row.staff;
+      if (!window.confirm(`Assign ${label} to ${row.shiftType} (${timeWindow}) for week starting ${weekStart}?`)) return;
+      setAssigningIdx(i);
+      const normalizedGroup = group === 'lab' ? 'lab' : 'field';
+      const body = { weekStart, ...form, assignments: [{ staff: row.staff, shiftType: row.shiftType }], group: normalizedGroup };
+      const res = await fetch(`${base}/api/schedules?group=${encodeURIComponent(normalizedGroup)}`, { method: 'POST', headers, body: JSON.stringify(body) });
+      if (!res.ok) {
+        let msg = `Assign failed (${res.status})`;
+        try { const j = await res.json(); if (j?.message) msg = j.message; } catch (_) {}
+        throw new Error(msg);
+      }
+      setInfoMsg(`Assigned ${label} to ${row.shiftType} (${timeWindow}) successfully.`);
+      await load();
+    } catch (e) {
+      setError(e?.message || 'Assign failed');
+    } finally {
+      setAssigningIdx(-1);
+    }
+  };
 
   // Helpers for override date boundaries (must be in the current week)
   const weekStartDate = useMemo(() => new Date(weekStart), [weekStart]);
@@ -223,10 +262,10 @@ const ManagerShifts = () => {
             <span>Target Group</span>
             <select value={group} onChange={(e)=>setGroup(e.target.value)}>
               <option value="field">Field Staff</option>
-              <option value="warehouse">Warehouse Staff</option>
               <option value="delivery">Delivery Staff</option>
-              <option value="lab">Lab / QA</option>
-              <option value="admin">Admin Support</option>
+              <option value="lab">Lab Staff</option>
+              <option value="accountant">Accountant</option>
+              <option value="company">Company Staff</option>
             </select>
           </label>
         </div>
@@ -305,15 +344,31 @@ const ManagerShifts = () => {
                           onKeyDown={(e)=>{ if (e.key === ' ') e.preventDefault(); }}
                         />
                       )}
+                      {/* Selected staff display */}
+                      {!!a.staff && (
+                        <div style={{ fontSize:12, color:'#64748b', marginTop:4 }}>
+                          {staffOptions.find(o=>o.value===a.staff)?.label || a.staff}
+                        </div>
+                      )}
                     </td>
                     <td>
-                      <select value={a.shiftType} onChange={(e)=>setAssignment(i,'shiftType', e.target.value)}>
-                        <option>Morning</option>
-                        <option>Evening</option>
-                      </select>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <select value={a.shiftType} onChange={(e)=>setAssignment(i,'shiftType', e.target.value)}>
+                          <option>Morning</option>
+                          <option>Evening</option>
+                        </select>
+                        <span style={{ fontSize:12, color:'#64748b' }}>
+                          {a.shiftType === 'Evening' ? `${form.eveningStart} - ${form.eveningEnd}` : `${form.morningStart} - ${form.morningEnd}`}
+                        </span>
+                      </div>
                     </td>
                     <td>
-                      <button type="button" className="btn btn-outline" onClick={()=>removeAssignment(i)}>Remove</button>
+                      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                        <button type="button" className="btn btn-primary" disabled={assigningIdx===i || loading} onClick={()=>assignNow(i)}>
+                          {assigningIdx===i ? 'Assigning...' : 'Assign Now'}
+                        </button>
+                        <button type="button" className="btn btn-outline" onClick={()=>removeAssignment(i)}>Remove</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -322,6 +377,7 @@ const ManagerShifts = () => {
                 )}
               </tbody>
             </table>
+            {infoMsg && <div className="alert success" style={{ marginTop:8 }}>{infoMsg}</div>}
             {conflicts.length > 0 && (
               <div style={{ marginTop: 8, color: '#b45309', background:'#fff7ed', border:'1px solid #fed7aa', padding:8, borderRadius:6 }}>
                 <b>Conflicts detected</b>

@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
 import './LatexSelling.css'; // Reuse the CSS from LatexSelling
 
 const SubmitRequest = () => {
+    const [assigned, setAssigned] = useState([]);
+    const [assignedLoading, setAssignedLoading] = useState(false);
+    const [assignedErr, setAssignedErr] = useState('');
+
     const [formData, setFormData] = useState({
         quantity: '',
         drcPercentage: '',
@@ -10,6 +15,28 @@ const SubmitRequest = () => {
         notes: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        const loadAssigned = async () => {
+            setAssignedLoading(true);
+            setAssignedErr('');
+            try {
+                const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/barrels/my-assigned`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                if (!res.ok) throw new Error(`Failed to load assigned barrels (${res.status})`);
+                const j = await res.json();
+                const list = Array.isArray(j?.records) ? j.records : Array.isArray(j) ? j : [];
+                setAssigned(list);
+            } catch (e) {
+                setAssignedErr(e?.message || 'Failed to load');
+                setAssigned([]);
+            } finally {
+                setAssignedLoading(false);
+            }
+        };
+        loadAssigned();
+    }, []);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({
@@ -75,6 +102,13 @@ const SubmitRequest = () => {
 
             <div className="submit-request-section">
                 <p>Submit your latex for sale with quantity and DRC percentage</p>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+                    <div style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+                        <span style={{ color: '#6b7280', marginRight: 8 }}>Company barrels assigned</span>
+                        <strong>{assignedLoading ? '...' : assigned.length}</strong>
+                    </div>
+                    {assignedErr && <div style={{ color: 'tomato' }}>{assignedErr}</div>}
+                </div>
 
                 <form onSubmit={handleSubmitRequest} className="sell-request-form">
                     <div className="form-row">

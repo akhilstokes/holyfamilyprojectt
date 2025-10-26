@@ -7,6 +7,8 @@ const barrelSchema = new mongoose.Schema(
     capacity: { type: Number, required: true, min: 1 }, // liters
     currentVolume: { type: Number, default: 0, min: 0 }, // liters
     status: { type: String, enum: ['in-use', 'in-storage', 'disposed'], default: 'in-storage' },
+    // Allocation owner (user/farmer) if assigned out by manager
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
     // Additive fields for damage/repair workflow
     baseWeight: { type: Number },

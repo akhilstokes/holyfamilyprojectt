@@ -2,12 +2,38 @@ const Leave = require('../models/leaveModel');
 const User = require('../models/userModel');
 const mongoose = require('mongoose');
 
+// Helper function to resolve a valid staff ObjectId from req.user
+async function resolveStaffObjectId(authUser) {
+    try {
+        if (authUser?._id && mongoose.isValidObjectId(authUser._id)) {
+            return new mongoose.Types.ObjectId(authUser._id);
+        }
+        if (authUser?.id && mongoose.isValidObjectId(authUser.id)) {
+            return new mongoose.Types.ObjectId(authUser.id);
+        }
+        if (authUser?.userId && mongoose.isValidObjectId(authUser.userId)) {
+            return new mongoose.Types.ObjectId(authUser.userId);
+        }
+        if (authUser?.staffId) {
+            const userDoc = await User.findOne({ staffId: authUser.staffId }).select('_id');
+            if (userDoc?._id) return userDoc._id;
+        }
+        return null;
+    } catch (_) {
+        return null;
+    }
+}
+
 // STAFF ROUTES
 exports.applyLeave = async (req, res) => {
     try {
         const { leaveType, startDate, endDate, reason, dayType } = req.body;
+        const staff = await resolveStaffObjectId(req.user);
+        if (!staff) {
+            return res.status(400).json({ message: 'Invalid authenticated user.' });
+        }
         const leave = new Leave({
-            staff: req.user._id,
+            staff,
             leaveType,
             dayType: dayType === 'half' ? 'half' : 'full',
             startDate,
@@ -38,13 +64,8 @@ exports.getStaffHistory = async (req, res) => {
 
 exports.viewMyLeaves = async (req, res) => {
     try {
-        const user = req.user || {};
-        const id = user._id || user.id || user.userId;
-        if (!id) return res.status(400).json({ message: 'Invalid authenticated user.' });
-        const staff = mongoose.Types.ObjectId.isValid(id)
-          ? new mongoose.Types.ObjectId(id)
-          : null;
-        if (!staff) return res.status(400).json({ message: 'Invalid user id' });
+        const staff = await resolveStaffObjectId(req.user);
+        if (!staff) return res.status(400).json({ message: 'Invalid authenticated user.' });
         const leaves = await Leave.find({ staff }).sort({ appliedAt: -1 });
         res.status(200).json({ leaves });
     } catch (error) {

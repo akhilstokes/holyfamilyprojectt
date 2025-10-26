@@ -30,7 +30,7 @@ const rateHistorySchema = new mongoose.Schema(
     source: {
       type: String,
       default: 'manual',
-      enum: ['manual', 'rubber_board', 'system', 'api']
+      enum: ['manual', 'rubber_board', 'system', 'api', 'cache_last_known']
     },
     // URL from which the rate was fetched (for external sources)
     fetchedFrom: {

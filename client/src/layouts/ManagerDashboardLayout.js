@@ -33,6 +33,7 @@ const ManagerDashboardLayout = ({ children }) => {
       <aside className={`sidebar sidebar--flush-left ${sidebarOpen ? '' : 'sidebar--hidden'}`}>
         <div className="sidebar-header">Manager</div>
         <ul className="sidebar-nav">
+          <li className="nav-item"><NavLink to="/manager">Dashboard</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/home">Overview</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/live">Live Check-ins</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/leaves">Pending Leaves</NavLink></li>
@@ -41,6 +42,7 @@ const ManagerDashboardLayout = ({ children }) => {
           <li className="nav-item"><NavLink to="/manager/hanger-space">Hanger Space</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/shifts">Shift Planning</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/sell-requests">Sell Requests</NavLink></li>
+          <li className="nav-item"><NavLink to="/manager/barrel-allocation">Barrel Allocation</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/latex-billing">Latex Billing</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/rates">Set Live Rate</NavLink></li>
           <li className="nav-item"><NavLink to="/manager/wages">Wages</NavLink></li>

@@ -74,6 +74,19 @@ const attendanceSchema = new mongoose.Schema({
     type: Number, // in minutes
     default: 0
   },
+  // Who marked this attendance (admin/manager/accountant or self)
+  markedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  markedByRole: {
+    type: String,
+    trim: true,
+    maxlength: 64
+  },
+  markedAt: {
+    type: Date
+  },
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -232,6 +245,7 @@ attendanceSchema.statics.getTodayAttendance = async function() {
   })
   .populate('staff', 'name email role')
   .populate('shift', 'name startTime endTime')
+  .populate('markedBy', 'name email role')
   .sort({ checkIn: -1 });
 };
 

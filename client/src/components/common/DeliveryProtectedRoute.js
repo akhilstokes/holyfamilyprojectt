@@ -8,8 +8,10 @@ const DeliveryProtectedRoute = ({ children }) => {
   if (loading) return <div>Loading...</div>;
   if (!isAuthenticated || !user) return <Navigate to="/login" />;
 
-  // Allow delivery staff and admin
-  if (user.role !== 'delivery_staff' && user.role !== 'admin') {
+  // Normalize role to handle values like 'delivery staff' vs 'delivery_staff'
+  const role = String(user.role || '').toLowerCase().replace(/\s+/g, '_');
+  // Allow delivery staff, admin, and lab (for delivery->lab check-in flow)
+  if (role !== 'delivery_staff' && role !== 'admin' && role !== 'lab') {
     return <Navigate to="/user" />;
   }
 

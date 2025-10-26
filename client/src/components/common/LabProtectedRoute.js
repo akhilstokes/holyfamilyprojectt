@@ -9,12 +9,13 @@ const LabProtectedRoute = ({ children }) => {
   if (loading) return <div>Loading...</div>;
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/login" state={{ from: `${location.pathname}${location.search}` }} replace />;
   }
 
   // Only allow lab role (and optionally admin for troubleshooting)
-  if (user.role !== 'lab') {
-    return <Navigate to="/user" replace />;
+  if (String(user.role || '').toLowerCase() !== 'lab') {
+    // Force login as lab and preserve the full URL so query params are kept
+    return <Navigate to="/login" state={{ from: `${location.pathname}${location.search}`, reason: 'lab_only' }} replace />;
   }
 
   return children;

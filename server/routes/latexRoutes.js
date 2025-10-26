@@ -7,6 +7,7 @@ const {
     updateLatexRequest,
     getAllLatexRequests,
     generateReceipt,
+    createManualTest,
     testEndpoint,
     collectLatex,
     recordTestResult,

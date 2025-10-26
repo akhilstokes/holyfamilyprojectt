@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { protect, admin, adminOrManager } = require('../middleware/authMiddleware');
+const { protect, admin, adminOrManager, adminManagerAccountant } = require('../middleware/authMiddleware');
+
 const ctrl = require('../controllers/hangerSpaceController');
 
 // Publicly nothing
@@ -9,12 +10,13 @@ const ctrl = require('../controllers/hangerSpaceController');
 router.get('/vacant', protect, ctrl.vacant);
 router.post('/:id/assign', protect, ctrl.staffAssign); // body: { action: 'claim'|'free', product? }
 
-// Admin/Manager: view and mark status; Admin: seed, bulk mark, and upsert/delete
-router.get('/', protect, adminOrManager, ctrl.list);
-router.put('/:id/status', protect, adminOrManager, ctrl.markStatus);
+// Admin/Manager/Accountant: view and mark status; Admin: seed, bulk mark, and upsert/delete
+router.get('/', protect, adminManagerAccountant, ctrl.list);
+router.put('/:id/status', protect, adminManagerAccountant, ctrl.markStatus);
+
 router.post('/seed-grid', protect, admin, ctrl.seedGrid);
 // Bulk mark by ids
-router.post('/bulk/status', protect, adminOrManager, async (req, res) => {
+router.post('/bulk/status', protect, adminManagerAccountant, async (req, res) => {
   try {
     const { ids = [], status = 'vacant' } = req.body || {};
     if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'ids required' });

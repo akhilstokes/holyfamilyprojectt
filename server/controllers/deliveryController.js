@@ -1,18 +1,18 @@
 const DeliveryTask = require('../models/deliveryTaskModel');
-const Notification = require('../models/Notification');
 const DeliveryIntake = require('../models/deliveryIntakeModel');
-const sendEmail = require('../utils/sendEmail');
+const Notification = require('../models/Notification');
 const User = require('../models/userModel');
 const StaffLocation = require('../models/StaffLocation');
+const Shift = require('../models/shiftModel');
 
 // Create a delivery task (admin/manager)
 exports.createTask = async (req, res) => {
   try {
-    const { title, customerUserId, assignedTo, pickupAddress, dropAddress, scheduledAt, notes } = req.body;
+    const { title, customerUserId, assignedTo, pickupAddress, dropAddress, scheduledAt, notes, meta } = req.body;
     if (!title || !assignedTo || !pickupAddress || !dropAddress) {
       return res.status(400).json({ message: 'title, assignedTo, pickupAddress and dropAddress are required' });
     }
-    const doc = await DeliveryTask.create({ title, customerUserId, assignedTo, pickupAddress, dropAddress, scheduledAt, notes });
+    const doc = await DeliveryTask.create({ title, customerUserId, assignedTo, pickupAddress, dropAddress, scheduledAt, notes, meta });
 
     // Notify customer about schedule
     if (customerUserId) {
@@ -32,7 +32,236 @@ exports.createTask = async (req, res) => {
   }
 };
 
-// Manager verify intake (mark as manager_verified)
+// List all tasks (admin/manager)
+exports.listAllTasks = async (req, res) => {
+  try {
+    const { status, assignedTo, page = 1, limit = 50 } = req.query;
+    const query = {};
+    if (status) query.status = status;
+    if (assignedTo) query.assignedTo = assignedTo;
+
+    const tasks = await DeliveryTask.find(query)
+      .populate('customerUserId', 'name email phoneNumber')
+      .populate('assignedTo', 'name email role')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await DeliveryTask.countDocuments(query);
+
+    return res.json({ items: tasks, total, page: parseInt(page), limit: parseInt(limit) });
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// List my tasks (delivery staff)
+exports.listMyTasks = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const tasks = await DeliveryTask.find({ assignedTo: userId })
+      .populate('customerUserId', 'name email phoneNumber')
+      .sort({ createdAt: -1 });
+
+    return res.json(tasks);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Get single task
+exports.getTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const task = await DeliveryTask.findById(id)
+      .populate('customerUserId', 'name email phoneNumber')
+      .populate('assignedTo', 'name email role');
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    return res.json(task);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Update task
+exports.updateTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const task = await DeliveryTask.findByIdAndUpdate(id, req.body, { new: true })
+      .populate('customerUserId', 'name email phoneNumber')
+      .populate('assignedTo', 'name email role');
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    return res.json(task);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Delete task
+exports.deleteTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const task = await DeliveryTask.findByIdAndDelete(id);
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    return res.json({ message: 'Task deleted successfully' });
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Update task status
+exports.updateStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, meta } = req.body;
+
+    const task = await DeliveryTask.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // Check if user is assigned to this task or is admin/manager
+    if (task.assignedTo.toString() !== req.user._id.toString() && 
+        !['admin', 'manager'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Not authorized to update this task' });
+    }
+
+    task.status = status;
+    if (meta) {
+      task.meta = { ...task.meta, ...meta };
+    }
+    await task.save();
+
+    return res.json(task);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Update my location (delivery staff)
+exports.updateMyLocation = async (req, res) => {
+  try {
+    const { latitude, longitude, accuracy } = req.body;
+    const userId = req.user._id;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({ message: 'latitude and longitude are required' });
+    }
+
+    const location = await StaffLocation.findOneAndUpdate(
+      { userId },
+      { 
+        userId, 
+        location: { type: 'Point', coordinates: [longitude, latitude] },
+        accuracy,
+        updatedAt: new Date()
+      },
+      { upsert: true, new: true }
+    );
+
+    return res.json(location);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// List staff locations (admin/manager)
+exports.listStaffLocations = async (req, res) => {
+  try {
+    const locations = await StaffLocation.find()
+      .populate('userId', 'name email role')
+      .sort({ updatedAt: -1 });
+
+    return res.json(locations);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// List delivered tasks for lab
+exports.listDeliveredForLab = async (req, res) => {
+  try {
+    const tasks = await DeliveryTask.find({ status: 'delivered' })
+      .populate('customerUserId', 'name email phoneNumber')
+      .populate('assignedTo', 'name email role')
+      .sort({ updatedAt: -1 });
+
+    return res.json(tasks);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Barrel intake functions
+exports.intakeBarrels = async (req, res) => {
+  try {
+    const { barrelCount, customerName, customerPhone, notes, barrelIds } = req.body;
+    const staffId = req.user._id;
+
+    if (!barrelCount || !customerName) {
+      return res.status(400).json({ message: 'barrelCount and customerName are required' });
+    }
+
+    const intake = await DeliveryIntake.create({
+      createdBy: staffId,
+      name: customerName,
+      phone: customerPhone,
+      barrelCount,
+      notes,
+      barrelIds,
+      status: 'pending'
+    });
+
+    return res.status(201).json(intake);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+exports.listIntakes = async (req, res) => {
+  try {
+    const { status, page = 1, limit = 50 } = req.query;
+    const query = {};
+    if (status) query.status = status;
+
+    const intakes = await DeliveryIntake.find(query)
+      .populate('createdBy', 'name email role')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await DeliveryIntake.countDocuments(query);
+
+    return res.json({ items: intakes, total, page: parseInt(page), limit: parseInt(limit) });
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+exports.listMyIntakes = async (req, res) => {
+  try {
+    const staffId = req.user._id;
+    const intakes = await DeliveryIntake.find({ createdBy: staffId })
+      .sort({ createdAt: -1 });
+
+    return res.json(intakes);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
 exports.verifyIntake = async (req, res) => {
   try {
     const { id } = req.params;
@@ -55,367 +284,194 @@ exports.verifyIntake = async (req, res) => {
         dropAddress,
         scheduledAt,
         notes,
-        meta: { intakeId: doc._id }
+        meta: { intakeId: doc._id, barrelCount: doc.barrelCount }
       });
     }
-    return res.json({ success: true, intake: doc, task });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to verify intake', error: e.message });
-  }
-};
 
-// Get single intake by id
-exports.getIntake = async (req, res) => {
-  try {
-    const doc = await DeliveryIntake.findById(req.params.id);
-    if (!doc) return res.status(404).json({ message: 'Intake not found' });
-    return res.json({ intake: doc });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to load intake', error: e.message });
-  }
-};
-
-// Update intake fields (name, phone, barrelCount, notes, status, companyBarrel) - admin/manager/accountant
-exports.updateIntake = async (req, res) => {
-  try {
-    const updates = (({ name, phone, barrelCount, notes, status, pricePerBarrel, totalAmount, companyBarrel }) => ({ name, phone, barrelCount, notes, status, pricePerBarrel, totalAmount, companyBarrel }))(req.body || {});
-    const doc = await DeliveryIntake.findByIdAndUpdate(req.params.id, updates, { new: true });
-    if (!doc) return res.status(404).json({ message: 'Intake not found' });
-    try {
-      if (doc.createdBy && (updates.barrelCount != null || updates.companyBarrel != null)) {
-        await Notification.create({
-          userId: doc.createdBy,
-          role: 'user',
-          title: 'Sell request updated',
-          message: `Your sell request has been updated${updates.barrelCount != null ? `: barrel count = ${updates.barrelCount}` : ''}${updates.companyBarrel != null ? `, company barrel = ${updates.companyBarrel}` : ''}.`,
-          link: '/user/requests',
-          meta: { intakeId: doc._id, type: 'SELL_BARRELS' }
-        });
-      }
-    } catch (_) { /* ignore notification errors */ }
-    return res.json({ intake: doc });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to update intake', error: e.message });
-  }
-};
-
-// Delete intake
-exports.deleteIntake = async (req, res) => {
-  try {
-    const doc = await DeliveryIntake.findByIdAndDelete(req.params.id);
-    if (!doc) return res.status(404).json({ message: 'Intake not found' });
-    return res.json({ success: true });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to delete intake', error: e.message });
-  }
-};
-
-// Admin/Manager: list all tasks with optional status filter and basic pagination
-exports.listAllTasks = async (req, res) => {
-  try {
-    const { status, page = 1, limit = 50 } = req.query || {};
-    const q = {};
-    if (status) q.status = status;
-    const skip = (Math.max(Number(page), 1) - 1) * Math.max(Number(limit), 1);
-    const [items, total] = await Promise.all([
-      DeliveryTask.find(q).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
-      DeliveryTask.countDocuments(q)
-    ]);
-    return res.json({ items, total, page: Number(page), limit: Number(limit) });
+    return res.json({ intake: doc, task });
   } catch (e) {
     return res.status(500).json({ message: 'Server Error', error: e.message });
   }
 };
 
-// Get single task by id
-exports.getTask = async (req, res) => {
-  try {
-    const doc = await DeliveryTask.findById(req.params.id);
-    if (!doc) return res.status(404).json({ message: 'Task not found' });
-    return res.json(doc);
-  } catch (e) {
-    return res.status(500).json({ message: 'Server Error', error: e.message });
-  }
-};
-
-// Update task fields (admin/manager only)
-exports.updateTask = async (req, res) => {
-  try {
-    const updates = (({ title, customerUserId, assignedTo, pickupAddress, dropAddress, scheduledAt, notes, status }) => ({ title, customerUserId, assignedTo, pickupAddress, dropAddress, scheduledAt, notes, status }))(req.body || {});
-    const doc = await DeliveryTask.findByIdAndUpdate(req.params.id, updates, { new: true });
-    if (!doc) return res.status(404).json({ message: 'Task not found' });
-    return res.json(doc);
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to update task', error: e.message });
-  }
-};
-
-// Delete task (admin/manager only)
-exports.deleteTask = async (req, res) => {
-  try {
-    const doc = await DeliveryTask.findByIdAndDelete(req.params.id);
-    if (!doc) return res.status(404).json({ message: 'Task not found' });
-    return res.json({ success: true });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to delete task', error: e.message });
-  }
-};
-
-// Helper: compute remaining allowance for a user (0 or undefined allowance means unlimited)
-async function computeRemainingAllowance(userId) {
-  const user = await User.findById(userId).lean();
-  if (!user) return { allowance: 0, used: 0, remaining: 0 };
-  const allowance = Number(user.sellAllowance || 0);
-  if (!Number.isFinite(allowance) || allowance <= 0) {
-    // Unlimited when not set or 0
-    return { allowance: 0, used: 0, remaining: Infinity };
-  }
-  const activeStatuses = ['pending', 'manager_verified', 'approved'];
-  const used = await DeliveryIntake.aggregate([
-    { $match: { createdBy: user._id, status: { $in: activeStatuses } } },
-    { $group: { _id: null, total: { $sum: '$barrelCount' } } }
-  ]).then(a => (a[0]?.total || 0));
-  const remaining = Math.max(allowance - Number(used || 0), 0);
-  return { allowance, used, remaining };
-}
-
-// Record delivery barrel intake (delivery staff)
-exports.intakeBarrels = async (req, res) => {
-  try {
-    const { name, phone, barrelCount, notes, location, locationAccuracy } = req.body || {};
-    if (!name || !phone || barrelCount === undefined) {
-      return res.status(400).json({ message: 'name, phone, and barrelCount are required' });
-    }
-    const count = Number(barrelCount);
-    if (!Number.isFinite(count) || count < 1) {
-      return res.status(400).json({ message: 'barrelCount must be at least 1' });
-    }
-    // Enforce user allowance if configured
-    const { allowance, remaining } = await computeRemainingAllowance(req.user._id);
-    if (Number.isFinite(remaining) && count > remaining) {
-      return res.status(400).json({ message: `Requested barrels (${count}) exceed remaining allowance (${remaining})`, code: 'ALLOWANCE_EXCEEDED', allowance, remaining });
-    }
-    const doc = await DeliveryIntake.create({
-      name: String(name).trim(),
-      phone: String(phone).trim(),
-      barrelCount: count,
-      notes: notes ? String(notes) : undefined,
-      createdBy: req.user._id,
-      status: 'pending',
-      ...(location && location.type === 'Point' && Array.isArray(location.coordinates) && location.coordinates.length === 2
-        ? { location: { type: 'Point', coordinates: [Number(location.coordinates[0]), Number(location.coordinates[1])] } }
-        : {}),
-      ...(locationAccuracy !== undefined ? { locationAccuracy: Number(locationAccuracy) } : {}),
-    });
-    return res.status(201).json({ success: true, intake: doc });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to record intake', error: e.message });
-  }
-};
-
-// Get my allowance and remaining
-exports.getMySellAllowance = async (req, res) => {
-  try {
-    const { allowance, used, remaining } = await computeRemainingAllowance(req.user._id);
-    return res.json({ success: true, allowance, used, remaining });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to load allowance', error: e.message });
-  }
-};
-
-// Set a user's allowance (admin/manager)
-exports.setUserSellAllowance = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { allowance } = req.body || {};
-    const value = Number(allowance || 0);
-    if (!Number.isFinite(value) || value < 0) return res.status(400).json({ message: 'allowance must be >= 0' });
-    const user = await User.findByIdAndUpdate(userId, { sellAllowance: value, sellAllowanceUpdatedAt: new Date(), sellAllowanceSetBy: req.user._id }, { new: true });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    const metrics = await computeRemainingAllowance(user._id);
-    return res.json({ success: true, userId: user._id, ...metrics });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to set allowance', error: e.message });
-  }
-};
-
-// List intakes (filter by status) for accountant/manager/admin
-exports.listIntakes = async (req, res) => {
-  try {
-    const { status } = req.query || {};
-    const q = {};
-    if (status) q.status = status;
-    const items = await DeliveryIntake.find(q).sort({ createdAt: -1 }).lean();
-    return res.json({ success: true, items });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to load intakes', error: e.message });
-  }
-};
-
-// List my intakes (created by current user)
-exports.listMyIntakes = async (req, res) => {
-  try {
-    const items = await DeliveryIntake.find({ createdBy: req.user._id }).sort({ createdAt: -1 }).lean();
-    return res.json({ success: true, items });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to load my intakes', error: e.message });
-  }
-};
-
-// Approve intake and set price to compute total amount (accountant/manager/admin)
 exports.approveIntake = async (req, res) => {
   try {
     const { id } = req.params;
-    const { pricePerBarrel } = req.body || {};
     const doc = await DeliveryIntake.findById(id);
     if (!doc) return res.status(404).json({ message: 'Intake not found' });
-    if (pricePerBarrel === undefined || pricePerBarrel === null) {
-      return res.status(400).json({ message: 'pricePerBarrel is required' });
-    }
-    const rate = Number(pricePerBarrel);
-    doc.pricePerBarrel = rate;
-    doc.totalAmount = Math.round(Number(doc.barrelCount || 0) * rate);
     doc.status = 'approved';
     doc.approvedAt = new Date();
     doc.approvedBy = req.user._id;
     await doc.save();
-    return res.json({ success: true, intake: doc });
-  } catch (e) {
-    return res.status(500).json({ message: 'Failed to approve intake', error: e.message });
-  }
-};
 
-// List tasks for current staff (or filter)
-exports.listMyTasks = async (req, res) => {
-  try {
-    const q = {};
-    if (req.user.role === 'delivery_staff') {
-      q.assignedTo = req.user._id;
-    }
-    if (req.query.status) q.status = req.query.status;
-    const list = await DeliveryTask.find(q).sort({ scheduledAt: 1, createdAt: -1 });
-    return res.json(list);
+    return res.json(doc);
   } catch (e) {
     return res.status(500).json({ message: 'Server Error', error: e.message });
   }
 };
 
-// Update status (assigned staff or admin)
-exports.updateStatus = async (req, res) => {
+exports.getIntake = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, meta } = req.body;
-    const task = await DeliveryTask.findById(id);
-    if (!task) return res.status(404).json({ message: 'Task not found' });
+    const intake = await DeliveryIntake.findById(id)
+      .populate('createdBy', 'name email role')
+      .populate('verifiedBy', 'name email')
+      .populate('approvedBy', 'name email');
 
-    const canUpdate = req.user.role === 'admin' || String(task.assignedTo) === String(req.user._id);
-    if (!canUpdate) return res.status(403).json({ message: 'Not authorized' });
-
-    // Allowed transitions
-    const allowed = {
-      pickup_scheduled: ['enroute_pickup', 'cancelled'],
-      enroute_pickup: ['picked_up', 'cancelled'],
-      picked_up: ['enroute_drop', 'cancelled'],
-      enroute_drop: ['delivered', 'cancelled'],
-      delivered: [],
-      cancelled: [],
-    };
-    const validStatuses = Object.keys(allowed);
-    if (status && !validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status value' });
+    if (!intake) {
+      return res.status(404).json({ message: 'Intake not found' });
     }
 
-    if (status) {
-      const current = task.status || 'pickup_scheduled';
-      if (current !== status) {
-        const nexts = allowed[current] || [];
-        if (!nexts.includes(status)) {
-          return res.status(400).json({ message: `Illegal transition from ${current} to ${status}` });
-        }
-      }
-      // Stamp timeline
-      const now = new Date();
-      if (status === 'enroute_pickup') task.meta.set('pickupStartedAt', now);
-      if (status === 'picked_up') task.meta.set('pickedUpAt', now);
-      if (status === 'enroute_drop') task.meta.set('dropStartedAt', now);
-      if (status === 'delivered') task.meta.set('deliveredAt', now);
-      if (status === 'cancelled') {
-        task.meta.set('cancelledAt', now);
-        if (meta?.reason) task.meta.set('cancelReason', String(meta.reason));
-      }
-      task.status = status;
-    }
-
-    if (meta && typeof meta === 'object') {
-      Object.entries(meta).forEach(([k, v]) => task.meta.set(k, v));
-    }
-    await task.save();
-
-    // Notifications on key transitions
-    if (task.customerUserId) {
-      if (status === 'enroute_pickup') {
-        await Notification.create({ userId: task.customerUserId, role: 'user', title: 'Pickup Enroute', message: 'Our staff is on the way for pickup', link: '/user/notifications', meta: { taskId: task._id } });
-      }
-      if (status === 'picked_up') {
-        await Notification.create({ userId: task.customerUserId, role: 'user', title: 'Pickup Completed', message: 'Your barrels have been picked up', link: '/user/notifications', meta: { taskId: task._id } });
-        // Try to email the user as well
-        try {
-          const user = await User.findById(task.customerUserId).lean();
-          const emailTo = meta?.notifyEmail || user?.email;
-          if (emailTo) {
-            await sendEmail({
-              email: emailTo,
-              subject: 'HFP: Barrels Picked Up',
-              message: `Hello, your delivery task "${task.title}" has been picked up. Task ID: ${task._id}`,
-            });
-          }
-        } catch (_) { /* ignore email errors */ }
-      }
-      if (status === 'delivered') {
-        await Notification.create({ userId: task.customerUserId, role: 'user', title: 'Delivery Completed', message: 'Delivery has been completed', link: '/user/notifications', meta: { taskId: task._id } });
-      }
-    }
-
-    return res.json(task);
+    return res.json(intake);
   } catch (e) {
     return res.status(500).json({ message: 'Server Error', error: e.message });
   }
 };
 
-// --- Live location: delivery staff updates their current location ---
-exports.updateMyLocation = async (req, res) => {
+exports.updateIntake = async (req, res) => {
   try {
-    const { latitude, longitude, accuracy, meta } = req.body || {};
-    if (typeof latitude !== 'number' || typeof longitude !== 'number') {
-      return res.status(400).json({ message: 'latitude and longitude (numbers) are required' });
+    const { id } = req.params;
+    const intake = await DeliveryIntake.findByIdAndUpdate(id, req.body, { new: true })
+      .populate('createdBy', 'name email role');
+
+    if (!intake) {
+      return res.status(404).json({ message: 'Intake not found' });
     }
-    const payload = {
-      user: req.user._id,
-      role: req.user.role,
-      coords: { lat: latitude, lng: longitude, accuracy: accuracy != null ? Number(accuracy) : undefined },
-      meta: meta && typeof meta === 'object' ? meta : {},
-      updatedAt: new Date(),
-    };
-    const doc = await StaffLocation.findOneAndUpdate(
-      { user: req.user._id },
-      { $set: payload },
-      { upsert: true, new: true }
-    );
-    return res.json({ success: true, location: doc });
+
+    return res.json(intake);
   } catch (e) {
-    return res.status(500).json({ message: 'Failed to update location', error: e.message });
+    return res.status(500).json({ message: 'Server Error', error: e.message });
   }
 };
 
-// --- Manager/Admin: list recent staff locations (optionally filter by role) ---
-exports.listStaffLocations = async (req, res) => {
+exports.deleteIntake = async (req, res) => {
   try {
-    const { role } = req.query || {};
-    const q = {};
-    if (role) q.role = role;
-    const items = await StaffLocation.find(q).populate('user', 'name email role').sort({ updatedAt: -1 }).lean();
-    return res.json({ success: true, items });
+    const { id } = req.params;
+    const intake = await DeliveryIntake.findByIdAndDelete(id);
+
+    if (!intake) {
+      return res.status(404).json({ message: 'Intake not found' });
+    }
+
+    return res.json({ message: 'Intake deleted successfully' });
   } catch (e) {
-    return res.status(500).json({ message: 'Failed to load staff locations', error: e.message });
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Sell allowance functions
+exports.getMySellAllowance = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select('sellAllowance');
+    
+    return res.json({ 
+      sellAllowance: user?.sellAllowance || 0,
+      unlimited: !user?.sellAllowance || user.sellAllowance === 0
+    });
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+exports.setUserSellAllowance = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { sellAllowance } = req.body;
+
+    if (sellAllowance < 0) {
+      return res.status(400).json({ message: 'Sell allowance cannot be negative' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { 
+        sellAllowance,
+        sellAllowanceUpdatedAt: new Date(),
+        sellAllowanceSetBy: req.user._id
+      },
+      { new: true }
+    ).select('name email sellAllowance sellAllowanceUpdatedAt');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json(user);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Get delivery staff shift schedule
+exports.getDeliveryShiftSchedule = async (req, res) => {
+  try {
+    const staffId = req.user._id;
+    
+    // Get user with assigned shift
+    const user = await User.findById(staffId).populate('assignedShift');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get current week dates
+      const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    // Get all active shifts
+    const allShifts = await Shift.find({ isActive: true })
+      .populate('assignedStaff', 'name email role')
+      .sort({ startTime: 1 });
+
+    // Format all shifts for display
+    const formattedShifts = allShifts.map(shift => ({
+      _id: shift._id,
+      name: shift.name,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      duration: shift.duration,
+      gracePeriod: shift.gracePeriod,
+      description: shift.description,
+      isActive: shift.isActive,
+      assignedStaffCount: shift.assignedStaff.length
+    }));
+
+    // Format my assignment
+    let myAssignment = null;
+    if (user.assignedShift) {
+      const shift = user.assignedShift;
+      myAssignment = {
+        _id: shift._id,
+        name: shift.name,
+        shiftType: shift.name.includes('Morning') ? 'Morning' : 
+                   shift.name.includes('Evening') ? 'Evening' : 
+                   shift.name.includes('Night') ? 'Night' : 'Regular',
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        duration: shift.duration,
+        gracePeriod: shift.gracePeriod,
+        description: shift.description,
+        days: [0, 1, 2, 3, 4, 5, 6] // Assume working all days, can be customized
+      };
+    }
+
+    const response = {
+      weekStart: startOfWeek.toISOString(),
+      weekEnd: endOfWeek.toISOString(),
+      myAssignment,
+      allShifts: formattedShifts
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error fetching delivery shift schedule:', error);
+    res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };

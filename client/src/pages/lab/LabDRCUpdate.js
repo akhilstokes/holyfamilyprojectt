@@ -157,7 +157,34 @@ const LabDRCUpdate = () => {
           <input type="number" step="any" min={0} max={100} placeholder="DRC %" value={manual.drc} onChange={e=>setManual(m=>({ ...m, drc: e.target.value }))} style={{ width: 120 }} />
           <input type="number" step="1" min={0} placeholder="# Barrels (opt)" value={manual.barrels} onChange={e=>setManual(m=>({ ...m, barrels: e.target.value }))} style={{ width: 160 }} />
           <button className="btn" type="button" disabled={!manualValid || saving} onClick={()=>submitManual(false)}>{saving ? 'Saving...' : 'Save'}</button>
-          <button className="btn btn-success" type="button" disabled={!manualValid || saving} onClick={()=>submitManual(true)}>{saving ? 'Submitting...' : 'Complete & Send'}</button>
+          <button className="btn btn-success" type="button" disabled={!manualValid || saving} onClick={async ()=>{
+            await submitManual(true);
+            // Notify accountant after successful manual DRC completion
+            try {
+              const API = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+              const token = localStorage.getItem('token');
+              await fetch(`${API}/api/notifications/staff-trip-event`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                  title: 'DRC Test Completed',
+                  message: `Manual sample ${manual.barrelId.trim()} DRC test completed by lab staff`,
+                  link: '/accountant/latex-verify',
+                  meta: {
+                    sampleId: manual.barrelId.trim(),
+                    customerName: manual.buyer.trim(),
+                    drcPercentage: Number(manual.drc),
+                    barrelCount: manual.barrels === '' ? undefined : Number(manual.barrels),
+                    quantity: Number(manual.qty),
+                    requestId: manual.barrelId.trim()
+                  },
+                  targetRole: 'accountant'
+                })
+              });
+            } catch (e) {
+              console.warn('Failed to notify accountant:', e);
+            }
+          }}>{saving ? 'Submitting...' : 'Complete & Send'}</button>
         </div>
       </div>
 
@@ -313,6 +340,32 @@ const Row = ({ s, onSubmit, saving }) => {
             const confirmSend = window.confirm('Mark test complete and send to Accounts?');
             if (!confirmSend) return;
             await onSubmit(id, drc, null, { overrideBuyerName: buyerName.trim(), barrelCount: barrelCount ? Number(barrelCount) : undefined });
+
+            // Notify accountant after successful DRC completion
+            try {
+              const API = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+              const token = localStorage.getItem('token');
+              await fetch(`${API}/api/notifications/staff-trip-event`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                  title: 'DRC Test Completed',
+                  message: `Sample ${id} DRC test completed by lab staff`,
+                  link: '/accountant/latex-verify',
+                  meta: {
+                    sampleId: String(id),
+                    customerName: buyerName.trim(),
+                    drcPercentage: Number(drc),
+                    barrelCount: barrelCount ? Number(barrelCount) : undefined,
+                    quantity: qty,
+                    requestId: id
+                  },
+                  targetRole: 'accountant'
+                })
+              });
+            } catch (e) {
+              console.warn('Failed to notify accountant:', e);
+            }
           }} disabled={saving}>{saving ? 'Submitting...' : 'Complete & Send to Accounts'}</button>
         </div>
       </td>

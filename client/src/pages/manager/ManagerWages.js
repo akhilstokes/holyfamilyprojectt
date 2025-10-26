@@ -25,26 +25,48 @@ const ManagerWages = () => {
         const api = process.env.REACT_APP_API_URL || 'http://localhost:5000';
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         const hdrs = token ? { Authorization: `Bearer ${token}` } : {};
-        const role = (
+        // Determine role; for lab, attempt both lab_staff and lab to be tolerant
+        const rolePrimary = (
           form.group === 'lab' ? 'lab_staff' :
           form.group === 'delivery' ? 'delivery_staff' :
           form.group === 'accountant' ? 'accountant' :
           'field_staff'
         );
-        const res = await fetch(`${api}/api/user-management/staff?role=${encodeURIComponent(role)}&limit=200&status=active`, { headers: hdrs, credentials: 'include' });
-        if (!res.ok) {
-          throw new Error(`Failed to load employees (${res.status})`);
+        async function fetchByRole(role) {
+          const r = await fetch(`${api}/api/user-management/staff?role=${encodeURIComponent(role)}&limit=200&status=active`, { headers: hdrs, credentials: 'include' });
+          if (!r.ok) throw new Error(`Failed to load employees (${r.status})`);
+          const j = await r.json();
+          const arr = j?.users || j?.records || j?.data || j || [];
+          return Array.isArray(arr) ? arr : [];
         }
-        const data = await res.json();
-        const users = data?.users || data?.records || data?.data || data || [];
-        const userList = Array.isArray(users) ? users : [];
+        let userList = await fetchByRole(rolePrimary);
+        if (form.group === 'lab' && userList.length === 0) {
+          // Fallback to legacy role "lab"
+          userList = await fetchByRole('lab');
+        }
+        if (form.group === 'accountant' && userList.length === 0) {
+          // Fallback to capitalized role variant if backend stores differently
+          userList = await fetchByRole('Accountant');
+        }
+        if (form.group === 'accountant' && userList.length === 0) {
+          // Final fallback: list all users and filter by role containing 'accountant'
+          const rAll = await fetch(`${api}/api/users`, { headers: hdrs, credentials: 'include' });
+          if (rAll.ok) {
+            const jAll = await rAll.json();
+            const arrAll = jAll?.users || jAll?.records || jAll?.data || jAll || [];
+            const filtered = (Array.isArray(arrAll) ? arrAll : []).filter(u => (
+              (u.status || 'active') === 'active' && String(u.role || '').toLowerCase().includes('accountant')
+            ));
+            if (filtered.length) userList = filtered;
+          }
+        }
         setEmployees(userList);
-        
         if (userList.length === 0) {
           const groupName = form.group === 'lab' ? 'Lab Staff' : 
                            form.group === 'delivery' ? 'Delivery Staff' : 
                            form.group === 'accountant' ? 'Accountant' : 'Staff';
-          setError(`No active ${groupName} found. Please add employees with role "${role}" first.`);
+          const roleHint = form.group === 'lab' ? 'lab_staff or lab' : (form.group === 'accountant' ? 'accountant (any case)' : rolePrimary);
+          setError(`No active ${groupName} found. Please add employees with role "${roleHint}" first.`);
         }
       } catch (e) {
         setError(e?.message || 'Failed to load employees');
@@ -53,6 +75,13 @@ const ManagerWages = () => {
     };
     loadUsers();
   }, [form.group]);
+
+  // If group is accountant and employees loaded, auto-select the first employee when none chosen
+  useEffect(() => {
+    if (form.group === 'accountant' && !form.workerId && employees.length > 0) {
+      setForm(s => ({ ...s, workerId: employees[0]._id }));
+    }
+  }, [employees, form.group, form.workerId]);
 
   const calculate = async (e) => {
     e.preventDefault();
@@ -69,7 +98,10 @@ const ManagerWages = () => {
 
   // Build payslip objects
   const buildCalculatedPayslip = () => {
-    const gross = Number(result?.month?.grossSalary ?? result?.grossSalary ?? 0) || 0;
+    const workingDaysCalc = Number(result?.month?.workingDays ?? result?.workingDays ?? 0) || 0;
+    const dailyWageCalc = Number(result?.worker?.dailyWage ?? 0) || 0;
+    const grossSystem = Number(result?.month?.grossSalary ?? result?.grossSalary ?? 0) || 0;
+    const gross = form.group === 'delivery' ? (workingDaysCalc * dailyWageCalc) : grossSystem;
     const pending = Math.max(0, gross - (Number(advance) || 0));
     return {
       workerId: form.workerId,
@@ -77,8 +109,8 @@ const ManagerWages = () => {
       year: Number(form.year),
       month: Number(form.month),
       source: 'calculated',
-      workingDays: Number(result?.month?.workingDays ?? result?.workingDays ?? 0) || 0,
-      dailyWage: Number(result?.worker?.dailyWage ?? 0) || 0,
+      workingDays: workingDaysCalc,
+      dailyWage: dailyWageCalc,
       grossSalary: gross,
       salaryAdvance: Number(advance) || 0,
       netPay: pending,
@@ -88,8 +120,11 @@ const ManagerWages = () => {
 
   const buildManualPayslip = () => {
     const basePay = (Number(manual.workingDays)||0) * (Number(manual.dailyWage)||0);
-    const otPay = (Number(manual.overtimeHours)||0) * (Number(manual.overtimeRate)||0);
-    const gross = basePay + otPay + (Number(manual.bonus)||0);
+    const otPayRaw = (Number(manual.overtimeHours)||0) * (Number(manual.overtimeRate)||0);
+    const bonusRaw = Number(manual.bonus)||0;
+    const otPay = form.group === 'delivery' ? 0 : otPayRaw;
+    const bonus = form.group === 'delivery' ? 0 : bonusRaw;
+    const gross = basePay + otPay + bonus;
     const net = Math.max(0, gross - (Number(manual.deductions)||0) - (Number(manual.advance)||0));
     return {
       workerId: form.workerId || null,
@@ -99,9 +134,9 @@ const ManagerWages = () => {
       source: 'manual',
       workingDays: Number(manual.workingDays)||0,
       dailyWage: Number(manual.dailyWage)||0,
-      overtimeHours: Number(manual.overtimeHours)||0,
-      overtimeRate: Number(manual.overtimeRate)||0,
-      bonus: Number(manual.bonus)||0,
+      overtimeHours: form.group === 'delivery' ? 0 : (Number(manual.overtimeHours)||0),
+      overtimeRate: form.group === 'delivery' ? 0 : (Number(manual.overtimeRate)||0),
+      bonus: form.group === 'delivery' ? 0 : (Number(manual.bonus)||0),
       deductions: Number(manual.deductions)||0,
       salaryAdvance: Number(manual.advance)||0,
       grossSalary: gross,
@@ -206,15 +241,28 @@ const ManagerWages = () => {
         <div style={{ marginTop: 16 }}>
           <div className="dash-card" style={{ padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>Summary</h3>
-            <div>Working Days: <b>{result.month?.workingDays ?? result.workingDays ?? '-'}</b></div>
-            <div>Daily Wage: <b>{result.worker?.dailyWage ?? '-'}</b></div>
-            <div>Gross Salary: <b>{result.month?.grossSalary ?? result.grossSalary ?? '-'}</b></div>
+            {(() => {
+              const wd = Number(result.month?.workingDays ?? result.workingDays ?? 0) || 0;
+              const dw = Number(result.worker?.dailyWage ?? 0) || 0;
+              const grossSystem = Number(result.month?.grossSalary ?? result.grossSalary ?? 0) || 0;
+              const grossShown = form.group === 'delivery' ? (wd * dw) : grossSystem;
+              return (
+                <>
+                  <div>Working Days: <b>{wd}</b></div>
+                  <div>Daily Wage: <b>{dw}</b></div>
+                  <div>Gross Salary: <b>{grossShown}</b></div>
+                </>
+              );
+            })()}
             <div style={{ marginTop: 8 }}>
               <label>Salary Advance</label><br />
               <input type="number" min={0} step="0.01" value={advance} onChange={(e)=>setAdvance(Number(e.target.value || 0))} />
             </div>
             {(() => {
-              const gross = Number(result.month?.grossSalary ?? result.grossSalary ?? 0) || 0;
+              const wd = Number(result.month?.workingDays ?? result.workingDays ?? 0) || 0;
+              const dw = Number(result.worker?.dailyWage ?? 0) || 0;
+              const grossSystem = Number(result.month?.grossSalary ?? result.grossSalary ?? 0) || 0;
+              const gross = form.group === 'delivery' ? (wd * dw) : grossSystem;
               const pending = Math.max(0, gross - (Number(advance) || 0));
               return (
                 <>
@@ -252,19 +300,25 @@ const ManagerWages = () => {
               <span style={{ color:'#334155', fontWeight:600 }}>Overtime Hours</span>
               <input type="number" min={0} step="0.1" value={manual.overtimeHours}
                      onChange={(e)=>setManual(m=>({ ...m, overtimeHours: Number(e.target.value || 0) }))}
-                     style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #e5e7eb', background:'#fff' }} />
+                     disabled={form.group==='delivery'}
+                     title={form.group==='delivery' ? 'Overtime disabled for Delivery Staff' : ''}
+                     style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #e5e7eb', background:'#f9fafb' }} />
             </label>
             <label style={{ display:'flex', flexDirection:'column', gap:6 }}>
               <span style={{ color:'#334155', fontWeight:600 }}>Overtime Rate (per hour)</span>
               <input type="number" min={0} step="0.01" value={manual.overtimeRate}
                      onChange={(e)=>setManual(m=>({ ...m, overtimeRate: Number(e.target.value || 0) }))}
-                     style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #e5e7eb', background:'#fff' }} />
+                     disabled={form.group==='delivery'}
+                     title={form.group==='delivery' ? 'Overtime disabled for Delivery Staff' : ''}
+                     style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #e5e7eb', background:'#f9fafb' }} />
             </label>
             <label style={{ display:'flex', flexDirection:'column', gap:6 }}>
               <span style={{ color:'#334155', fontWeight:600 }}>Bonus</span>
               <input type="number" min={0} step="0.01" value={manual.bonus}
                      onChange={(e)=>setManual(m=>({ ...m, bonus: Number(e.target.value || 0) }))}
-                     style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #e5e7eb', background:'#fff' }} />
+                     disabled={form.group==='delivery'}
+                     title={form.group==='delivery' ? 'Bonus disabled for Delivery Staff' : ''}
+                     style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #e5e7eb', background:'#f9fafb' }} />
             </label>
             <label style={{ display:'flex', flexDirection:'column', gap:6 }}>
               <span style={{ color:'#334155', fontWeight:600 }}>Deductions</span>
@@ -281,8 +335,9 @@ const ManagerWages = () => {
           </div>
           {(() => {
             const base = (Number(manual.workingDays)||0) * (Number(manual.dailyWage)||0);
-            const ot = (Number(manual.overtimeHours)||0) * (Number(manual.overtimeRate)||0);
-            const gross = base + ot + (Number(manual.bonus)||0);
+            const ot = form.group==='delivery' ? 0 : ((Number(manual.overtimeHours)||0) * (Number(manual.overtimeRate)||0));
+            const bonus = form.group==='delivery' ? 0 : (Number(manual.bonus)||0);
+            const gross = base + ot + bonus;
             const net = Math.max(0, gross - (Number(manual.deductions)||0) - (Number(manual.advance)||0));
             return (
               <div style={{ marginTop: 12, display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:12 }}>

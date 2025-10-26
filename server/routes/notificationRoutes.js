@@ -34,4 +34,32 @@ router.patch('/:id/read', async (req, res) => {
   }
 });
 
+// Compatibility: some clients send PUT instead of PATCH
+router.put('/:id/read', async (req, res) => {
+  try {
+    const n = await Notification.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user._id },
+      { $set: { read: true } },
+      { new: true }
+    );
+    if (!n) return res.status(404).json({ message: 'Notification not found' });
+    res.json({ notification: n });
+  } catch (e) {
+    res.status(500).json({ message: 'Failed to update notification' });
+  }
+});
+
+// Mark all read (compatibility for NotificationSystem.js)
+router.put('/mark-all-read', async (req, res) => {
+  try {
+    await Notification.updateMany(
+      { userId: req.user._id, read: false },
+      { $set: { read: true } }
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: 'Failed to mark all as read' });
+  }
+});
+
 module.exports = router;
