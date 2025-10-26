@@ -17,22 +17,17 @@ router.get('/', protect, adminOrManager, ctrl.listAllTasks);
 router.post('/location', protect, ctrl.updateMyLocation); // delivery staff updates own location
 router.get('/locations', protect, adminOrManager, ctrl.listStaffLocations); // managers/admins list staff locations
 
-// Get single task (admin/manager)
-router.get('/:id', protect, adminOrManager, ctrl.getTask);
-// Update task fields (admin/manager)
-router.put('/:id', protect, adminOrManager, ctrl.updateTask);
-// Delete task (admin/manager)
-router.delete('/:id', protect, adminOrManager, ctrl.deleteTask);
-
 // List my tasks (delivery staff) or filter by status (admin/manager)
 router.get('/my', protect, ctrl.listMyTasks);
-
-// Update status (assigned delivery staff or admin)
-router.put('/:id/status', protect, ctrl.updateStatus);
+// Lab: list delivered tasks
+router.get('/delivered-for-lab', protect, adminManagerAccountant, ctrl.listDeliveredForLab);
 
 // Task History endpoints (delivery staff)
 router.get('/task-history', protect, historyCtrl.getTaskHistory); // Get task history with filter
 router.get('/task-history/:taskId', protect, historyCtrl.getTaskHistoryDetail); // Get detailed task history
+
+// Shift schedule endpoint (delivery staff)
+router.get('/shift-schedule', protect, ctrl.getDeliveryShiftSchedule);
 
 // Intake endpoints
 router.post('/barrels/intake', protect, ctrl.intakeBarrels); // delivery staff
@@ -47,5 +42,16 @@ router.delete('/barrels/intake/:id', protect, adminManagerAccountant, ctrl.delet
 // Allowance endpoints
 router.get('/barrels/allowance/my', protect, ctrl.getMySellAllowance);
 router.put('/barrels/allowance/:userId', protect, adminOrManager, ctrl.setUserSellAllowance);
+
+// Update status (assigned delivery staff or admin)
+router.put('/:id([a-fA-F0-9]{24})/status', protect, ctrl.updateStatus);
+
+// Generic ID-based task routes (must be after specific routes like '/task-history')
+// Get single task (admin/manager)
+router.get('/:id([a-fA-F0-9]{24})', protect, adminOrManager, ctrl.getTask);
+// Update task fields (admin/manager)
+router.put('/:id([a-fA-F0-9]{24})', protect, adminOrManager, ctrl.updateTask);
+// Delete task (admin/manager)
+router.delete('/:id([a-fA-F0-9]{24})', protect, adminOrManager, ctrl.deleteTask);
 
 module.exports = router;

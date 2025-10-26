@@ -28,8 +28,9 @@ const DeliveryDashboardLayout = ({ children }) => {
           <li className="nav-item"><NavLink to="/delivery">Dashboard</NavLink></li>
           <li className="nav-item"><NavLink to="/delivery/route-plan">Route Plan</NavLink></li>
           <li className="nav-item"><NavLink to="/delivery/tasks">My Tasks</NavLink></li>
+          <li className="nav-item"><NavLink to="/delivery/assigned-requests">Assigned Requests</NavLink></li>
           <li className="nav-item"><NavLink to="/delivery/task-history">Task History</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/live-location">Live Location</NavLink></li>
+          <li className="nav-item"><NavLink to="/delivery/shift-schedule">My Shift Schedule</NavLink></li>
           <li className="nav-item"><NavLink to="/delivery/barrel-intake">Barrel Intake</NavLink></li>
           <li className="nav-item"><NavLink to="/delivery/attendance">Attendance</NavLink></li>
           <li className="nav-item"><NavLink to="/delivery/leave">Leave</NavLink></li>

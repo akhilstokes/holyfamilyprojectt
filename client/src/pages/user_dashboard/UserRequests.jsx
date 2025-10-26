@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { createRequest, getRequests, createSellBarrelIntake, getMySellAllowance } from '../../services/customerService';
+import { createRequest, getRequests, createSellBarrelIntake, getMySellAllowance, getMyCompanyBarrelsCount } from '../../services/customerService';
 import { useConfirm } from '../../components/common/ConfirmDialog';
 
 const initialBarrel = { type: 'BARREL', quantity: 1, notes: '' };
-const initialSellBarrels = { name: '', phone: '', barrelCount: 1, companyBarrel: '', notes: '' };
+const initialSellBarrels = { name: '', phone: '', barrelCount: 1, notes: '' };
 const initialComplaint = { type: 'COMPLAINT', subject: '', category: 'other', description: '' };
 
 const UserRequests = () => {
@@ -22,6 +22,7 @@ const UserRequests = () => {
   const confirm = useConfirm();
   const [info, setInfo] = useState('');
   const [allowance, setAllowance] = useState({ allowance: 0, used: 0, remaining: Infinity });
+  const [myCompanyBarrels, setMyCompanyBarrels] = useState(0);
 
   const load = async () => {
     setLoading(true);
@@ -41,6 +42,13 @@ const UserRequests = () => {
     } catch { /* ignore */ }
   };
 
+  const loadMyCompanyBarrels = async () => {
+    try {
+      const n = await getMyCompanyBarrelsCount();
+      setMyCompanyBarrels(Number(n) || 0);
+    } catch { setMyCompanyBarrels(0); }
+  };
+
   const submitSellBarrels = async () => {
     setSubmitting(true); setErr('');
     try {
@@ -49,8 +57,8 @@ const UserRequests = () => {
         setErr('Please enter name, phone and barrel count');
       } else if (count < 1) {
         setErr('Barrel count must be at least 1');
-      } else if (Number.isFinite(allowance.remaining) && count > allowance.remaining) {
-        setErr(`Requested barrels (${count}) exceed remaining allowance (${allowance.remaining}). Please reduce the number.`);
+      } else if (count > myCompanyBarrels) {
+        setErr(`Requested barrels (${count}) exceed your company barrels (${myCompanyBarrels}).`);
       } else {
         const ok = await confirm('Confirm submission', 'Are you sure? Please wait for manager verification.');
         if (!ok) { setSubmitting(false); return; }
@@ -58,7 +66,6 @@ const UserRequests = () => {
           name: String(sellBarrels.name).trim(),
           phone: String(sellBarrels.phone).trim(),
           barrelCount: count,
-          companyBarrel: String(sellBarrels.companyBarrel || '').trim(),
           notes: sellBarrels.notes || '',
           ...(geo.lat && geo.lng ? { location: { type: 'Point', coordinates: [geo.lng, geo.lat] }, locationAccuracy: geo.accuracy } : {})
         });
@@ -66,7 +73,7 @@ const UserRequests = () => {
         setGeo({ lat: null, lng: null, accuracy: null });
         setGeoStatus('');
         setInfo('Submitted. Please wait for manager verification.');
-        await Promise.all([load(), loadAllowance()]);
+        await Promise.all([load(), loadAllowance(), loadMyCompanyBarrels()]);
       }
     } catch (e) { setErr(e?.message || 'Failed to submit sell barrels request'); }
     finally { setSubmitting(false); }
@@ -91,7 +98,13 @@ const UserRequests = () => {
     );
   };
 
-  useEffect(() => { load(); loadAllowance(); }, []);
+  useEffect(() => { load(); loadAllowance(); loadMyCompanyBarrels(); }, []);
+
+  useEffect(() => {
+    if (tab === 'SELL_BARRELS') {
+      loadMyCompanyBarrels();
+    }
+  }, [tab]);
 
   // Prefill Sell Barrels form with user info if available
   useEffect(() => {
@@ -213,9 +226,7 @@ const UserRequests = () => {
             />
           </label>
           <div style={{ display:'flex', gap:12, color:'#2563eb', fontSize:13 }}>
-            <span>Allowance: {allowance.allowance || 0}</span>
-            <span>Used: {Number.isFinite(allowance.remaining) ? (allowance.allowance - allowance.remaining) : '-'}</span>
-            <span>Remaining: {Number.isFinite(allowance.remaining) ? allowance.remaining : 'Unlimited'}</span>
+            <span>Company Barrels: {myCompanyBarrels}</span>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
             <button type="button" onClick={getLocation}>Use my location</button>
@@ -224,16 +235,6 @@ const UserRequests = () => {
               <span style={{ fontSize:12, color:'#2563eb' }}>Lat: {geo.lat.toFixed(5)}, Lng: {geo.lng.toFixed(5)}</span>
             )}
           </div>
-          <label>
-            Company Barrel (manager will set)
-            <input
-              type="text"
-              placeholder="Manager will set this"
-              value={sellBarrels.companyBarrel || ''}
-              readOnly
-              disabled
-            />
-          </label>
           <label>
             Notes (optional)
             <textarea value={sellBarrels.notes} onChange={e => setSellBarrels({ ...sellBarrels, notes: e.target.value })} />

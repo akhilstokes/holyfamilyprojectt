@@ -110,6 +110,16 @@ exports.adminMarkAttendance = async (req, res) => {
       attendance.checkOut = now;
       attendance.notes = notes ? (attendance.notes ? `${attendance.notes}\n${notes}` : notes) : attendance.notes;
     }
+    // Audit who marked this attendance
+    try {
+      if (req.user && req.user._id) {
+        attendance.markedBy = req.user._id;
+        attendance.markedByRole = req.user.role || (req.user.name || '').toString();
+      } else if (req.user && req.user.name) {
+        attendance.markedByRole = req.user.name;
+      }
+      attendance.markedAt = new Date();
+    } catch (_) { /* ignore audit failures */ }
 
     await attendance.save();
     return res.json({ success: true, attendance });
@@ -234,6 +244,15 @@ exports.markAttendance = async (req, res) => {
         attendance.notes = attendance.notes ? `${attendance.notes}\n${notes}` : notes;
       }
     }
+
+    // Record who marked (self)
+    try {
+      if (req.user && req.user._id) {
+        attendance.markedBy = req.user._id;
+        attendance.markedByRole = req.user.role || (req.user.name || '').toString();
+      }
+      attendance.markedAt = new Date();
+    } catch (_) { /* ignore */ }
 
     await attendance.save();
 
@@ -460,4 +479,5 @@ exports.getAttendanceAnalytics = async (req, res) => {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
+
 

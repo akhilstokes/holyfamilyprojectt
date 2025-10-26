@@ -19,3 +19,4 @@ router.post('/admin/mark', protect, adminManagerAccountant, attendanceController
 
 module.exports = router;
 
+

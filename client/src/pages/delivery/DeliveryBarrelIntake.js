@@ -41,7 +41,13 @@ const DeliveryBarrelIntake = ({ readOnly = false }) => {
       const token = localStorage.getItem('token');
       const headers = token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' };
       // Use the correct barrel intake endpoint
-      const payload = { ...form, barrelCount: Number(scanned.length || form.barrelCount) || 0, barrelIds: scanned.map(s => s.barrelId) };
+      const payload = { 
+        customerName: form.name,
+        customerPhone: form.phone,
+        barrelCount: Number(scanned.length || form.barrelCount) || 0, 
+        notes: form.notes,
+        barrelIds: scanned.map(s => s.barrelId) 
+      };
       const res = await fetch(`${apiBase}/api/delivery/barrels/intake`, { method: 'POST', headers, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error(`Submit failed (${res.status})`);
       setMessage('Intake recorded');

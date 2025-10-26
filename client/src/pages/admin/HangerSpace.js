@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './HangerSpace.css';
-import { listHangerSpaces, seedHangerGrid, setHangerSpaceStatus } from '../../services/adminService';
+import { listHangerSpaces, seedHangerGrid, setHangerSpaceStatus, bulkSetHangerSpaceStatus } from '../../services/adminService';
 
 // Rows D through L
 const ROWS = ['D','E','F','G','H','I','J','K','L'];
@@ -44,6 +44,8 @@ const RowLabels = ({ side = 'left' }) => (
 
 const HangerSpace = () => {
   const [slots, setSlots] = useState([]);
+  const [bulk, setBulk] = useState({ block: 'B', status: 'empty_barrel' });
+  const [bulkCols, setBulkCols] = useState({ block: 'B', fromCol: 1, toCol: 10, status: 'occupied' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -70,6 +72,35 @@ const HangerSpace = () => {
       setError(e.response?.data?.message || e.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const applyBulkByCols = async () => {
+    try {
+      const b = (bulkCols.block || 'B');
+      const from = Math.max(1, Number(bulkCols.fromCol) || 1);
+      const to = Math.max(from, Number(bulkCols.toCol) || from);
+      const ids = slots.filter(s => s.block === b && s.col >= from && s.col <= to).map(s => s._id);
+      if (!ids.length) return;
+      const ok = window.confirm(`Set ${ids.length} slots in Block ${b}, Col ${from}-${to} to ${bulkCols.status}?`);
+      if (!ok) return;
+      await bulkSetHangerSpaceStatus(ids, bulkCols.status);
+      await load();
+    } catch (e) {
+      alert(e.response?.data?.message || e.message);
+    }
+  };
+
+  const applyBulk = async () => {
+    try {
+      const ids = slots.filter(s => s.block === (bulk.block || 'B')).map(s => s._id);
+      if (!ids.length) return;
+      const ok = window.confirm(`Set ${ids.length} slots in Block ${bulk.block} to ${bulk.status}?`);
+      if (!ok) return;
+      await bulkSetHangerSpaceStatus(ids, bulk.status);
+      await load();
+    } catch (e) {
+      alert(e.response?.data?.message || e.message);
     }
   };
 
@@ -122,6 +153,50 @@ Enter 1-4`, '1');
         <div className="hanger-gap" />
         <Block label="B" cols={10} statusMap={statusMap} onClickSlot={handleClick} />
         <RowLabels side="right" />
+      </div>
+
+      <div className="dash-card" style={{ marginTop: 12, padding: 12, display: 'flex', alignItems:'center', gap: 8, flexWrap:'wrap' }}>
+        <div style={{ fontWeight: 600 }}>Quick Fill</div>
+        <label>Block
+          <select value={bulk.block} onChange={(e)=>setBulk(s=>({ ...s, block: e.target.value }))} style={{ marginLeft: 6 }}>
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
+        </label>
+        <label>Status
+          <select value={bulk.status} onChange={(e)=>setBulk(s=>({ ...s, status: e.target.value }))} style={{ marginLeft: 6 }}>
+            <option value="vacant">Free</option>
+            <option value="empty_barrel">Empty Barrel</option>
+            <option value="occupied">Rubber Band</option>
+            <option value="complete_bill">Complete Bill</option>
+          </select>
+        </label>
+        <button className="btn" onClick={applyBulk}>Apply</button>
+      </div>
+
+      <div className="dash-card" style={{ marginTop: 12, padding: 12, display: 'flex', alignItems:'center', gap: 8, flexWrap:'wrap' }}>
+        <div style={{ fontWeight: 600 }}>Bulk by Columns</div>
+        <label>Block
+          <select value={bulkCols.block} onChange={(e)=>setBulkCols(s=>({ ...s, block: e.target.value }))} style={{ marginLeft: 6 }}>
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
+        </label>
+        <label>From Col
+          <input type="number" min={1} max={10} value={bulkCols.fromCol} onChange={(e)=>setBulkCols(s=>({ ...s, fromCol: e.target.value }))} style={{ width: 80, marginLeft: 6 }} />
+        </label>
+        <label>To Col
+          <input type="number" min={1} max={10} value={bulkCols.toCol} onChange={(e)=>setBulkCols(s=>({ ...s, toCol: e.target.value }))} style={{ width: 80, marginLeft: 6 }} />
+        </label>
+        <label>Status
+          <select value={bulkCols.status} onChange={(e)=>setBulkCols(s=>({ ...s, status: e.target.value }))} style={{ marginLeft: 6 }}>
+            <option value="vacant">Free</option>
+            <option value="empty_barrel">Empty Barrel</option>
+            <option value="occupied">Rubber Band</option>
+            <option value="complete_bill">Complete Bill</option>
+          </select>
+        </label>
+        <button className="btn" onClick={applyBulkByCols}>Apply Range</button>
       </div>
 
       <div className="legend">

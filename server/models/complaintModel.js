@@ -90,3 +90,4 @@ complaintSchema.index({ reportedAt: -1 });
 
 module.exports = mongoose.model('Complaint', complaintSchema);
 
+

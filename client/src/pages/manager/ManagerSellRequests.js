@@ -32,6 +32,34 @@ const ManagerSellRequests = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyRows, setHistoryRows] = useState([]);
+
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const url = `${API}/api/sell-requests/admin/all?limit=200`;
+      const res = await fetch(url, { headers: authHeaders(), cache: 'no-cache' });
+      if (!res.ok) throw new Error(`Failed to load (${res.status})`);
+      const data = await res.json();
+      const list = Array.isArray(data?.records) ? data.records : (Array.isArray(data) ? data : []);
+      const rows = list.map(r => ({
+        id: r._id,
+        user: r.farmerId?.name || r.farmerId?.email || r.name || r.user?.name || '-',
+        staff: r.assignedDeliveryStaffId?.name || r.assignedDeliveryStaffId?.email || '-',
+        date: r.updatedAt || r.createdAt,
+        status: r.status || '-'
+      })).sort((a,b)=> new Date(b.date||0) - new Date(a.date||0));
+      setHistoryRows(rows);
+    } catch (e) {
+      setError(e?.message || 'Failed to load history');
+      setHistoryRows([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const statusOptions = useMemo(() => ([
     'PENDING','REQUESTED','FIELD_ASSIGNED','COLLECTED','DELIVER_ASSIGNED','DELIVERED_TO_LAB','TESTED','ACCOUNT_CALCULATED','VERIFIED','INVOICED'
   ]), []);
@@ -59,7 +87,7 @@ const ManagerSellRequests = () => {
         '/api/sell-requests/admin/all',
         '/api/latex/admin/requests',
         '/api/barrel-requests/admin/all',
-        '/api/chemical-requests/admin/all',
+        // '/api/chemical-requests/admin/all', // removed (route not available)
         '/api/delivery/barrels/intake'
       ];
       
@@ -198,11 +226,53 @@ const ManagerSellRequests = () => {
     setStaffError('');
     setStaffLoading(true);
     try {
-      const res = await fetch(`${API}/api/users`, { headers: authHeaders() });
-      const data = await res.json();
-      const list = Array.isArray(data?.users) ? data.users : (Array.isArray(data) ? data : []);
-      const onlyDelivery = list.filter(u => (u.role || '').toLowerCase() === 'delivery_staff');
-      setStaffList(onlyDelivery);
+      // Try multiple endpoints to get delivery staff
+      let deliveryStaff = [];
+      
+      // First try the user-management endpoint
+      try {
+        const res = await fetch(`${API}/api/user-management/staff?role=delivery_staff&status=active&limit=100`, { headers: authHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data?.users) ? data.users : (Array.isArray(data?.records) ? data.records : []);
+          deliveryStaff = list.filter(u => (u.role || '').toLowerCase() === 'delivery_staff');
+        }
+      } catch (e) {
+        console.log('User-management endpoint failed, trying shifts endpoint');
+      }
+      
+      // If no results, try the shifts endpoint
+      if (deliveryStaff.length === 0) {
+        try {
+          const res = await fetch(`${API}/api/shifts/staff`, { headers: authHeaders() });
+          if (res.ok) {
+            const data = await res.json();
+            const list = Array.isArray(data?.staff) ? data.staff : (Array.isArray(data) ? data : []);
+            deliveryStaff = list.filter(u => (u.role || '').toLowerCase() === 'delivery_staff');
+          }
+        } catch (e) {
+          console.log('Shifts endpoint failed, trying fallback');
+        }
+      }
+      
+      // Fallback: try the old users endpoint
+      if (deliveryStaff.length === 0) {
+        try {
+          const res = await fetch(`${API}/api/users`, { headers: authHeaders() });
+          if (res.ok) {
+            const data = await res.json();
+            const list = Array.isArray(data?.users) ? data.users : (Array.isArray(data) ? data : []);
+            deliveryStaff = list.filter(u => (u.role || '').toLowerCase() === 'delivery_staff');
+          }
+        } catch (e) {
+          console.log('All endpoints failed');
+        }
+      }
+      
+      setStaffList(deliveryStaff);
+      if (deliveryStaff.length === 0) {
+        setStaffError('No delivery staff found. Please ensure delivery staff are registered in the system.');
+      }
     } catch (e) {
       setStaffError('Failed to load delivery staff');
       setStaffList([]);
@@ -219,32 +289,64 @@ const ManagerSellRequests = () => {
     
     // Disable button after clicking
     setAssignedRequests(prev => new Set([...prev, assignDeliveryId]));
-    // Build minimal task payload so it shows in staff My Tasks immediately
+    
     try {
       const req = rows.find(r => r._id === assignDeliveryId) || {};
+      
+      // For SELL requests, assign on SellRequest; for SELL_BARRELS (delivery intakes), skip and directly create a task
+      if (req._type === 'SELL') {
+        const assignResponse = await fetch(`${API}/api/sell-requests/${assignDeliveryId}/assign-delivery`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({ deliveryStaffId: selectedStaff })
+        });
+        if (!assignResponse.ok) {
+          throw new Error(`Failed to assign delivery staff: ${assignResponse.status}`);
+        }
+      }
+      
+      // Normalize pickup address to a string (backend expects strings)
+      const rawPickup = req.pickupAddress || req.address || req.capturedAddress || req.location;
+      const pickupAddress = typeof rawPickup === 'string'
+        ? rawPickup
+        : (rawPickup && typeof rawPickup === 'object' && (rawPickup.label || rawPickup.name || rawPickup.address))
+          ? (rawPickup.label || rawPickup.name || rawPickup.address)
+          : 'Customer pickup location';
+
+      // Then create a delivery task for the staff to see
       const payload = {
         title: req._type ? `${req._type} Pickup` : 'Pickup Task',
-        customerUserId: req.user?._id || req.userId || undefined,
+        customerUserId: req.createdBy || req.user?._id || req.userId || undefined,
         assignedTo: selectedStaff,
-        pickupAddress: req.pickupAddress || req.address || req.location || 'Customer pickup location',
+        pickupAddress,
         dropAddress: 'HFP Lab / Yard',
         scheduledAt: new Date().toISOString(),
         notes: req._notes || undefined,
+        meta: {
+          barrelCount: req.barrelCount ?? undefined,
+          sellRequestId: req._type === 'SELL' ? req._id : undefined,
+          intakeId: req._type === 'SELL_BARRELS' ? req._id : undefined
+        }
       };
+      
       await createTask(payload);
-      setInfo('Delivery task created and assigned! 🚚');
+      setInfo('Assigned successfully');
+      
+      // Optimistic status update in table
+      setRows(prev => prev.map(r => (
+        r._id === assignDeliveryId ? { ...r, status: 'assigned', _statusUpper: 'ASSIGNED' } : r
+      )));
+      setAssignedRequests(prev => new Set([...prev, assignDeliveryId]));
+      
     } catch (e) {
-      setError('Failed to create delivery task');
+      setError('Failed to assign delivery staff: ' + (e?.message || 'Unknown error'));
+      console.error('Assignment error:', e);
     }
+    
     setShowAssignModal(false);
     setSelectedStaff('');
     setAssignDeliveryId(null);
     setError('');
-    if (user?.role === 'admin') {
-      navigate('/admin/delivery-tasks');
-    } else {
-      navigate('/manager/live-locations');
-    }
   };
 
 
@@ -267,6 +369,10 @@ const ManagerSellRequests = () => {
       const res = await fetch(target, { method: 'PUT', headers: authHeaders() });
       if (!res.ok) throw new Error(`Verify failed ${res.status} @ ${target}`);
       setInfo('Verified successfully.');
+      // Optimistically mark status as approved in the table
+      setRows(prev => prev.map(r => (
+        r._id === id ? { ...r, status: 'approved', _statusUpper: 'APPROVED' } : r
+      )));
       await load();
     } catch (e) {
       setError((e?.message || 'Verify failed').replace(/<[^>]*>/g, ''));
@@ -280,6 +386,18 @@ const ManagerSellRequests = () => {
     setApprovedRequests(prev => new Set([...prev, id]));
     setInfo('Approved! ✅');
     setError('');
+    try {
+      const r = rows.find(x => x._id === id) || {};
+      // If this row came from delivery barrel intake list, mark approved via generic update
+      // The /approve endpoint requires pricePerBarrel and returns 400 without it.
+      if (String(r._source || '').includes('/delivery/barrels/intake')) {
+        const target = `${API}/api/delivery/barrels/intake/${id}`;
+        await fetch(target, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status: 'approved' }) });
+      }
+      // Reflect approved status immediately in the table
+      setRows(prev => prev.map(x => x._id === id ? { ...x, status: 'approved', _statusUpper: 'APPROVED' } : x));
+    } catch (_) { /* non-blocking */ }
+    // After approval, proceed to assign delivery
     openAssignDelivery(id);
   };
 
@@ -406,6 +524,9 @@ const ManagerSellRequests = () => {
         <button onClick={() => navigate('/manager/live-locations')} style={{ marginLeft: 8 }}>
           Live Staff Map
         </button>
+        <button onClick={()=>{ setShowHistory(true); loadHistory(); }} style={{ marginLeft: 8 }}>
+          History
+        </button>
 
         <div style={{ display:'flex', gap:6, alignItems:'center', marginLeft: 'auto' }}>
           <span style={{ color:'#64748b', fontSize:12 }}>View:</span>
@@ -431,6 +552,45 @@ const ManagerSellRequests = () => {
             </button>
           ))}
         </div>
+
+      {showHistory && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
+          <div style={{ background:'#fff', width:'min(980px, 96%)', maxHeight:'84vh', borderRadius:8, overflow:'hidden', display:'flex', flexDirection:'column' }}>
+            <div style={{ padding:12, borderBottom:'1px solid #eee', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div style={{ fontWeight:600 }}>Sell Requests History</div>
+              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                <button onClick={loadHistory} disabled={historyLoading}>{historyLoading ? 'Loading...' : 'Refresh'}</button>
+                <button onClick={()=> setShowHistory(false)}>Close</button>
+              </div>
+            </div>
+            <div style={{ padding:12, overflow:'auto' }}>
+              <table className="dashboard-table" style={{ minWidth: 720 }}>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Delivery Staff</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyRows.map(r => (
+                    <tr key={r.id}>
+                      <td>{r.user}</td>
+                      <td>{r.staff}</td>
+                      <td>{r.date ? new Date(r.date).toLocaleString() : '-'}</td>
+                      <td>{r.status}</td>
+                    </tr>
+                  ))}
+                  {historyRows.length === 0 && (
+                    <tr><td colSpan={4} style={{ textAlign:'center', color:'#6b7280' }}>{historyLoading ? 'Loading...' : 'No history found'}</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
 
       <div style={{ overflowX:'auto' }}>
@@ -470,27 +630,7 @@ const ManagerSellRequests = () => {
                 <td>{safeDate(r._createdAt || r.requestedAt || r.createdAt)}</td>
                 <td>
                   {r._type === 'SELL_BARRELS' ? (
-                    cbEditId === r._id ? (
-                      <span style={{ color:'#2563eb' }}>CB editing...</span>
-                    ) : bcEditId === r._id ? (
-                      <>
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={bcEditValue}
-                          onChange={(e)=>setBcEditValue(e.target.value)}
-                          style={{ width:90 }}
-                        />
-                        <button onClick={() => onSaveBarrelCount(r._id, bcEditValue)}>Save</button>
-                        <button onClick={() => { setBcEditId(''); setBcEditValue(''); }}>Cancel</button>
-                      </>
-                    ) : (
-                      <>
-                        <span>BC: {r.barrelCount ?? '-'}</span>
-                        <button onClick={() => { setBcEditId(r._id); setBcEditValue(r.barrelCount ?? 1); }} style={{ marginLeft:8 }}>Edit</button>
-                      </>
-                    )
+                    <span>BC: {r.barrelCount ?? '-'}</span>
                   ) : (
                     <span>-</span>
                   )}
@@ -505,26 +645,7 @@ const ManagerSellRequests = () => {
                     )}
                     {r._type === 'SELL_BARRELS' && (
                       <>
-                        {cbEditId === r._id ? (
-                          <>
-                            <input
-                              type="number"
-                              min={0}
-                              step={1}
-                              value={cbEditValue}
-                              onChange={(e)=>setCbEditValue(e.target.value)}
-                              placeholder="Company barrel"
-                              style={{ width:120 }}
-                            />
-                            <button onClick={() => saveCompanyBarrel(r._id, cbEditValue)}>Save</button>
-                            <button onClick={() => { setCbEditId(''); setCbEditValue(''); }}>Cancel</button>
-                          </>
-                        ) : (
-                          <>
-                            <span style={{ alignSelf:'center', color:'#2563eb' }}>CB: {r.companyBarrel || '-'}</span>
-                            <button onClick={() => { setCbEditId(r._id); setCbEditValue(r.companyBarrel || ''); }}>Edit</button>
-                          </>
-                        )}
+                        <span style={{ alignSelf:'center', color:'#2563eb' }}>CB: {r.companyBarrel || '-'}</span>
                         <button 
                           disabled={approvingId===r._id || approvedRequests.has(r._id)} 
                           onClick={() => approve(r._id)}
@@ -535,11 +656,6 @@ const ManagerSellRequests = () => {
                           }}
                         >
                           {approvedRequests.has(r._id) ? 'Approved ✅' : (approvingId===r._id ? 'Approving...' : 'Approve')}
-                        </button>
-                        <button
-                          onClick={() => setUserAllowance(r.createdBy || r.user?._id || r.userId, '')}
-                        >
-                          Set Allowance
                         </button>
                         <button 
                           disabled={assignedRequests.has(r._id)}

@@ -15,7 +15,7 @@ import AdminProtectedRoute from "./components/common/AdminProtectedRoute";
 import AdminDashboardLayout from "./layouts/AdminDashboardLayout";
 import ManagerProtectedRoute from "./components/common/ManagerProtectedRoute";
 import ManagerDashboardLayout from "./layouts/ManagerDashboardLayout";
-import ManagerHome from "./pages/manager/ManagerHome";
+import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import ManagerLiveLocations from "./pages/manager/DeliveryLiveMap";
 import LiveCheckins from "./pages/manager/LiveCheckins";
 import PendingLeaves from "./pages/manager/PendingLeaves";
@@ -28,6 +28,7 @@ import ManagerWages from "./pages/manager/ManagerWages";
 import ManagerStock from "./pages/manager/ManagerStock";
 import ManagerChemicalHistory from "./pages/manager/ManagerChemicalHistory";
 import ManagerSellRequests from "./pages/manager/ManagerSellRequests";
+import ManagerBarrelAllocation from "./pages/manager/ManagerBarrelAllocation";
 import ManagerChemicalRequests from "./pages/manager/ManagerChemicalRequests";
 import ManagerFaultyBarrels from "./pages/manager/ManagerFaultyBarrels";
 import ManagerCompleted from "./pages/manager/ManagerCompleted";
@@ -56,9 +57,12 @@ import AccountantLatexVerify from "./pages/accountant/AccountantLatexVerify";
 import AccountantWages from "./pages/accountant/AccountantWages";
 import AccountantStockMonitor from "./pages/accountant/AccountantStockMonitor";
 import AccountantAttendance from "./pages/accountant/AccountantAttendance";
+import AccountantAttendanceMark from "./pages/accountant/AccountantAttendanceMark";
 import AccountantLeave from "./pages/accountant/AccountantLeave";
 import AccountantBillPayments from "./pages/accountant/AccountantBillPayments";
 import AccountantSalaries from "./pages/accountant/AccountantSalaries";
+import AccountantSelfAttendance from "./pages/accountant/AccountantSelfAttendance";
+import AccountantDashboard from "./pages/accountant/AccountantDashboard";
 
 // Buyers module removed
 
@@ -113,6 +117,7 @@ import CustomerBillingDashboard from "./components/workflows/CustomerBilling";
 import DeliveryDashboardLayout from "./layouts/DeliveryDashboardLayout";
 import DeliveryDashboard from "./pages/delivery/DeliveryDashboard";
 import DeliveryRoutePlan from "./pages/delivery/DeliveryRoutePlan";
+import DeliveryShiftSchedule from "./pages/delivery/DeliveryShiftSchedule";
 import DeliveryLiveLocation from "./pages/delivery/DeliveryLiveLocation";
 import DeliveryTasks from "./pages/delivery/DeliveryTasks";
 import DeliveryTaskHistory from "./pages/delivery/DeliveryTaskHistory";
@@ -122,6 +127,7 @@ import AccountantBarrelVerify from "./pages/accountant/AccountantBarrelVerify";
 import DeliveryAttendance from "./pages/delivery/DeliveryAttendance";
 import DeliveryLeave from "./pages/delivery/DeliveryLeave";
 import DeliverySalary from "./pages/delivery/DeliverySalary";
+import DeliveryAssignedSellRequests from "./pages/delivery/DeliveryAssignedSellRequests";
 // Admin Pages
 import AdminHome from "./pages/admin/AdminHome";
 import Attendance from "./pages/admin/Attendance";
@@ -481,6 +487,16 @@ function App() {
         }
       />
       <Route
+        path="/delivery/shift-schedule"
+        element={
+          <DeliveryProtectedRoute>
+            <DeliveryDashboardLayout>
+              <DeliveryShiftSchedule />
+            </DeliveryDashboardLayout>
+          </DeliveryProtectedRoute>
+        }
+      />
+      <Route
         path="/delivery/live-location"
         element={
           <DeliveryProtectedRoute>
@@ -498,6 +514,16 @@ function App() {
               <DeliveryTasks />
             </DeliveryDashboardLayout>
           </DeliveryProtectedRoute>
+        }
+      />
+      <Route
+        path="/delivery/lab-check-in"
+        element={
+          <ProtectedRoute>
+            <DeliveryDashboardLayout>
+              <LabCheckIn />
+            </DeliveryDashboardLayout>
+          </ProtectedRoute>
         }
       />
       <Route
@@ -536,6 +562,16 @@ function App() {
           <DeliveryProtectedRoute>
             <DeliveryDashboardLayout>
               <DeliveryBarrelMovement />
+            </DeliveryDashboardLayout>
+          </DeliveryProtectedRoute>
+        }
+      />
+      <Route
+        path="/delivery/assigned-requests"
+        element={
+          <DeliveryProtectedRoute>
+            <DeliveryDashboardLayout>
+              <DeliveryAssignedSellRequests />
             </DeliveryDashboardLayout>
           </DeliveryProtectedRoute>
         }
@@ -819,7 +855,7 @@ function App() {
         element={
           <ManagerProtectedRoute>
             <ManagerDashboardLayout>
-              <ManagerHome />
+              <ManagerDashboard />
             </ManagerDashboardLayout>
           </ManagerProtectedRoute>
         }
@@ -910,6 +946,16 @@ function App() {
           <ManagerProtectedRoute>
             <ManagerDashboardLayout>
               <ManagerSellRequests />
+            </ManagerDashboardLayout>
+          </ManagerProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/barrel-allocation"
+        element={
+          <ManagerProtectedRoute>
+            <ManagerDashboardLayout>
+              <ManagerBarrelAllocation />
             </ManagerDashboardLayout>
           </ManagerProtectedRoute>
         }
@@ -1193,6 +1239,16 @@ function App() {
 
       {/* =================== ACCOUNTANT ROUTES =================== */}
       <Route
+        path="/accountant"
+        element={
+          <AccountantProtectedRoute>
+            <AccountantDashboardLayout>
+              <AccountantDashboard />
+            </AccountantDashboardLayout>
+          </AccountantProtectedRoute>
+        }
+      />
+      <Route
         path="/accountant/latex"
         element={
           <AccountantProtectedRoute>
@@ -1228,6 +1284,26 @@ function App() {
           <AccountantProtectedRoute>
             <AccountantDashboardLayout>
               <AccountantAttendance />
+            </AccountantDashboardLayout>
+          </AccountantProtectedRoute>
+        }
+      />
+      <Route
+        path="/accountant/my-attendance"
+        element={
+          <AccountantProtectedRoute>
+            <AccountantDashboardLayout>
+              <AccountantSelfAttendance />
+            </AccountantDashboardLayout>
+          </AccountantProtectedRoute>
+        }
+      />
+      <Route
+        path="/accountant/mark-attendance"
+        element={
+          <AccountantProtectedRoute>
+            <AccountantDashboardLayout>
+              <AccountantAttendanceMark />
             </AccountantDashboardLayout>
           </AccountantProtectedRoute>
         }

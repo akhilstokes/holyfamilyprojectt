@@ -46,6 +46,33 @@ export default function AccountantLatexVerify() {
     if (!ok) return;
     await accountantCalculate(r._id, rate);
     await load();
+
+    // Notify manager after successful calculation
+    try {
+      const API = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('token');
+      await fetch(`${API}/api/notifications/staff-trip-event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          title: 'Latex Billing Ready for Verification',
+          message: `Sample ${r._id} billing calculated by accountant and ready for manager verification`,
+          link: '/manager/latex-billing',
+          meta: {
+            sampleId: String(r._id),
+            customerName: r.user?.name || 'Customer',
+            calculatedAmount: r.calculatedAmount,
+            marketRate: rate,
+            quantity: r.quantity,
+            drcPercentage: r.drcPercentage,
+            requestId: r._id
+          },
+          targetRole: 'manager'
+        })
+      });
+    } catch (e) {
+      console.warn('Failed to notify manager:', e);
+    }
   };
 
   return (

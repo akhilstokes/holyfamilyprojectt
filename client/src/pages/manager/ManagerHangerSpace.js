@@ -1,160 +1,121 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import '../admin/HangerSpace.css';
+import { listHangerSpaces, seedHangerGrid, setHangerSpaceStatus } from '../../services/adminService';
+
+// Rows D through L
+const ROWS = ['D','E','F','G','H','I','J','K','L'];
+
+const Block = ({ label, cols = 10, statusMap, onClickSlot }) => (
+  <div className="hanger-block" aria-label={`Hanger block ${label}`}>
+    {ROWS.map((row) => (
+      <div className="hanger-row" key={`${label}-${row}`}>
+        <div className="row-cells">
+          {Array.from({ length: cols }).map((_, idx) => {
+            const col = idx + 1;
+            const key = `${label}-${row}-${col}`;
+            const status = statusMap.get(key) || 'free';
+            return (
+              <div
+                key={key}
+                className={`slot ${status}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => onClickSlot(label, row, col, status)}
+                aria-label={`${row}${col} ${status}`}
+                title={`${row}${col} ${status}`}
+              />
+            );
+          })}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const RowLabels = ({ side = 'left' }) => (
+  <div className={`row-labels ${side}`} aria-hidden>
+    {ROWS.map((r) => (
+      <div className="row-label" key={`${side}-${r}`}>{r}</div>
+    ))}
+  </div>
+);
 
 const ManagerHangerSpace = () => {
-  const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
-
-  const [rows, setRows] = useState([]);
+  const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [capacity, setCapacity] = useState(null);
-  const [threshold, setThreshold] = useState(0.75); // 75%
+
+  const statusMap = useMemo(() => {
+    const m = new Map();
+    for (const slot of slots) {
+      const cls = slot.status === 'vacant' ? 'free' : slot.status;
+      m.set(`${slot.block}-${slot.row}-${slot.col}`, cls);
+    }
+    return m;
+  }, [slots]);
+
+  const occupiedCount = useMemo(() => slots.filter(s => s.status === 'occupied').length, [slots]);
 
   const load = async () => {
     setLoading(true); setError('');
     try {
-      const [resSpaces, resCap] = await Promise.all([
-        fetch(`${base}/api/hanger-spaces`, { headers }),
-        fetch(`${base}/api/capacity`, { headers })
-      ]);
-      if (!resSpaces.ok) throw new Error(`Failed to load spaces (${resSpaces.status})`);
-      const data = await resSpaces.json();
-      setRows(Array.isArray(data) ? data : (Array.isArray(data?.records) ? data.records : []));
-      if (resCap.ok) {
-        const cap = await resCap.json();
-        setCapacity(cap);
-      } else {
-        setCapacity(null);
-      }
+      const data = await listHangerSpaces();
+      setSlots(Array.isArray(data) ? data : (Array.isArray(data?.records) ? data.records : []));
     } catch (e) {
-      setError(e?.message || 'Failed to load');
-      setRows([]);
+      setError(e.response?.data?.message || e.message);
+      setSlots([]);
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, []);
 
-  const mark = async (id, status) => {
+  const handleClick = async (block, row, col, status) => {
     try {
-      setError('');
-      const ok = window.confirm(`Are you sure you want to mark this slot as ${status}?`);
-      if (!ok) return;
-      const res = await fetch(`${base}/api/hanger-spaces/${id}/status`, { method: 'PUT', headers, body: JSON.stringify({ status }) });
-      if (!res.ok) throw new Error(`Update failed (${res.status})`);
-      await load();
-    } catch (e) { setError(e?.message || 'Update failed'); }
-  };
-
-  const updateProduct = async (id, currentStatus, product, prevProduct = '') => {
-    try {
-      setError('');
-      const labelPrev = prevProduct || '-';
-      const labelNext = product || '-';
-      const ok = window.confirm(`Change product from "${labelPrev}" to "${labelNext}"?`);
-      if (!ok) return;
-      const body = { status: currentStatus || 'vacant', product: product || '' };
-      const res = await fetch(`${base}/api/hanger-spaces/${id}/status`, { method: 'PUT', headers, body: JSON.stringify(body) });
-      if (!res.ok) throw new Error(`Failed to set product (${res.status})`);
+      const slot = slots.find(s => s.block === block && s.row === row && s.col === col);
+      if (!slot) return;
+      const options = [
+        { key: 'occupied', label: 'Occupied (Rubber Band)' },
+        { key: 'empty_barrel', label: 'Empty Barrel' },
+        { key: 'complete_bill', label: 'Complete Bill' },
+        { key: 'vacant', label: 'Vacant' }
+      ];
+      const choice = window.prompt(`Set status for ${row}${col}:\n+1) Occupied (Rubber Band)\n+2) Empty Barrel\n+3) Complete Bill\n+4) Vacant\nEnter 1-4`, '1');
+      const idx = parseInt(choice, 10);
+      if (!idx || idx < 1 || idx > 4) return;
+      const selected = options[idx - 1].key;
+      const product = selected === 'occupied' ? (window.prompt('Rubber band label (optional):', '') || '') : '';
+      await setHangerSpaceStatus(slot._id, selected, product);
       await load();
     } catch (e) {
-      setError(e?.message || 'Failed to set product');
+      alert(e.response?.data?.message || e.message);
     }
   };
 
   return (
-    <div style={{ padding: 16, color: '#0f172a' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>Hanger Space</h2>
-        <button onClick={load} disabled={loading}>{loading ? 'Refreshing...' : 'Refresh'}</button>
+    <div className="hanger-page">
+      {error && <div style={{ color: '#fca5a5', marginBottom: 12 }}>{error}</div>}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+        <button className="btn" onClick={load} disabled={loading}>Reload</button>
+        <button className="btn" onClick={async () => { await seedHangerGrid(); await load(); }} disabled={loading}>Seed Grid</button>
+        <span style={{ color: '#e2e8f0' }}>Total: {slots.length} | Occupied: {occupiedCount}</span>
       </div>
-      {error && <div style={{ color: 'tomato', marginTop: 8 }}>{error}</div>}
-      {capacity && (
-        <div className="dash-card" style={{ marginTop: 12, padding: 12 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap: 12, flexWrap:'wrap' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>Capacity Utilization</div>
-              {(() => {
-                const used = capacity?.godown?.usedPallets || 0;
-                const total = capacity?.godown?.totalPallets || 0;
-                const pct = total > 0 ? used / total : 0;
-                const pctLabel = `${Math.round(pct * 100)}% Full`;
-                const critical = pct >= threshold;
-                return (
-                  <div>
-                    <div style={{ display:'flex', alignItems:'center', gap: 8 }}>
-                      <div style={{ minWidth: 180, height: 10, background:'#e5e7eb', borderRadius: 4, overflow:'hidden' }}>
-                        <div style={{ width: `${Math.min(100, Math.round(pct * 100))}%`, height:'100%', background: critical ? '#ef4444' : '#10b981' }} />
-                      </div>
-                      <div style={{ fontWeight: 700 }}>{pctLabel}</div>
-                    </div>
-                    <div style={{ color:'#64748b', marginTop: 4 }}>Used {used} / {total} pallets</div>
-                    {critical && (
-                      <div style={{ marginTop: 8, background:'#fef2f2', border:'1px solid #fecaca', color:'#b91c1c', padding:8, borderRadius:6 }}>
-                        Alert: Capacity is approaching a critical limit.
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color:'#64748b' }}>Alert Threshold (%)
-                <input type="number" min={1} max={100} value={Math.round(threshold*100)} onChange={(e)=>{
-                  const v = Math.min(100, Math.max(1, Number(e.target.value)||75));
-                  setThreshold(v/100);
-                }} style={{ marginLeft: 8, width: 80 }} />
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
-      <div style={{ marginTop: 12, overflowX: 'auto' }}>
-        <table className="dashboard-table" style={{ minWidth: 720, color: '#0f172a' }}>
-          <thead>
-            <tr>
-              {['Block','Row','Col','Status','Product','Actions'].map(h => (
-                <th key={h} style={{ color: '#0f172a', opacity: 1, fontWeight: 600 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r._id}>
-                <td style={{ color: '#0f172a' }}>{r.block}</td>
-                <td style={{ color: '#0f172a' }}>{r.row}</td>
-                <td style={{ color: '#0f172a' }}>{r.col}</td>
-                <td style={{ color: '#0f172a' }}>{r.status}</td>
-                <td style={{ color: '#0f172a' }}>
-                  <select 
-                    value={r.product || ''}
-                    onChange={(e)=>updateProduct(r._id, r.status, e.target.value, r.product || '')}
-                    style={{ padding: 6, border: '1px solid #e5e7eb', borderRadius: 6 }}
-                  >
-                    <option value="">Select item</option>
-                    <option value="Barrel">1) Barrel</option>
-                    <option value="Empty Barrel">2) Empty Barrel</option>
-                    <option value="Rubber Band">3) Rubber Band</option>
-                  </select>
-                </td>
-                <td style={{ color: '#0f172a' }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-success" disabled={r.status === 'occupied'} onClick={() => mark(r._id, 'occupied')}>Mark Occupied</button>
-                    <button className="btn btn-sm btn-outline" disabled={r.status === 'vacant'} onClick={() => mark(r._id, 'vacant')}>Mark Vacant</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!loading && rows.length === 0 && (
-              <tr><td colSpan={6} style={{ textAlign: 'center', color: '#6b7280' }}>No slots.</td></tr>
-            )}
-          </tbody>
-        </table>
+
+      <div className="hanger-wrap">
+        <RowLabels side="left" />
+        <Block label="A" cols={10} statusMap={statusMap} onClickSlot={handleClick} />
+        <div className="hanger-gap" />
+        <Block label="B" cols={10} statusMap={statusMap} onClickSlot={handleClick} />
+        <RowLabels side="right" />
+      </div>
+
+      <div className="legend">
+        <div className="legend-item"><span className="slot free" /> Free</div>
+        <div className="legend-item"><span className="slot occupied" /> Rubber Band</div>
+        <div className="legend-item"><span className="slot empty_barrel" /> Empty Barrel</div>
+        <div className="legend-item"><span className="slot complete_bill" /> Complete Bill</div>
       </div>
     </div>
   );
 };
 
 export default ManagerHangerSpace;
-
-

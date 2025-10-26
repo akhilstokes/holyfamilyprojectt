@@ -141,7 +141,13 @@ const userSchema = new mongoose.Schema({
     // Per-user sell barrels allowance (0 or undefined means unlimited)
     sellAllowance: { type: Number, default: 0, min: 0 },
     sellAllowanceUpdatedAt: Date,
-    sellAllowanceSetBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    sellAllowanceSetBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
+    // Assigned shift for staff members
+    assignedShift: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Shift' 
+    }
 
 }, { timestamps: true });
 

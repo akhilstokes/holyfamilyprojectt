@@ -1,7 +1,7 @@
- 
-const express = require('express');
+ const express = require('express');
 const router = express.Router();
-const { addBarrel, updateBarrel, getAllBarrels, getNextToUse, getExpiryQueue, markInUse, updateWeights, setLocation, setCondition } = require('../controllers/barrelController');
+const { addBarrel, updateBarrel, getAllBarrels, getNextToUse, getExpiryQueue, markInUse, updateWeights, setLocation, setCondition, assignBatch, listMyAssigned, listDispatchHistory } = require('../controllers/barrelController');
+
 const { protect, admin, labOnly, adminOrManager } = require('../middleware/authMiddleware');
 
 // Only admin can add new barrels
@@ -10,6 +10,11 @@ router.post('/', protect, admin, addBarrel);
 router.put('/:id', protect, updateBarrel);
 // Any authorized user can view all barrels
 router.get('/', protect, getAllBarrels);
+
+// Allocation endpoints
+router.post('/assign-batch', protect, adminOrManager, assignBatch);
+router.get('/my-assigned', protect, listMyAssigned);
+router.get('/dispatch-history', protect, adminOrManager, listDispatchHistory);
 
 // New lifecycle endpoints
 router.put('/:id/weights', protect, labOnly, updateWeights);

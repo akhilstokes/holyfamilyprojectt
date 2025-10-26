@@ -122,8 +122,9 @@ const AccountantAttendance = () => {
               <th>Check-in</th>
               <th>Check-out</th>
               <th>Status</th>
-              <th>Late (min)</th>
-              <th>Action</th>
+                  <th>Late (min)</th>
+                  <th>Marked By</th>
+                  <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -153,9 +154,18 @@ const AccountantAttendance = () => {
                     {status === 'late' && <span style={{ marginLeft:6, background:'#FEE2E2', color:'#B91C1C', padding:'2px 6px', borderRadius:4, fontSize:12 }}>Late</span>}
                   </td>
                   <td>{lateMin}</td>
-                  <td>
+                      <td>{r.markedBy ? (r.markedBy.name || r.markedBy.email) : '-'}</td>
+                      <td>
                     <div style={{ display:'flex', gap:8 }}>
-                      <button className="btn" disabled={saving || disableIn} onClick={()=>actMark(r.staff?._id || r.staff?.id, 'check_in')}>{saving && !disableIn ? 'Saving...' : 'Check In'}</button>
+                      <button
+                        className="btn"
+                        disabled={saving || disableIn}
+                        onClick={() => actMark(r.staff?._id || r.staff?.id, 'check_in')}
+                        title="Create check-in for staff"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                      >
+                        <span>{saving && !disableIn ? 'Saving...' : 'Create Check-in'}</span>
+                      </button>
                       <button className="btn" disabled={saving || disableOut} onClick={()=>actMark(r.staff?._id || r.staff?.id, 'check_out')}>{saving && !disableOut ? 'Saving...' : 'Check Out'}</button>
                     </div>
                   </td>
@@ -187,6 +197,8 @@ const AccountantAttendance = () => {
                 <th>Check-out</th>
                 <th>Status</th>
                 <th>Late (min)</th>
+                <th>Marked By</th>
+                <th>Marked At</th>
               </tr>
             </thead>
             <tbody>
@@ -200,6 +212,8 @@ const AccountantAttendance = () => {
                   <td>{r.checkOut ? new Date(r.checkOut).toLocaleTimeString() : '-'}</td>
                   <td>{r.status || '-'}</td>
                   <td>{r.lateMinutes || 0}</td>
+                  <td>{r.markedBy ? (r.markedBy.name || r.markedBy.email) : '-'}</td>
+                  <td>{r.markedAt ? new Date(r.markedAt).toLocaleString() : '-'}</td>
                 </tr>
               )) : (
                 <tr><td colSpan={8} style={{ color:'#6b7280' }}>No history</td></tr>

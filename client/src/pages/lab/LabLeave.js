@@ -21,7 +21,19 @@ const LabLeave = () => {
     try {
       setLoading(true);
       const res = await fetch(`${base}/api/leave/my-leaves`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) setLeaves(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.records)
+            ? data.records
+            : Array.isArray(data)
+              ? data
+              : [];
+        setLeaves(list);
+      } else {
+        setLeaves([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -170,7 +182,7 @@ const LabLeave = () => {
               </tr>
             </thead>
             <tbody>
-              {leaves.map(l => (
+              {(Array.isArray(leaves) ? leaves : []).map(l => (
                 <tr key={l._id}>
                   <td>{l.leaveType}</td>
                   <td>{l.startDate ? new Date(l.startDate).toLocaleDateString() : '-'}</td>
@@ -184,7 +196,7 @@ const LabLeave = () => {
                   </td>
                 </tr>
               ))}
-              {leaves.length === 0 && <tr><td colSpan={5}>No leave requests</td></tr>}
+              {Array.isArray(leaves) && leaves.length === 0 && <tr><td colSpan={5}>No leave requests</td></tr>}
             </tbody>
           </table>
         )}
