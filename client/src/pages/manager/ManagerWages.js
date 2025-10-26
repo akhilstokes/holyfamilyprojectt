@@ -25,54 +25,116 @@ const ManagerWages = () => {
         const api = process.env.REACT_APP_API_URL || 'http://localhost:5000';
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         const hdrs = token ? { Authorization: `Bearer ${token}` } : {};
-        // Determine role; for lab, attempt both lab_staff and lab to be tolerant
-        const rolePrimary = (
-          form.group === 'lab' ? 'lab_staff' :
-          form.group === 'delivery' ? 'delivery_staff' :
-          form.group === 'accountant' ? 'accountant' :
-          'field_staff'
-        );
-        async function fetchByRole(role) {
-          const r = await fetch(`${api}/api/user-management/staff?role=${encodeURIComponent(role)}&limit=200&status=active`, { headers: hdrs, credentials: 'include' });
-          if (!r.ok) throw new Error(`Failed to load employees (${r.status})`);
-          const j = await r.json();
-          const arr = j?.users || j?.records || j?.data || j || [];
-          return Array.isArray(arr) ? arr : [];
+        
+        // Determine role mapping
+        const roleMapping = {
+          'field': 'field_staff',
+          'lab': 'lab_staff', 
+          'delivery': 'delivery_staff',
+          'accountant': 'accountant'
+        };
+        
+        const targetRole = roleMapping[form.group] || 'field_staff';
+        
+        // Try the wages staff endpoint first (new dedicated endpoint)
+        let userList = [];
+        try {
+          const response = await fetch(`${api}/api/wages/staff?role=${encodeURIComponent(targetRole)}`, { 
+            headers: hdrs, 
+            credentials: 'include' 
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            userList = data?.data || data?.users || data?.records || data || [];
+            if (!Array.isArray(userList)) userList = [];
+          } else {
+            console.warn(`Wages staff endpoint failed: ${response.status}`);
+          }
+        } catch (err) {
+          console.warn('Wages staff endpoint error:', err.message);
         }
-        let userList = await fetchByRole(rolePrimary);
-        if (form.group === 'lab' && userList.length === 0) {
-          // Fallback to legacy role "lab"
-          userList = await fetchByRole('lab');
-        }
-        if (form.group === 'accountant' && userList.length === 0) {
-          // Fallback to capitalized role variant if backend stores differently
-          userList = await fetchByRole('Accountant');
-        }
-        if (form.group === 'accountant' && userList.length === 0) {
-          // Final fallback: list all users and filter by role containing 'accountant'
-          const rAll = await fetch(`${api}/api/users`, { headers: hdrs, credentials: 'include' });
-          if (rAll.ok) {
-            const jAll = await rAll.json();
-            const arrAll = jAll?.users || jAll?.records || jAll?.data || jAll || [];
-            const filtered = (Array.isArray(arrAll) ? arrAll : []).filter(u => (
-              (u.status || 'active') === 'active' && String(u.role || '').toLowerCase().includes('accountant')
-            ));
-            if (filtered.length) userList = filtered;
+        
+        // Fallback to user-management endpoint
+        if (userList.length === 0) {
+          try {
+            const response = await fetch(`${api}/api/user-management/staff?role=${encodeURIComponent(targetRole)}&limit=200&status=active`, { 
+              headers: hdrs, 
+              credentials: 'include' 
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              userList = data?.users || data?.records || data?.data || data || [];
+              if (!Array.isArray(userList)) userList = [];
+            } else {
+              console.warn(`User-management endpoint failed: ${response.status}`);
+            }
+          } catch (err) {
+            console.warn('User-management endpoint error:', err.message);
           }
         }
+        
+        // If no users found, try alternative endpoints
+        if (userList.length === 0) {
+          try {
+            // Try the general users endpoint with role filtering
+            const response = await fetch(`${api}/api/users?role=${encodeURIComponent(targetRole)}`, { 
+              headers: hdrs, 
+              credentials: 'include' 
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              const allUsers = Array.isArray(data) ? data : (data?.users || data?.records || data?.data || []);
+              userList = allUsers.filter(user => 
+                user.role === targetRole && 
+                (user.status === 'active' || user.status === undefined)
+              );
+            }
+          } catch (err) {
+            console.warn('Users endpoint error:', err.message);
+          }
+        }
+        
+        // Final fallback: get all users and filter client-side
+        if (userList.length === 0) {
+          try {
+            const response = await fetch(`${api}/api/users`, { 
+              headers: hdrs, 
+              credentials: 'include' 
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              const allUsers = Array.isArray(data) ? data : (data?.users || data?.records || data?.data || []);
+              userList = allUsers.filter(user => {
+                const userRole = user.role?.toLowerCase();
+                const targetRoleLower = targetRole.toLowerCase();
+                return userRole === targetRoleLower && 
+                       (user.status === 'active' || user.status === undefined);
+              });
+            }
+          } catch (err) {
+            console.warn('Fallback users endpoint error:', err.message);
+          }
+        }
+        
         setEmployees(userList);
+        
         if (userList.length === 0) {
           const groupName = form.group === 'lab' ? 'Lab Staff' : 
                            form.group === 'delivery' ? 'Delivery Staff' : 
                            form.group === 'accountant' ? 'Accountant' : 'Staff';
-          const roleHint = form.group === 'lab' ? 'lab_staff or lab' : (form.group === 'accountant' ? 'accountant (any case)' : rolePrimary);
-          setError(`No active ${groupName} found. Please add employees with role "${roleHint}" first.`);
+          setError(`No active ${groupName} found. Please add employees with role "${targetRole}" first.`);
         }
       } catch (e) {
+        console.error('Error loading employees:', e);
         setError(e?.message || 'Failed to load employees');
         setEmployees([]);
       }
     };
+    
     loadUsers();
   }, [form.group]);
 

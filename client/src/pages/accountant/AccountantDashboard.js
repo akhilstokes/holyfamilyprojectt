@@ -5,18 +5,32 @@ const AccountantDashboard = () => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
+  const navigate = useNavigate();
   const [notifs, setNotifs] = useState([]);
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     const loadNotifs = async () => {
       try {
+        // Check if user is authenticated before making the request
+        if (!token) {
+          console.log('No authentication token found, skipping notifications');
+          setNotifs([]);
+          setUnread(0);
+          return;
+        }
+
         const res = await fetch(`${base}/api/notifications?limit=10`, { headers });
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data?.notifications) ? data.notifications : (Array.isArray(data) ? data : []);
           setNotifs(list);
           setUnread(Number(data?.unread || (list.filter(n=>!n.read).length)));
+        } else if (res.status === 401) {
+          // Unauthorized - user needs to login
+          console.log('User not authenticated, redirecting to login');
+          navigate('/login');
+          return;
         } else {
           setNotifs([]);
           setUnread(0);
@@ -29,7 +43,7 @@ const AccountantDashboard = () => {
     loadNotifs();
     const id = setInterval(loadNotifs, 30000);
     return () => clearInterval(id);
-  }, [base, headers]);
+  }, [base, headers, token, navigate]);
 
   const markRead = async (id) => {
     try {

@@ -10,7 +10,18 @@ const mongoose = require('mongoose');
 // Helper: resolve a usable staff ObjectId from the authenticated user payload
 async function resolveStaffObjectId(authUser) {
   try {
-    // Preferred: direct _id
+    // Handle built-in tokens that have string IDs
+    if (authUser?._id && typeof authUser._id === 'string' && authUser._id.startsWith('builtin-')) {
+      if (authUser.staffId) {
+        const userDoc = await User.findOne({ staffId: authUser.staffId }).select('_id');
+        if (userDoc?._id) {
+          return userDoc._id;
+        }
+      }
+      return null;
+    }
+    
+    // Preferred: direct _id (valid ObjectId)
     if (authUser?._id && mongoose.isValidObjectId(authUser._id)) {
       return new mongoose.Types.ObjectId(authUser._id);
     }
@@ -25,12 +36,15 @@ async function resolveStaffObjectId(authUser) {
     // try to locate the User document by that staffId
     if (authUser?.staffId) {
       const userDoc = await User.findOne({ staffId: authUser.staffId }).select('_id');
-      if (userDoc?._id) return userDoc._id;
+      if (userDoc?._id) {
+        return userDoc._id;
+      }
     }
     // Not resolvable
     return null;
-  } catch (_) {
-    return null;
+  } catch (error) { 
+    console.error('Error in resolveStaffObjectId:', error);
+    return null; 
   }
 }
 
@@ -165,6 +179,12 @@ exports.getDashboardOverview = async (req, res) => {
 exports.markAttendance = async (req, res) => {
   try {
     const { type, location, photo } = req.body; // type: 'checkin' or 'checkout'
+    
+    // Validate required fields
+    if (!type) {
+      return res.status(400).json({ success: false, message: 'Type is required' });
+    }
+    
     const staffId = await resolveStaffObjectId(req.user);
     if (!staffId) {
       return res.status(400).json({ success: false, message: 'Invalid authenticated user. Unable to resolve staff id.' });
@@ -510,6 +530,8 @@ exports.updateProfile = async (req, res) => {
     });
   }
 };
+
+
 
 
 

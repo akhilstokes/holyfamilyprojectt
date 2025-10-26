@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyRoleClass]);
 
   const saveAuth = useCallback((next) => {
     if (next && next.token) {
@@ -71,12 +71,17 @@ export const AuthProvider = ({ children }) => {
   }, [apiBase]);
 
   const googleSignIn = useCallback(async (credential) => {
-    // Backend expects POST /api/auth/google-signin with body { token }
-    const { data } = await axios.post(`${apiBase}/api/auth/google-signin`, { token: credential });
-    setUser(data.user);
-    setToken(data.token);
-    saveAuth({ user: data.user, token: data.token });
-    return data;
+    try {
+      // Backend expects POST /api/auth/google-signin with body { token }
+      const { data } = await axios.post(`${apiBase}/api/auth/google-signin`, { token: credential });
+      setUser(data.user);
+      setToken(data.token);
+      saveAuth({ user: data.user, token: data.token });
+      return data;
+    } catch (error) {
+      console.error('Google Sign-In Error:', error);
+      throw error;
+    }
   }, [apiBase, saveAuth]);
 
   const logout = useCallback(async () => {

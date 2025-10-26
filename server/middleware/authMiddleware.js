@@ -139,10 +139,35 @@ exports.labOnly = (req, res, next) => {
     return res.status(403).json({ message: 'Not authorized. Lab staff required.' });
 };
 
+// Allow Lab staff or Admin
+exports.labOrAdminMiddleware = (req, res, next) => {
+    if (req.user && (req.user.role === 'lab' || req.user.role === 'admin')) {
+        return next();
+    }
+    return res.status(403).json({ message: 'Not authorized. Lab staff or Admin required.' });
+};
+
 // Allow Field staff (mapped as delivery_staff or field)
 exports.fieldOnly = (req, res, next) => {
     if (req.user && (req.user.role === 'delivery_staff' || req.user.role === 'field')) {
         return next();
     }
     return res.status(403).json({ message: 'Not authorized. Field staff required.' });
+};
+
+// Generic authorize function for role-based access control
+exports.authorize = (...roles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Not authorized, no user found' });
+        }
+        
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({ 
+                message: `Not authorized. Required roles: ${roles.join(', ')}. Your role: ${req.user.role}` 
+            });
+        }
+        
+        next();
+    };
 };

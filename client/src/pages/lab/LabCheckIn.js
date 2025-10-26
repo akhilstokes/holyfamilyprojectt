@@ -21,13 +21,19 @@ const LabCheckIn = () => {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
+      console.log('LabCheckIn URL params:', window.location.search);
+      console.log('All URL params:', Object.fromEntries(params.entries()));
+      
       const sampleId = params.get('sampleId');
       const customerName = params.get('customerName');
       const barrelCount = params.get('barrelCount');
       const receivedAt = params.get('receivedAt');
+      
+      console.log('Parsed params:', { sampleId, customerName, barrelCount, receivedAt });
+      
       const patch = {};
-      if (sampleId) patch.sampleId = sampleId;
-      if (customerName) patch.customerName = customerName;
+      if (sampleId && sampleId.trim()) patch.sampleId = sampleId.trim();
+      if (customerName && customerName.trim()) patch.customerName = customerName.trim();
       if (barrelCount != null) patch.barrelCount = Number(barrelCount) || 0;
       if (receivedAt) patch.receivedAt = receivedAt;
       if (Object.keys(patch).length) setForm(f => ({ ...f, ...patch }));
@@ -85,13 +91,13 @@ const LabCheckIn = () => {
         }),
       });
       if (!res.ok) throw new Error(`Check-in failed (${res.status})`);
-      setMessage('Sample checked in successfully');
+      setMessage('Sample checked in successfully - Redirecting to DRC test...');
       setForm({ sampleId: '', customerName: '', batch: '', quantityLiters: '', receivedAt: '', notes: '', barrelCount: 0 });
       setBarrels([]);
       // Redirect to DRC update page after successful check-in
       setTimeout(() => {
         navigate(`/lab/drc-update?sampleId=${encodeURIComponent(form.sampleId)}`);
-      }, 1500);
+      }, 1000);
     } catch (e2) {
       setError(e2?.message || 'Failed to check in');
     } finally {

@@ -17,7 +17,16 @@ const app = express();
 app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
+// Add Cross-Origin-Opener-Policy header to allow Google OAuth popups
+app.use((req, res, next) => {
+    res.header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    next();
+});
 
 // Enable JSON parsing for incoming requests
 app.use(express.json());
@@ -72,6 +81,7 @@ app.use('/api/chemicals', require('./routes/chemRoutes'));
 app.use('/api/chem-requests', require('./routes/chemicalRequestRoutes'));
 app.use('/api/uploads', require('./routes/uploadRoutes'));
 app.use('/api/salary', require('./routes/salaryRoutes'));
+app.use('/api/wages', require('./routes/wagesRoutes'));
 app.use('/api/daily-wage', require('./routes/dailyWageRoutes'));
 app.use('/api/monthly-wage', require('./routes/monthlyWageRoutes'));
 app.use('/api/wage-templates', require('./routes/wageTemplateRoutes'));
@@ -87,6 +97,7 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/delivery', require('./routes/deliveryRoutes'));
 app.use('/api/lab', require('./routes/labSampleRoutes'));
 app.use('/api/complaints', require('./routes/complaintRoutes'));
+app.use('/api/knn', require('./routes/knnRoutes'));
 app.use('/api/stock-history', require('./routes/stockHistoryRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/shifts', require('./routes/shiftRoutes'));
@@ -161,11 +172,19 @@ app.get('/', (req, res) => {
 
 // Start the server only after DB connection is established
 const PORT = process.env.PORT || 5000;
+const http = require('http');
+const setupWebSocketServer = require('./websocketServer');
+
 (async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    const server = http.createServer(app);
+    // Set up WebSocket server
+    const wss = setupWebSocketServer(server);
+
+    server.listen(PORT, () => {
+      console.log(`HTTP Server running on port ${PORT}`);
+      console.log(`WebSocket Server is running on ws://localhost:${PORT}`);
       // Start the rate scheduler after server starts
       setTimeout(() => {
         try {

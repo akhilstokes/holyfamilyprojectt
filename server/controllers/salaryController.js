@@ -323,6 +323,21 @@ exports.approveSalary = async (req, res) => {
       return res.status(404).json({ message: 'Salary record not found' });
     }
 
+    // Send notification to staff member
+    await Notification.create({
+      userId: salary.staff._id,
+      role: salary.staff.role,
+      title: 'Salary Approved',
+      message: `Your salary for ${salary.month}/${salary.year} has been approved by ${salary.approvedBy?.name || 'Manager'}. Amount: ₹${salary.netSalary || salary.grossSalary}`,
+      link: '/staff/salary',
+      meta: { 
+        salaryId: salary._id, 
+        year: salary.year, 
+        month: salary.month,
+        amount: salary.netSalary || salary.grossSalary
+      }
+    });
+
     res.json({
       message: 'Salary approved successfully',
       data: salary

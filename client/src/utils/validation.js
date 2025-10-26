@@ -1,300 +1,451 @@
-// Enhanced validation utility functions with real-time feedback
+// Comprehensive validation utilities for the application
 
-// Real-time validation state management
-export class ValidationState {
-    constructor() {
-        this.errors = {};
-        this.warnings = {};
-        this.isValidating = {};
-        this.validationTimers = {};
-    }
-
-    setError(field, error) {
-        this.errors[field] = error;
-        this.warnings[field] = null;
-    }
-
-    setWarning(field, warning) {
-        this.warnings[field] = warning;
-        this.errors[field] = null;
-    }
-
-    clear(field) {
-        delete this.errors[field];
-        delete this.warnings[field];
-        delete this.isValidating[field];
-    }
-
-    isValid(field) {
-        return !this.errors[field] && !this.warnings[field];
-    }
-
-    hasErrors() {
-        return Object.keys(this.errors).length > 0;
-    }
-
-    hasWarnings() {
-        return Object.keys(this.warnings).length > 0;
-    }
-
-    getFieldState(field) {
-        if (this.errors[field]) return 'error';
-        if (this.warnings[field]) return 'warning';
-        if (this.isValidating[field]) return 'validating';
-        return 'valid';
-    }
-}
-
-// Debounced validation for real-time feedback
-export const debounceValidation = (fn, delay = 300) => {
-    return (value, ...args) => {
-        return new Promise((resolve) => {
-            const timer = setTimeout(() => {
-                const result = fn(value, ...args);
-                resolve(result);
-            }, delay);
-        });
-    };
+// Common validation patterns
+export const validationPatterns = {
+  // Phone number validation (10 digits, no leading zeros)
+  phone: /^[1-9]\d{9}$/,
+  
+  // Email validation
+  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  
+  // Indian phone number
+  indianPhone: /^[6-9]\d{9}$/,
+  
+  // Positive number (no leading zeros, minimum 1)
+  positiveNumber: /^[1-9]\d*$/,
+  
+  // Decimal with 2 places (0.01 increments)
+  decimalTwoPlaces: /^\d+(\.\d{1,2})?$/,
+  
+  // Quantity validation (positive decimal)
+  quantity: /^[1-9]\d*(\.\d{1,2})?$/,
+  
+  // DRC percentage (0-100 with 2 decimal places)
+  drcPercentage: /^(100(\.00)?|[1-9]?\d(\.\d{1,2})?)$/,
+  
+  // Rate validation (positive number with 2 decimal places)
+  rate: /^[1-9]\d*(\.\d{1,2})?$/,
+  
+  // Invoice number
+  invoiceNumber: /^[A-Z0-9-]+$/,
+  
+  // Sample ID
+  sampleId: /^[A-Z0-9-]+$/,
+  
+  // Name validation (letters, spaces, dots)
+  name: /^[a-zA-Z\s.]+$/,
+  
+  // Address validation
+  address: /^[a-zA-Z0-9\s,.-]+$/,
+  
+  // No leading zeros for numbers
+  noLeadingZeros: /^[1-9]\d*$/
 };
 
-// Name validation (letters and spaces only, no spaces allowed)
-export const validateName = (name) => {
-    if (!name || !name.trim()) {
-        return { valid: false, message: 'Name is required.', severity: 'error' };
+// Validation functions
+export const validators = {
+  // Required field validation
+  required: (value, fieldName = 'Field') => {
+    if (!value || (typeof value === 'string' && value.trim() === '')) {
+      return `${fieldName} is required`;
+    }
+    return null;
+  },
+
+  // Email validation
+  email: (value) => {
+    if (!value) return null;
+    if (!validationPatterns.email.test(value)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  },
+
+  // Phone number validation
+  phone: (value) => {
+    if (!value) return null;
+    if (!validationPatterns.indianPhone.test(value)) {
+      return 'Please enter a valid 10-digit phone number starting with 6-9';
+    }
+    return null;
+  },
+
+  // Number validation (prevent 000000000000)
+  number: (value, fieldName = 'Number') => {
+    if (!value) return null;
+    
+    // Check for all zeros
+    if (/^0+$/.test(value.toString())) {
+      return `${fieldName} cannot be all zeros`;
     }
     
-    const trimmedName = name.trim();
-    
-    // Check for spaces - not allowed
-    if (trimmedName.includes(' ')) {
-        return { valid: false, message: 'Name cannot contain spaces.', severity: 'error' };
+    // Check for leading zeros (except single 0)
+    if (value.toString().length > 1 && value.toString().startsWith('0')) {
+      return `${fieldName} cannot start with zero`;
     }
     
-    // Only letters allowed (no numbers, special characters, or spaces)
-    if (!/^[a-zA-Z]+$/.test(trimmedName)) {
-        return { valid: false, message: 'Name must contain only letters (no numbers, spaces, or special characters).', severity: 'error' };
+    // Check if it's a valid positive number
+    if (!validationPatterns.positiveNumber.test(value.toString())) {
+      return `${fieldName} must be a positive number`;
     }
     
-    if (trimmedName.length < 2) {
-        return { valid: false, message: 'Name must be at least 2 characters long.', severity: 'error' };
+    return null;
+  },
+
+  // Decimal validation (0.01 increments)
+  decimal: (value, fieldName = 'Amount', min = 0.01, max = 999999.99) => {
+    if (!value) return null;
+    
+    const numValue = parseFloat(value);
+    
+    // Check if it's a valid number
+    if (isNaN(numValue)) {
+      return `${fieldName} must be a valid number`;
     }
     
-    if (trimmedName.length > 50) {
-        return { valid: false, message: 'Name must be less than 50 characters.', severity: 'warning' };
+    // Check for all zeros
+    if (numValue === 0) {
+      return `${fieldName} cannot be zero`;
     }
     
-    return { valid: true, message: 'Name looks good!', severity: 'success' };
+    // Check minimum value
+    if (numValue < min) {
+      return `${fieldName} must be at least ${min}`;
+    }
+    
+    // Check maximum value
+    if (numValue > max) {
+      return `${fieldName} cannot exceed ${max}`;
+    }
+    
+    // Check decimal places (max 2)
+    const decimalPlaces = (value.toString().split('.')[1] || '').length;
+    if (decimalPlaces > 2) {
+      return `${fieldName} can have maximum 2 decimal places`;
+    }
+    
+    // Check 0.01 increments
+    const rounded = Math.round(numValue * 100) / 100;
+    if (Math.abs(numValue - rounded) > 0.001) {
+      return `${fieldName} must be in increments of 0.01`;
+    }
+    
+    return null;
+  },
+
+  // Quantity validation
+  quantity: (value, fieldName = 'Quantity') => {
+    if (!value) return null;
+    
+    const numValue = parseFloat(value);
+    
+    if (isNaN(numValue)) {
+      return `${fieldName} must be a valid number`;
+    }
+    
+    if (numValue <= 0) {
+      return `${fieldName} must be greater than 0`;
+    }
+    
+    if (numValue < 0.01) {
+      return `${fieldName} must be at least 0.01`;
+    }
+    
+    // Check for reasonable maximum (10000 liters)
+    if (numValue > 10000) {
+      return `${fieldName} cannot exceed 10,000 liters`;
+    }
+    
+    return null;
+  },
+
+  // DRC percentage validation
+  drcPercentage: (value) => {
+    if (!value) return null;
+    
+    const numValue = parseFloat(value);
+    
+    if (isNaN(numValue)) {
+      return 'DRC percentage must be a valid number';
+    }
+    
+    if (numValue < 0 || numValue > 100) {
+      return 'DRC percentage must be between 0 and 100';
+    }
+    
+    return null;
+  },
+
+  // Rate validation
+  rate: (value, fieldName = 'Rate') => {
+    if (!value) return null;
+    
+    const numValue = parseFloat(value);
+    
+    if (isNaN(numValue)) {
+      return `${fieldName} must be a valid number`;
+    }
+    
+    if (numValue <= 0) {
+      return `${fieldName} must be greater than 0`;
+    }
+    
+    if (numValue < 0.01) {
+      return `${fieldName} must be at least ₹0.01`;
+    }
+    
+    // Check for reasonable maximum (₹10000 per kg)
+    if (numValue > 10000) {
+      return `${fieldName} cannot exceed ₹10,000 per kg`;
+    }
+    
+    return null;
+  },
+
+  // Date validation
+  date: (value, fieldName = 'Date') => {
+    if (!value) return null;
+    
+    const date = new Date(value);
+    
+    if (isNaN(date.getTime())) {
+      return `${fieldName} must be a valid date`;
+    }
+    
+    return null;
+  },
+
+  // TO date validation (must be after FROM date)
+  toDate: (toValue, fromValue, fieldName = 'To Date') => {
+    if (!toValue) return null;
+    
+    const toDate = new Date(toValue);
+    const fromDate = fromValue ? new Date(fromValue) : new Date();
+    
+    if (isNaN(toDate.getTime())) {
+      return `${fieldName} must be a valid date`;
+    }
+    
+    if (toDate <= fromDate) {
+      return `${fieldName} must be after the from date`;
+    }
+    
+    // Check if date is not too far in the future (1 year)
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    
+    if (toDate > oneYearFromNow) {
+      return `${fieldName} cannot be more than 1 year in the future`;
+    }
+    
+    return null;
+  },
+
+  // Name validation
+  name: (value, fieldName = 'Name') => {
+    if (!value) return null;
+    
+    if (!validationPatterns.name.test(value)) {
+      return `${fieldName} can only contain letters, spaces, and dots`;
+    }
+    
+    if (value.trim().length < 2) {
+      return `${fieldName} must be at least 2 characters long`;
+    }
+    
+    if (value.trim().length > 50) {
+      return `${fieldName} cannot exceed 50 characters`;
+    }
+    
+    return null;
+  },
+
+  // Address validation
+  address: (value, fieldName = 'Address') => {
+    if (!value) return null;
+    
+    if (!validationPatterns.address.test(value)) {
+      return `${fieldName} contains invalid characters`;
+    }
+    
+    if (value.trim().length < 5) {
+      return `${fieldName} must be at least 5 characters long`;
+    }
+    
+    if (value.trim().length > 200) {
+      return `${fieldName} cannot exceed 200 characters`;
+    }
+    
+    return null;
+  },
+
+  // Password validation
+  password: (value) => {
+    if (!value) return 'Password is required';
+    
+    if (value.length < 8) {
+      return 'Password must be at least 8 characters long';
+    }
+    
+    if (value.length > 50) {
+      return 'Password cannot exceed 50 characters';
+    }
+    
+    if (!/(?=.*[a-z])/.test(value)) {
+      return 'Password must contain at least one lowercase letter';
+    }
+    
+    if (!/(?=.*[A-Z])/.test(value)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    
+    if (!/(?=.*\d)/.test(value)) {
+      return 'Password must contain at least one number';
+    }
+    
+    return null;
+  },
+
+  // Role validation
+  role: (value) => {
+    const validRoles = ['admin', 'manager', 'user', 'accountant', 'lab', 'field_staff', 'delivery'];
+    
+    if (!value) return 'Role is required';
+    
+    if (!validRoles.includes(value.toLowerCase())) {
+      return `Role must be one of: ${validRoles.join(', ')}`;
+    }
+    
+    return null;
+  },
+
+  // Barrel count validation
+  barrelCount: (value) => {
+    if (!value) return null;
+    
+    const numValue = parseInt(value);
+    
+    if (isNaN(numValue)) {
+      return 'Barrel count must be a valid number';
+    }
+    
+    if (numValue < 0) {
+      return 'Barrel count cannot be negative';
+    }
+    
+    if (numValue > 1000) {
+      return 'Barrel count cannot exceed 1000';
+    }
+    
+    return null;
+  },
+
+  // Sample ID validation
+  sampleId: (value) => {
+    if (!value) return null;
+    
+    if (!validationPatterns.sampleId.test(value)) {
+      return 'Sample ID can only contain uppercase letters, numbers, and hyphens';
+    }
+    
+    if (value.length < 3) {
+      return 'Sample ID must be at least 3 characters long';
+    }
+    
+    if (value.length > 20) {
+      return 'Sample ID cannot exceed 20 characters';
+    }
+    
+    return null;
+  }
 };
 
-// Phone number validation for Indian numbers only
-export const validatePhoneNumber = (phone) => {
-    if (!phone.trim()) {
-        return 'Phone number is required.';
+// Form validation helper
+export const validateForm = (formData, validationRules) => {
+  const errors = {};
+  
+  Object.keys(validationRules).forEach(field => {
+    const rules = validationRules[field];
+    const value = formData[field];
+    
+    for (const rule of rules) {
+      const error = rule(value, field);
+      if (error) {
+        errors[field] = error;
+        break; // Stop at first error for this field
+      }
     }
-    
-    // Check for spaces - not allowed
-    if (phone.includes(' ')) {
-        return 'Phone number cannot contain spaces.';
-    }
-    
-    // Remove all non-digit characters for validation
-    const cleanPhone = phone.replace(/\D/g, '');
-    
-    // Check if it's all zeros
-    if (/^0+$/.test(cleanPhone)) {
-        return 'Phone number cannot be all zeros.';
-    }
-    
-    // Only accept 10-digit Indian mobile numbers
-    if (cleanPhone.length === 10) {
-        // Must start with 6, 7, 8, or 9 (Indian mobile number format)
-        if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
-            return 'Please provide a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).';
-        }
-    } else {
-        return 'Please provide a valid 10-digit Indian mobile number.';
-    }
-    
-    return '';
+  });
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
 };
 
-// Password validation (must contain special characters, no spaces)
-export const validatePassword = (password) => {
-    if (!password) {
-        return 'Password is required.';
+// Real-time validation helper
+export const validateField = (value, rules, fieldName) => {
+  for (const rule of rules) {
+    const error = rule(value, fieldName);
+    if (error) {
+      return error;
     }
-    if (password.length < 6) {
-        return 'Password must be at least 6 characters long.';
-    }
-    // Check for spaces - not allowed
-    if (password.includes(' ')) {
-        return 'Password cannot contain spaces.';
-    }
-    // Must contain at least one special character
-    if (!/(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/.test(password)) {
-        return 'Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?).';
-    }
-    // Only allow valid characters (letters, numbers, and special characters)
-    if (!/^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/.test(password)) {
-        return 'Password contains invalid characters.';
-    }
-    return '';
+  }
+  return null;
 };
 
-// Email validation
-export const validateEmail = (email) => {
-    if (!email.trim()) {
-        return 'Email is required.';
-    }
-    
-    // Check for spaces
-    if (email.includes(' ')) {
-        return 'Email cannot contain spaces.';
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        return 'Please enter a valid email address.';
-    }
-    
-    // Additional validation for common email issues
-    if (email.length > 254) {
-        return 'Email is too long.';
-    }
-    
-    if (email.startsWith('.') || email.endsWith('.') || email.includes('..')) {
-        return 'Email format is invalid.';
-    }
-    
-    return '';
+// Common validation rule sets
+export const commonValidationRules = {
+  // Login form
+  login: {
+    email: [validators.required, validators.email],
+    password: [validators.required]
+  },
+  
+  // User registration
+  userRegistration: {
+    name: [validators.required, validators.name],
+    email: [validators.required, validators.email],
+    phone: [validators.required, validators.phone],
+    password: [validators.required, validators.password],
+    role: [validators.required, validators.role]
+  },
+  
+  // Latex request
+  latexRequest: {
+    quantity: [validators.required, validators.quantity],
+    quality: [validators.required],
+    location: [validators.required, validators.address],
+    contactNumber: [validators.required, validators.phone],
+    notes: []
+  },
+  
+  // Rate update
+  rateUpdate: {
+    companyRate: [validators.required, validators.rate],
+    marketRate: [validators.required, validators.rate],
+    effectiveDate: [validators.required, validators.date]
+  },
+  
+  // Date range
+  dateRange: {
+    fromDate: [validators.required, validators.date],
+    toDate: [validators.required, validators.date, (value, fieldName, formData) => 
+      validators.toDate(value, formData?.fromDate, fieldName)]
+  },
+  
+  // Barrel data
+  barrelData: {
+    barrelCount: [validators.required, validators.barrelCount],
+    drcPercentage: [validators.required, validators.drcPercentage],
+    quantity: [validators.required, validators.quantity]
+  }
 };
 
-// Clean phone number for submission
-export const cleanPhoneNumber = (phoneNumber) => {
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    return cleanPhone.startsWith('91') && cleanPhone.length === 12 
-        ? cleanPhone.substring(2) 
-        : cleanPhone.startsWith('0') 
-            ? cleanPhone.substring(1) 
-            : cleanPhone;
-};
-
-// Format phone number for display
-export const formatPhoneNumber = (phoneNumber) => {
-    const clean = phoneNumber.replace(/\D/g, '');
-    if (clean.length === 10) {
-        return `+91 ${clean.slice(0, 5)} ${clean.slice(5)}`;
-    }
-    return phoneNumber;
-};
-
-// Staff ID validation
-export const validateStaffId = (staffId) => {
-    if (!staffId.trim()) {
-        return 'Staff ID is required.';
-    }
-    if (!/^[A-Z0-9]{6,12}$/.test(staffId)) {
-        return 'Staff ID must be 6-12 characters long and contain only uppercase letters and numbers.';
-    }
-    return '';
-};
-
-// Location validation for staff check-in
-export const validateLocation = (location) => {
-    if (!location) {
-        return 'Location is required for check-in/out.';
-    }
-    if (!location.latitude || !location.longitude) {
-        return 'Valid GPS coordinates are required.';
-    }
-    if (location.accuracy > 100) {
-        return 'GPS accuracy is too low. Please wait for better signal.';
-    }
-    if (location.latitude < -90 || location.latitude > 90) {
-        return 'Invalid latitude value.';
-    }
-    if (location.longitude < -180 || location.longitude > 180) {
-        return 'Invalid longitude value.';
-    }
-    return '';
-};
-
-// Photo validation for staff check-in
-export const validatePhoto = (file) => {
-    if (!file) {
-        return 'Photo is required for check-in/out.';
-    }
-    if (!file.type.startsWith('image/')) {
-        return 'Please select a valid image file.';
-    }
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        return 'Image file size must be less than 5MB.';
-    }
-    return '';
-};
-
-// General form validation
-export const validateForm = (formData, requiredFields = []) => {
-    const errors = {};
-    
-    // Check required fields
-    requiredFields.forEach(field => {
-        if (!formData[field] || !formData[field].toString().trim()) {
-            errors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required.`;
-        }
-    });
-    
-    // Validate specific fields if present
-    if (formData.name) {
-        const nameResult = validateName(formData.name);
-        if (nameResult && nameResult.valid === false) {
-            errors.name = nameResult.message;
-        }
-    }
-    
-    if (formData.email) {
-        const emailError = validateEmail(formData.email);
-        if (emailError) errors.email = emailError;
-    }
-    
-    if (formData.phoneNumber) {
-        const phoneError = validatePhoneNumber(formData.phoneNumber);
-        if (phoneError) errors.phoneNumber = phoneError;
-    }
-    
-    if (formData.password) {
-        const passwordError = validatePassword(formData.password);
-        if (passwordError) errors.password = passwordError;
-    }
-    
-    if (formData.staffId) {
-        const staffIdError = validateStaffId(formData.staffId);
-        if (staffIdError) errors.staffId = staffIdError;
-    }
-    
-    return errors;
-};
-
-// Role-specific validation
-export const validateUserRegistration = (formData) => {
-    const requiredFields = ['name', 'email', 'phoneNumber'];
-    if (formData.role !== 'field_staff') {
-        requiredFields.push('password');
-        requiredFields.push('confirmPassword');
-    }
-    const errors = validateForm(formData, requiredFields);
-    if (formData.role !== 'field_staff' && formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
-        errors.confirmPassword = 'Passwords do not match.';
-    }
-    return errors;
-};
-
-export const validateStaffRegistration = (formData) => {
-    const requiredFields = ['name', 'email', 'phoneNumber'];
-    return validateForm(formData, requiredFields);
-};
-
-export const validateAdminForm = (formData) => {
-    const requiredFields = ['name', 'email', 'phoneNumber', 'password'];
-    return validateForm(formData, requiredFields);
+export default {
+  validationPatterns,
+  validators,
+  validateForm,
+  validateField,
+  commonValidationRules
 };

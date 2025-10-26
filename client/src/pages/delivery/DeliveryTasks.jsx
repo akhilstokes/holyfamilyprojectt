@@ -62,14 +62,31 @@ const DeliveryTasks = () => {
   };
 
   const openLabCheckIn = (task) => {
-    const customer = task?.customerUserId?.name || task?.customerUserId?.email || '';
-    const count = task?.meta?.barrelCount ?? '';
+    console.log('Opening Lab Check-In for task:', task);
+    console.log('Task meta:', task?.meta);
+    console.log('Task customerUserId:', task?.customerUserId);
+    
+    // Extract values with fallbacks
+    const customer = task?.customerUserId?.name || task?.customerUserId?.email || task?.customerName || 'Unknown Customer';
+    const count = task?.meta?.barrelCount || task?.barrelCount || '1';
     const receivedAt = new Date().toISOString().slice(0,16);
-    const sampleId = task?.meta?.sellRequestId || task?._id;
-    const qs = new URLSearchParams({ sampleId: String(sampleId), customerName: String(customer), barrelCount: String(count), receivedAt });
+    const sampleId = task?.meta?.sellRequestId || task?._id || `TASK-${Date.now()}`;
+    
+    console.log('Extracted values:', { customer, count, receivedAt, sampleId });
+    
+    const qs = new URLSearchParams();
+    qs.set('sampleId', String(sampleId));
+    qs.set('customerName', String(customer));
+    qs.set('barrelCount', String(count));
+    qs.set('receivedAt', receivedAt);
+    
     const barrelIds = Array.isArray(task?.meta?.barrels) ? task.meta.barrels : [];
     barrelIds.forEach(id => { if (id) qs.append('barrels', String(id)); });
+    
     const checkInUrl = `/lab/check-in?${qs.toString()}`;
+    console.log('Final URL:', checkInUrl);
+    console.log('URLSearchParams:', qs.toString());
+    
     const role = String(user?.role || '').toLowerCase().replace(/\s+/g,'_');
     if (role !== 'lab') {
       alert('Only Lab Staff can complete Sample Check-In. You will be asked to log in as Lab to continue.');

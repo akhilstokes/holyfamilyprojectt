@@ -38,7 +38,14 @@
     "test:report": "playwright show-report",
     "test:server": "cd server && npm test",
     "test:client": "cd client && npm test",
-    "test:all": "npm run test:server && npm run test:client && npm run test:e2e"
+    "test:all": "npm run test:server && npm run test:client && npm run test:e2e",
+    "test:comprehensive": "node test-runner.js",
+    "test:login": "cd client && npm test -- --testPathPattern=LoginPageComprehensive.test.js",
+    "test:register": "cd client && npm test -- --testPathPattern=RegisterPageComprehensive.test.js",
+    "test:staff": "cd client && npm test -- --testPathPattern=StaffFunctionalityComprehensive.test.js",
+    "test:user": "cd client && npm test -- --testPathPattern=UserFunctionalityComprehensive.test.js",
+    "test:auth-flow": "cd client && npm test -- --testPathPattern=AuthenticationFlowComprehensive.test.js",
+    "test:knn": "cd client && npm test -- --testPathPattern=KNNAlgorithmComprehensive.test.js"
   },
   "repository": {
     "type": "git",

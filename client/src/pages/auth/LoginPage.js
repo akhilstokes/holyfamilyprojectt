@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
+import { validators, validateField, commonValidationRules } from '../../utils/validation';
 import './AuthStyles.css';
 
 const LoginPage = () => {
@@ -15,31 +16,16 @@ const LoginPage = () => {
     const returnTo = location.state?.from || null;
 
     const { email, password } = formData;
-    const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const [fieldErrors, setFieldErrors] = useState({ email: '', password: '' });
-    const [showPassword, setShowPassword] = useState(false);
-
-    const validateEmail = (value) => {
-        if (!value) return 'Email is required';
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) return 'Please enter a valid email address';
-        return '';
-    };
-
-    const validatePassword = (value) => {
-        if (!value) return 'Password is required';
-        if (value.length < 6) return 'Password must be at least 6 characters';
-        return '';
-    };
 
     const validateForm = () => {
-        const emailError = validateEmail(email);
-        const passwordError = validatePassword(password);
+        const emailError = validateField(email, commonValidationRules.login.email, 'Email');
+        const passwordError = validateField(password, commonValidationRules.login.password, 'Password');
         
         setFieldErrors({
-            email: emailError,
-            password: passwordError
+            email: emailError || '',
+            password: passwordError || ''
         });
 
         return !emailError && !passwordError;
@@ -47,15 +33,29 @@ const LoginPage = () => {
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
+        let error = '';
+        
         if (name === 'email') {
-            setFieldErrors(prev => ({
-                ...prev,
-                email: validateEmail(value)
-            }));
+            error = validateField(value, commonValidationRules.login.email, 'Email');
         } else if (name === 'password') {
+            error = validateField(value, commonValidationRules.login.password, 'Password');
+        }
+        
+        setFieldErrors(prev => ({
+            ...prev,
+            [name]: error || ''
+        }));
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        
+        // Clear error when user starts typing
+        if (fieldErrors[name]) {
             setFieldErrors(prev => ({
                 ...prev,
-                password: validatePassword(value)
+                [name]: ''
             }));
         }
     };
@@ -97,10 +97,17 @@ const LoginPage = () => {
         try {
             setLoading(true);
             setError('');
+            
+            if (!credentialResponse?.credential) {
+                throw new Error('No credential received from Google');
+            }
+            
             const res = await googleSignIn(credentialResponse.credential);
             navigatePostLogin(res?.user);
         } catch (err) {
-            setError('Google Sign-In failed. Please try again.');
+            console.error('Google Sign-In Error:', err);
+            const errorMessage = err?.response?.data?.message || err?.message || 'Google Sign-In failed. Please try again.';
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -169,7 +176,7 @@ const LoginPage = () => {
                             placeholder=" "
                             name="email" 
                             value={email} 
-                            onChange={onChange}
+                            onChange={handleChange}
                             onBlur={handleBlur}
                             required 
                         />
@@ -190,11 +197,11 @@ const LoginPage = () => {
                         <input 
                             id="password"
                             className={`form-input ${!fieldErrors.password && password ? 'valid' : ''}`} 
-                            type={showPassword ? 'text' : 'password'} 
+                            type="password" 
                             placeholder=" "
                             name="password" 
                             value={password} 
-                            onChange={onChange}
+                            onChange={handleChange}
                             onBlur={handleBlur}
                             required 
                         />

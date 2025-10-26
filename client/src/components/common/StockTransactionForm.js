@@ -426,3 +426,5 @@ const StockTransactionForm = ({ onSubmit, onCancel, initialData = {}, productNam
 export default StockTransactionForm;
 
 
+
+

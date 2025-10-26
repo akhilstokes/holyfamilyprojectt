@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import LeaveHistory from '../../components/common/LeaveHistory';
+import React, { useEffect, useState, useCallback } from 'react';
 import LeaveHistoryModal from '../../components/common/LeaveHistoryModal';
 
 const StaffLeave = () => {
@@ -21,17 +20,32 @@ const StaffLeave = () => {
   maxDate.setFullYear(maxDate.getFullYear() + 2);
   const maxDateStr = maxDate.toISOString().split('T')[0];
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`${base}/api/leave/my-leaves`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) setLeaves(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        console.log('API Response:', data); // Debug log
+        // Handle different response formats
+        const leavesArray = Array.isArray(data?.leaves) ? data.leaves : (Array.isArray(data) ? data : []);
+        console.log('Processed leaves array:', leavesArray); // Debug log
+        setLeaves(leavesArray);
+      } else {
+        console.log('API Error:', res.status, res.statusText); // Debug log
+        setLeaves([]);
+        setError('Failed to load leave requests');
+      }
+    } catch (error) {
+      console.error('Error loading leaves:', error);
+      setLeaves([]);
+      setError('Failed to load leave requests');
     } finally {
       setLoading(false);
     }
-  };
+  }, [base, token]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   // Validation functions
   const validateDates = () => {
@@ -198,21 +212,25 @@ const StaffLeave = () => {
               </tr>
             </thead>
             <tbody>
-              {leaves.map(l => (
-                <tr key={l._id}>
-                  <td>{l.leaveType}</td>
-                  <td>{l.startDate ? new Date(l.startDate).toLocaleDateString() : '-'}</td>
-                  <td>{l.endDate ? new Date(l.endDate).toLocaleDateString() : '-'}</td>
-                  <td>{l.dayType || 'full'}</td>
-                  <td>{l.status}</td>
-                  <td>
-                    {l.status === 'pending' && (
-                      <button className="btn btn-sm btn-outline-danger" onClick={()=>cancel(l._id)}>Cancel</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {leaves.length === 0 && <tr><td colSpan={5}>No leave requests</td></tr>}
+              {(() => {
+                // Extra safety check to ensure leaves is always an array
+                const safeLeaves = Array.isArray(leaves) ? leaves : [];
+                return safeLeaves.map(l => (
+                  <tr key={l._id}>
+                    <td>{l.leaveType}</td>
+                    <td>{l.startDate ? new Date(l.startDate).toLocaleDateString() : '-'}</td>
+                    <td>{l.endDate ? new Date(l.endDate).toLocaleDateString() : '-'}</td>
+                    <td>{l.dayType || 'full'}</td>
+                    <td>{l.status}</td>
+                    <td>
+                      {l.status === 'pending' && (
+                        <button className="btn btn-sm btn-outline-danger" onClick={()=>cancel(l._id)}>Cancel</button>
+                      )}
+                    </td>
+                  </tr>
+                ));
+              })()}
+              {(!Array.isArray(leaves) || leaves.length === 0) && <tr><td colSpan={6}>No leave requests</td></tr>}
             </tbody>
           </table>
         )}

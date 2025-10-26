@@ -521,29 +521,108 @@ const accountantCalculate = async (req, res) => {
     }
 };
 
+// PUT /api/latex/admin/calc-company-rate/:id
+// Accountant calculates amount using company rate automatically
+const accountantCalculateWithCompanyRate = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const doc = await LatexRequest.findById(id);
+        if (!doc) return res.status(404).json({ message: 'Latex request not found' });
+
+        // Get the latest company rate
+        const Rate = require('../models/rateModel');
+        const latestRate = await Rate.findOne({ status: 'published' }).sort({ effectiveDate: -1, createdAt: -1 });
+        if (!latestRate || !latestRate.companyRate) {
+            return res.status(400).json({ message: 'Company rate not found. Please set a company rate first.' });
+        }
+
+        const drc = Number(doc.drcPercentage || 0);
+        const qty = Number(doc.quantity || 0);
+        const rate = Number(latestRate.companyRate);
+        const dryKg = qty * (drc / 100);
+        const amount = Math.round(dryKg * rate);
+        
+        doc.marketRate = rate;
+        doc.calculatedAmount = amount;
+        doc.accountCalculatedAt = new Date();
+        doc.accountCalculatedBy = req.user._id;
+        doc.status = 'ACCOUNT_CALCULATED';
+        await doc.save();
+        
+        return res.json({ 
+            success: true, 
+            request: doc, 
+            calc: { qtyLiters: qty, drcPercent: drc, dryKg, rate, amount },
+            companyRate: rate
+        });
+    } catch (e) {
+        console.error('accountantCalculateWithCompanyRate error:', e);
+        return res.status(500).json({ message: 'Failed to calculate amount with company rate' });
+    }
+};
+
 // PUT /api/latex/admin/verify/:id
 // Manager verifies the calculation and generates invoice metadata
 const managerVerify = async (req, res) => {
     try {
+        console.log('managerVerify called with:', { id: req.params.id, user: req.user });
+        
         const { id } = req.params;
         const doc = await LatexRequest.findById(id).populate('user', 'name email');
-        if (!doc) return res.status(404).json({ message: 'Latex request not found' });
+        if (!doc) {
+            console.log('Latex request not found:', id);
+            return res.status(404).json({ message: 'Latex request not found' });
+        }
+        
+        console.log('Found document:', { 
+            id: doc._id, 
+            calculatedAmount: doc.calculatedAmount, 
+            marketRate: doc.marketRate,
+            status: doc.status 
+        });
+        
         if (!doc.calculatedAmount || !doc.marketRate) {
+            console.log('Calculation not completed:', { calculatedAmount: doc.calculatedAmount, marketRate: doc.marketRate });
             return res.status(400).json({ message: 'Calculation not completed yet' });
         }
+        
+        // Handle built-in tokens for verifiedBy
+        let verifiedBy = null;
+        if (req.user?._id) {
+            if (typeof req.user._id === 'string' && req.user._id.startsWith('builtin-')) {
+                // For built-in tokens, try to find the actual user
+                const User = require('../models/userModel');
+                const userDoc = await User.findOne({ staffId: req.user.staffId }).select('_id');
+                verifiedBy = userDoc?._id || null;
+            } else {
+                verifiedBy = req.user._id;
+            }
+        }
+        
         doc.verifiedAt = new Date();
-        doc.verifiedBy = req.user._id;
+        doc.verifiedBy = verifiedBy;
         doc.finalPayment = doc.calculatedAmount;
         doc.status = 'VERIFIED';
         // Simple invoice number: INV-<last8>
         doc.invoiceNumber = `INV-${String(doc._id).slice(-8).toUpperCase()}`;
         // Placeholder URL (can be replaced with real PDF service)
         doc.invoicePdfUrl = `/api/latex/invoice/${doc._id}`;
+        
+        console.log('Saving document with:', { 
+            verifiedAt: doc.verifiedAt, 
+            verifiedBy: doc.verifiedBy, 
+            status: doc.status,
+            invoiceNumber: doc.invoiceNumber 
+        });
+        
         await doc.save();
+        console.log('Document saved successfully');
+        
         return res.json({ success: true, request: doc });
     } catch (e) {
         console.error('managerVerify error:', e);
-        return res.status(500).json({ message: 'Failed to verify request' });
+        console.error('Error stack:', e.stack);
+        return res.status(500).json({ message: 'Failed to verify request', error: e.message });
     }
 };
 
@@ -603,6 +682,7 @@ module.exports = {
     collectLatex,
     recordTestResult,
     accountantCalculate,
+    accountantCalculateWithCompanyRate,
     managerVerify,
     getInvoice,
     listPendingTests,

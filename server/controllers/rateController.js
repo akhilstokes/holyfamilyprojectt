@@ -65,6 +65,54 @@ exports.getPublishedLatest = async (req, res) => {
   }
 };
 
+// Get company rate for billing
+// @route GET /api/rates/company
+exports.getCompanyRate = async (req, res) => {
+  try {
+    const product = req.query.product || 'latex60';
+    const rate = await Rate.findOne({ product, status: 'published' }).sort({ effectiveDate: -1, createdAt: -1 });
+    if (!rate) {
+      return res.json({ rate: 0, message: 'No company rate found' });
+    }
+    return res.json({ rate: rate.companyRate || 0 });
+  } catch (error) {
+    console.error('Error fetching company rate:', error);
+    return res.status(500).json({ message: 'Error fetching company rate', error: error.message });
+  }
+};
+
+// Update company rate (Admin/Manager only)
+// @route PUT /api/rates/company
+exports.updateCompanyRate = async (req, res) => {
+  try {
+    const { rate } = req.body;
+    if (rate == null || rate <= 0) {
+      return res.status(400).json({ message: 'Valid rate is required' });
+    }
+
+    const product = req.query.product || 'latex60';
+    
+    // Create a new rate entry with the updated company rate
+    const newRate = new Rate({
+      product,
+      companyRate: rate,
+      marketRate: 0, // Will be updated separately
+      source: 'manual',
+      effectiveDate: new Date(),
+      status: 'published',
+      createdBy: req.user?._id,
+      updatedBy: req.user?._id,
+      notes: 'Company rate updated for billing'
+    });
+
+    await newRate.save();
+    return res.json({ message: 'Company rate updated successfully', rate: newRate.companyRate });
+  } catch (error) {
+    console.error('Error updating company rate:', error);
+    return res.status(500).json({ message: 'Error updating company rate', error: error.message });
+  }
+};
+
 // Admin/Manager: Edit a proposed rate (resets to pending)
 // @route PUT /api/rates/:id
 exports.editRate = async (req, res) => {

@@ -6,6 +6,15 @@ const mongoose = require('mongoose');
 // Helper function to resolve staff ObjectId
 async function resolveStaffObjectId(authUser) {
   try {
+    // Handle built-in tokens that have string IDs
+    if (authUser?._id && typeof authUser._id === 'string' && authUser._id.startsWith('builtin-')) {
+      if (authUser.staffId) {
+        const userDoc = await User.findOne({ staffId: authUser.staffId }).select('_id');
+        if (userDoc?._id) return userDoc._id;
+      }
+      return null;
+    }
+    
     if (authUser?._id && mongoose.isValidObjectId(authUser._id)) {
       return new mongoose.Types.ObjectId(authUser._id);
     }
@@ -479,5 +488,94 @@ exports.getAttendanceAnalytics = async (req, res) => {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
+
+// Get weekly attendance summary
+exports.getWeeklySummary = async (req, res) => {
+  try {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay()); // Start of current week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // End of current week (Saturday)
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const matchQuery = {
+      date: {
+        $gte: startOfWeek,
+        $lte: endOfWeek
+      }
+    };
+
+    // Get weekly attendance summary
+    const weeklySummary = await Attendance.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: {
+            status: '$status',
+            day: { $dateToString: { format: '%Y-%m-%d', date: '$date' } }
+          },
+          count: { $sum: 1 },
+          staff: { $addToSet: '$staff' }
+        }
+      },
+      {
+        $group: {
+          _id: '$_id.day',
+          statuses: {
+            $push: {
+              status: '$_id.status',
+              count: '$count',
+              staff: '$staff'
+            }
+          },
+          totalStaff: { $sum: { $size: '$staff' } }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
+
+    // Get overall statistics for the week
+    const overallStats = await Attendance.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+          uniqueStaff: { $addToSet: '$staff' }
+        }
+      }
+    ]);
+
+    // Calculate totals
+    const totalRecords = overallStats.reduce((sum, stat) => sum + stat.count, 0);
+    const totalUniqueStaff = new Set(overallStats.flatMap(stat => stat.uniqueStaff)).size;
+
+    res.status(200).json({
+      success: true,
+      summary: {
+        weekStart: startOfWeek,
+        weekEnd: endOfWeek,
+        dailyBreakdown: weeklySummary,
+        overallStats: {
+          totalRecords,
+          totalUniqueStaff,
+          byStatus: overallStats.reduce((acc, stat) => {
+            acc[stat._id] = {
+              count: stat.count,
+              uniqueStaff: stat.uniqueStaff.length
+            };
+            return acc;
+          }, {})
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
 
 

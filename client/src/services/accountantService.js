@@ -61,9 +61,25 @@ export async function updateStockItem(id, payload) {
   return res.data;
 }
 
+// Company rate endpoints
+export async function getCompanyRate() {
+  const res = await axios.get(`${API}/api/rates/company`, { headers: authHeaders() });
+  return res.data?.rate || 0;
+}
+
+export async function updateCompanyRate(rate) {
+  const res = await axios.put(`${API}/api/rates/company`, { rate }, { headers: authHeaders() });
+  return res.data;
+}
+
 // Workflow helpers
 export async function accountantCalculate(id, marketRate) {
   const res = await axios.put(`${API}/api/latex/admin/calc/${id}`, { marketRate }, { headers: authHeaders() });
+  return res.data;
+}
+
+export async function accountantCalculateWithCompanyRate(id) {
+  const res = await axios.put(`${API}/api/latex/admin/calc-company-rate/${id}`, {}, { headers: authHeaders() });
   return res.data;
 }
 
@@ -75,4 +91,10 @@ export async function managerVerifyReq(id) {
 export async function getInvoice(id) {
   const res = await axios.get(`${API}/api/latex/invoice/${id}`, { headers: authHeaders() });
   return res.data?.invoice;
+}
+
+// Validation helpers
+export async function validateLatexRequest(id) {
+  const res = await axios.get(`${API}/api/latex/admin/validate/${id}`, { headers: authHeaders() });
+  return res.data;
 }

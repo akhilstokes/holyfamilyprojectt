@@ -55,6 +55,11 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
     try {
       setLoading(true);
       setError('');
+      
+      if (!credentialResponse?.credential) {
+        throw new Error('No credential received from Google');
+      }
+      
       const res = await googleSignIn(credentialResponse.credential);
       const role = res?.user?.role;
       const returnTo = location.state?.from;
@@ -77,7 +82,9 @@ const LoginModal = ({ isOpen, onClose, onOpenRegister }) => {
       }
       onClose?.();
     } catch (err) {
-      setError('Google Sign-In failed. Please try again.');
+      console.error('Google Sign-In Error:', err);
+      const errorMessage = err?.response?.data?.message || err?.message || 'Google Sign-In failed. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

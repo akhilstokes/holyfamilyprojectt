@@ -31,9 +31,50 @@ jest.mock('../context/AuthContext', () => ({
   AuthProvider: ({ children }) => <div>{children}</div>
 }));
 
+// Test Results Tracking
+const testResults = {
+  passed: 0,
+  failed: 0,
+  total: 0,
+  details: []
+};
+
+const trackTestResult = (testName, passed, error = null) => {
+  testResults.total++;
+  if (passed) {
+    testResults.passed++;
+  } else {
+    testResults.failed++;
+  }
+  testResults.details.push({
+    test: testName,
+    status: passed ? 'PASSED' : 'FAILED',
+    error: error?.message || null
+  });
+};
+
 describe('LoginPage Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset test results for each test suite
+    testResults.passed = 0;
+    testResults.failed = 0;
+    testResults.total = 0;
+    testResults.details = [];
+  });
+
+  afterAll(() => {
+    // Print comprehensive test results
+    console.log('\n=== LOGIN PAGE TEST RESULTS ===');
+    console.log(`Total Tests: ${testResults.total}`);
+    console.log(`Passed: ${testResults.passed}`);
+    console.log(`Failed: ${testResults.failed}`);
+    console.log(`Success Rate: ${((testResults.passed / testResults.total) * 100).toFixed(2)}%`);
+    console.log('\nDetailed Results:');
+    testResults.details.forEach(result => {
+      console.log(`${result.status}: ${result.test}${result.error ? ` - ${result.error}` : ''}`);
+    });
+    console.log('================================\n');
   });
 
   const renderLoginPage = () => {
@@ -48,12 +89,18 @@ describe('LoginPage Component', () => {
 
   describe('Rendering', () => {
     it('should render login form', () => {
-      renderLoginPage();
-      
-      expect(screen.getByText('Welcome Back')).toBeInTheDocument();
-      expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+      try {
+        renderLoginPage();
+        
+        expect(screen.getByText('Welcome Back')).toBeInTheDocument();
+        expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+        trackTestResult('Login form renders correctly', true);
+      } catch (error) {
+        trackTestResult('Login form renders correctly', false, error);
+        throw error;
+      }
     });
 
     it('should render back to home link', () => {
