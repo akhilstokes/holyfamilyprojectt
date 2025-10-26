@@ -1,29 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { NavLink } from 'react-router-dom';
 import UserModule from '../components/common/UserModule';
 import './DashboardLayout.css'; // Import the new CSS
 
 const DashboardLayout = ({ children }) => {
-    const navigate = useNavigate();
-    const { logout } = useAuth();
-
-    const handleLogout = async () => {
-        try {
-            await logout(); // update auth state and clear headers/storage
-            navigate('/login');
-        } catch (e) {
-            navigate('/login');
-        }
-    };
-
-    const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
 
     useEffect(() => {
         const handler = (e) => {
             if (menuRef.current && !menuRef.current.contains(e.target)) {
-                setMenuOpen(false);
+                // Menu close logic can be added here if needed
             }
         };
         document.addEventListener('mousedown', handler);

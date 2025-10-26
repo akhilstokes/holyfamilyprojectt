@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import LeaveHistoryModal from '../../components/common/LeaveHistoryModal';
 
 const LabLeave = () => {
@@ -17,7 +17,7 @@ const LabLeave = () => {
   maxDate.setFullYear(maxDate.getFullYear() + 2);
   const maxDateStr = maxDate.toISOString().split('T')[0];
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`${base}/api/leave/my-leaves`, { headers: { Authorization: `Bearer ${token}` } });
@@ -37,9 +37,9 @@ const LabLeave = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [base, token]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const validateDates = () => {
     const errors = {};

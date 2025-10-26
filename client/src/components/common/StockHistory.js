@@ -74,7 +74,7 @@ const StockHistory = ({ productName = null }) => {
     } finally {
       setLoading(false);
     }
-  }, [base, token, filterForm, pagination.current, productName]);
+  }, [base, token, filterForm.fromDate, filterForm.toDate, productName]);
 
   const loadAnalytics = useCallback(async () => {
     try {
@@ -97,7 +97,7 @@ const StockHistory = ({ productName = null }) => {
     } catch (err) {
       console.error('Error loading analytics:', err);
     }
-  }, [base, token, productName]);
+  }, [base, token, filterForm.fromDate, filterForm.toDate, productName]);
 
   useEffect(() => {
     if (token) {
@@ -417,6 +417,7 @@ const StockHistory = ({ productName = null }) => {
 };
 
 export default StockHistory;
+
 
 
 

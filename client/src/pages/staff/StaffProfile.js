@@ -707,7 +707,7 @@ const StaffProfile = () => {
                 className="form-control"
                 defaultValue={worker?.health?.medicalCertificateUrl||''}
                 onBlur={(e)=>validateAndMaybeUpdate('health.medicalCertificateUrl', e.target.value, { health: { ...worker?.health, medicalCertificateUrl: e.target.value } })}
-                onChange={()=> fieldErrors['health.medicalCertificateUrl'] && setFieldErrors((p)=>({ ...p, ['health.medicalCertificateUrl']: '' }))}
+                onChange={()=> fieldErrors.health?.medicalCertificateUrl && setFieldErrors((p)=>({ ...p, health: { ...p.health, medicalCertificateUrl: '' } }))}
               />
               {fieldErrors['health.medicalCertificateUrl'] ? <div className="text-danger" style={{ fontSize: 12 }}>{fieldErrors['health.medicalCertificateUrl']}</div> : null}
             </div>
@@ -720,7 +720,7 @@ const StaffProfile = () => {
                 className="form-control"
                 defaultValue={worker?.health?.lastCheckupDate? String(worker.health.lastCheckupDate).slice(0,10):''}
                 onBlur={(e)=>validateAndMaybeUpdate('health.lastCheckupDate', e.target.value, { health: { ...worker?.health, lastCheckupDate: e.target.value } })}
-                onChange={()=> fieldErrors['health.lastCheckupDate'] && setFieldErrors((p)=>({ ...p, ['health.lastCheckupDate']: '' }))}
+                onChange={()=> fieldErrors.health?.lastCheckupDate && setFieldErrors((p)=>({ ...p, health: { ...p.health, lastCheckupDate: '' } }))}
               />
               {fieldErrors['health.lastCheckupDate'] ? <div className="text-danger" style={{ fontSize: 12 }}>{fieldErrors['health.lastCheckupDate']}</div> : null}
             </div>

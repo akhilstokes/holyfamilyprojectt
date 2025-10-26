@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 export default function StaffDashboard() {
   const [data, setData] = useState({ worker: null, attendance: null, route: null });
@@ -7,7 +7,7 @@ export default function StaffDashboard() {
   const [error, setError] = useState('');
   const token = localStorage.getItem('token');
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -22,9 +22,9 @@ export default function StaffDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const fetchShiftSchedule = async () => {
+  const fetchShiftSchedule = useCallback(async () => {
     try {
       const res = await fetch('/api/workers/field/shift-schedule', {
         headers: { Authorization: `Bearer ${token}` },
@@ -36,7 +36,7 @@ export default function StaffDashboard() {
     } catch (e) {
       console.error('Failed to load shift schedule:', e);
     }
-  };
+  }, [token]);
 
   useEffect(() => { 
     fetchDashboard(); 

@@ -63,7 +63,7 @@ const MySchedule = () => {
     useEffect(() => {
         fetchSchedule();
         fetchRequests();
-    }, []);
+    }, [fetchSchedule, fetchRequests]);
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
@@ -621,6 +621,7 @@ const MySchedule = () => {
 };
 
 export default MySchedule;
+
 
 
 

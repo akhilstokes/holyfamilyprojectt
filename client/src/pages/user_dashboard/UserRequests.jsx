@@ -53,12 +53,21 @@ const UserRequests = () => {
     setSubmitting(true); setErr('');
     try {
       const count = Number(sellBarrels.barrelCount);
+      
+      // Validation 1: Check if user has company barrels
+      if (myCompanyBarrels === 0) {
+        setErr('You do not have any company barrels assigned. Please submit a barrel request first.');
+        setTab('BARREL'); // Switch to barrel request tab
+        return;
+      }
+      
+      // Validation 2: Basic field validation
       if (!sellBarrels.name || !sellBarrels.phone || !count) {
         setErr('Please enter name, phone and barrel count');
       } else if (count < 1) {
         setErr('Barrel count must be at least 1');
       } else if (count > myCompanyBarrels) {
-        setErr(`Requested barrels (${count}) exceed your company barrels (${myCompanyBarrels}).`);
+        setErr(`Requested barrels (${count}) exceed your company barrels (${myCompanyBarrels}). You only have ${myCompanyBarrels} barrel(s) available.`);
       } else {
         const ok = await confirm('Confirm submission', 'Are you sure? Please wait for manager verification.');
         if (!ok) { setSubmitting(false); return; }
@@ -209,6 +218,19 @@ const UserRequests = () => {
         </div>
       ) : tab === 'SELL_BARRELS' ? (
         <div className="dash-card" style={{ maxWidth: 640, display: 'grid', gap: 12 }}>
+          {myCompanyBarrels === 0 && (
+            <div className="alert error" style={{ backgroundColor: '#fee', border: '1px solid #fcc', color: '#c33', padding: '12px', borderRadius: '6px' }}>
+              <strong>⚠️ No Company Barrels Available</strong>
+              <p style={{ margin: '8px 0 0 0' }}>You don't have any company barrels assigned. Please submit a barrel request first to get barrels allocated to you.</p>
+              <button 
+                className="btn btn-sm" 
+                onClick={() => setTab('BARREL')} 
+                style={{ marginTop: '8px', backgroundColor: '#fff', color: '#c33', border: '1px solid #c33' }}
+              >
+                Go to Barrel Request
+              </button>
+            </div>
+          )}
           <div style={{ display:'grid', gap: 12, gridTemplateColumns:'1fr 1fr' }}>
             <label>
               Name
@@ -225,8 +247,13 @@ const UserRequests = () => {
               onChange={e => setSellBarrels({ ...sellBarrels, barrelCount: e.target.value })}
             />
           </label>
-          <div style={{ display:'flex', gap:12, color:'#2563eb', fontSize:13 }}>
-            <span>Company Barrels: {myCompanyBarrels}</span>
+          <div style={{ display:'flex', gap:12, color: myCompanyBarrels > 0 ? '#2563eb' : '#dc2626', fontSize:13, alignItems: 'center' }}>
+            <span style={{ fontWeight: myCompanyBarrels === 0 ? 'bold' : 'normal' }}>
+              {myCompanyBarrels === 0 ? '⚠️ ' : ''}Company Barrels: {myCompanyBarrels}
+            </span>
+            {myCompanyBarrels === 0 && (
+              <span style={{ fontSize: 11, color: '#666' }}>(Request barrels first)</span>
+            )}
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
             <button type="button" onClick={getLocation}>Use my location</button>
@@ -239,7 +266,9 @@ const UserRequests = () => {
             Notes (optional)
             <textarea value={sellBarrels.notes} onChange={e => setSellBarrels({ ...sellBarrels, notes: e.target.value })} />
           </label>
-          <button className="btn" onClick={submitSellBarrels} disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Request'}</button>
+          <button className="btn" onClick={submitSellBarrels} disabled={submitting || myCompanyBarrels === 0}>
+            {submitting ? 'Submitting...' : myCompanyBarrels === 0 ? 'No Barrels Available' : 'Submit Request'}
+          </button>
         </div>
       ) : (
         <div className="dash-card" style={{ maxWidth: 640, display: 'grid', gap: 12 }}>

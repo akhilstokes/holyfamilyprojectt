@@ -69,7 +69,7 @@ const AttendanceHistory = ({ staffType = 'staff' }) => {
     } finally {
       setLoading(false);
     }
-  }, [base, token, filterForm, pagination.current]);
+  }, [base, token, filterForm]);
 
   // useEffect hook must be called before any conditional returns
   useEffect(() => { 

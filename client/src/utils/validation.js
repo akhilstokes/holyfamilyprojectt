@@ -481,10 +481,12 @@ export const cleanPhoneNumber = (phone = '') => {
   return digits;
 };
 
-export default {
+const validationUtils = {
   validationPatterns,
   validators,
   validateForm,
   validateField,
   commonValidationRules
 };
+
+export default validationUtils;

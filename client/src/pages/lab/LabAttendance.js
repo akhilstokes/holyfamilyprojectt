@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 const LabAttendance = () => {
   const [today, setToday] = useState(null);
@@ -8,7 +8,7 @@ const LabAttendance = () => {
   const token = localStorage.getItem('token');
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       const [resToday, resHist] = await Promise.all([
@@ -33,9 +33,9 @@ const LabAttendance = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [base, headers]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const checkIn = async () => {
     try {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './PendingLeaves.css';
 import LeaveHistoryModal from '../../components/common/LeaveHistoryModal';
@@ -32,9 +32,11 @@ const PendingLeaves = () => {
   const [showLeaveHistoryModal, setShowLeaveHistoryModal] = useState(false);
   const [selectedStaffForHistory, setSelectedStaffForHistory] = useState(null);
 
-  const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  const headers = useMemo(() => 
+    token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+  , [token]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
       // Endpoint must be implemented on backend
@@ -50,7 +52,7 @@ const PendingLeaves = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [base, headers]);
 
   // Load schedule requests
   const loadScheduleRequests = useCallback(async () => {

@@ -32,7 +32,7 @@ const UserTransactions = () => {
     }
   };
 
-  useEffect(() => { load(); }, [page, pageSize]);
+  useEffect(() => { load(); }, [load, page, pageSize]);
 
   const beginEdit = (tx) => {
     const ok = window.confirm('Are you sure you want to edit this transaction?');

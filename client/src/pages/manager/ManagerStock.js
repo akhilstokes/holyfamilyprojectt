@@ -29,7 +29,7 @@ const ManagerStock = () => {
       if (res2.ok) { setItems(await res2.json()); }
     } catch (e) { setError(e?.message || 'Failed to load'); }
     finally { setLoading(false); }
-  }, [base, headers]);
+  }, [headers]);
 
   useEffect(() => { load(); }, [load]);
 

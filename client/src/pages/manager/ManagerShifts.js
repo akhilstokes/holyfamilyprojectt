@@ -246,11 +246,6 @@ const ManagerShifts = () => {
     } catch (e) { setError(e?.message || 'Failed to remove override'); }
   };
 
-  const preventInvalidNumberKey = (e) => {
-    const invalid = ['e','E','+','-','.',',',' '];
-    if (invalid.includes(e.key)) e.preventDefault();
-  };
-
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
