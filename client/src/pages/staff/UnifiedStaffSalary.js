@@ -304,8 +304,8 @@ const UnifiedSalaryHistoryView = ({ history, salaryType }) => {
             </tr>
           </thead>
           <tbody>
-            {history.map((record) => (
-              <tr key={record._id}>
+            {history.map((record, index) => (
+              <tr key={record._id || `history-${record.month}-${record.year}-${index}`}>
                 <td>
                   {salaryType === 'daily'
                     ? `${record.month}/${record.year}`

@@ -47,11 +47,6 @@ const StaffDashboardLayout = ({ children }) => {
             </NavLink>
           </li>
           <li className="nav-item">
-            <NavLink to="/staff/salary-management">
-              <i className="fas fa-calculator nav-icon"></i> Salary Management
-            </NavLink>
-          </li>
-          <li className="nav-item">
             <NavLink to="/staff/leave">
               <i className="fas fa-calendar-days nav-icon"></i> Leave
             </NavLink>
@@ -61,39 +56,9 @@ const StaffDashboardLayout = ({ children }) => {
               <i className="fas fa-clock nav-icon"></i> Shift Schedule
             </NavLink>
           </li>
-          <li className="nav-item">
-            <NavLink to="/staff/operations/add-barrel">
-              <i className="fas fa-oil-can nav-icon"></i> Add Barrel
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/operations/trip-km">
-              <i className="fas fa-road nav-icon"></i> Log Trip KM
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/inventory">
-              <i className="fas fa-warehouse nav-icon"></i> Inventory
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/weigh-latex">
-              <i className="fas fa-weight nav-icon"></i> Weigh Latex
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/dispatch-barrels">
-              <i className="fas fa-truck-loading nav-icon"></i> Dispatch Barrels
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/return-barrels">
-              <i className="fas fa-undo nav-icon"></i> Return Barrels
-            </NavLink>
-          </li>
         </ul>
       </aside>
-      <div className="main-content-wrapper">
+      <div className="main-content-wrapper" style={{ marginLeft: 0, width: '100%' }}>
         <header className="dashboard-header">
           <div>Staff</div>
           <button className="btn btn-sm btn-outline-secondary" onClick={handleLogout}>Logout</button>

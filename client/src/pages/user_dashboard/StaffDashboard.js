@@ -41,7 +41,16 @@ export default function StaffDashboard() {
   useEffect(() => { 
     fetchDashboard(); 
     fetchShiftSchedule();
-  }, [fetchDashboard, fetchShiftSchedule]);
+    
+    // Refresh every 30 seconds instead of on every render
+    const interval = setInterval(() => {
+      fetchDashboard();
+      fetchShiftSchedule();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const action = async (type) => {
     try {
