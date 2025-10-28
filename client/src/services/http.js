@@ -1,6 +1,6 @@
 // Lightweight fetch wrapper with retry/backoff and no-store cache
 export async function httpFetch(path, options = {}, retries = 2) {
-  const base = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
+  const base = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5001';
   const url = `${base}${path}`;
   try {
     const res = await fetch(url, { cache: 'no-store', ...options });

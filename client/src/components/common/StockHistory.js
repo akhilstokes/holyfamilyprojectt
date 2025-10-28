@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { formatDateTime, formatTableDateTime } from '../../utils/dateUtils';
 
 const StockHistory = ({ productName = null }) => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -162,18 +163,7 @@ const StockHistory = ({ productName = null }) => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    try {
-      return new Date(dateString).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return '-';
-    }
+    return formatTableDateTime(dateString);
   };
 
   const formatQuantity = (quantity, unit = 'L') => {

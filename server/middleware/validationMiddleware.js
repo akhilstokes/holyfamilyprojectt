@@ -89,10 +89,12 @@ const validationRules = {
     emergencyContactNumber: { required: false, validate: validatePhoneNumber },
     aadhaarNumber: { required: false },
     photoUrl: { required: false, validate: (url) => {
+      // Allow empty or valid URLs
+      if (!url || typeof url !== 'string') return '';
+      if (url.trim() === '') return '';
       // Basic URL check for images
-      if (typeof url !== 'string') return 'Invalid photo URL.';
-      const ok = /^(https?:\/\/).+\.(png|jpe?g|webp|gif)$/i.test(url);
-      return ok ? '' : 'Photo URL must be an http(s) link to an image file.';
+      const ok = /^(https?:\/\/|\/uploads\/).+\.(png|jpe?g|webp|gif)$/i.test(url);
+      return ok ? '' : 'Photo URL must be an http(s) link or /uploads/ path to an image file.';
     } },
     origin: { required: false },
     dailyWage: { required: false }

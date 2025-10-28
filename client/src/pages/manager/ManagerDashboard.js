@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import './ManagerDashboard.css';
 
 const ManagerDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -142,9 +143,52 @@ const ManagerDashboard = () => {
     } catch {}
   };
 
+  // Format notification metadata in a user-friendly way
+  const formatMetadata = (meta) => {
+    if (!meta) return null;
+    
+    const friendlyLabels = {
+      sampleId: 'Sample ID',
+      customerName: 'Customer',
+      calculatedAmount: 'Amount',
+      marketRate: 'Market Rate',
+      companyRate: 'Company Rate',
+      quantity: 'Quantity',
+      drcPercentage: 'DRC %',
+      requestId: 'Request ID',
+      barrelCount: 'Barrel Count',
+      customer: 'Customer',
+      receivedAt: 'Received At',
+      workerId: 'Worker ID',
+      billId: 'Bill ID'
+    };
+
+    return Object.entries(meta)
+      .filter(([k, v]) => v !== undefined && v !== null && v !== '')
+      .map(([key, value]) => ({
+        label: friendlyLabels[key] || key.replace(/([A-Z])/g, ' $1').trim(),
+        value: String(value)
+      }));
+  };
+
+  // Get notification icon based on title/type
+  const getNotificationIcon = (title) => {
+    if (!title) return '📋';
+    const lower = title.toLowerCase();
+    if (lower.includes('billing') || lower.includes('latex')) return '💰';
+    if (lower.includes('drc') || lower.includes('test')) return '🧪';
+    if (lower.includes('attendance')) return '👥';
+    if (lower.includes('leave')) return '📅';
+    if (lower.includes('bill') || lower.includes('payment')) return '💳';
+    if (lower.includes('stock') || lower.includes('inventory')) return '📦';
+    if (lower.includes('rate')) return '💹';
+    if (lower.includes('delivery')) return '🚚';
+    return '📋';
+  };
+
   if (loading) {
     return (
-      <div style={{ padding: 16, textAlign: 'center' }}>
+      <div className="manager-dashboard" style={{ textAlign: 'center', paddingTop: 60 }}>
         <h2>Manager Dashboard</h2>
         <div>Loading dashboard data...</div>
       </div>
@@ -343,50 +387,72 @@ const ManagerDashboard = () => {
       </div>
 
       {/* Notifications Section */}
-      <div className="dash-card" style={{ padding: 16 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <h4 style={{ marginTop: 0 }}>Recent Notifications</h4>
-          <span style={{ color:'#64748b', fontSize:12 }}>Unread: {unread}</span>
+      <div className="notifications-section">
+        <div className="notifications-header">
+          <h4>Recent Notifications</h4>
+          {unread > 0 && (
+            <span className="unread-badge">{unread} new</span>
+          )}
         </div>
         {notifs.length === 0 ? (
-          <div style={{ color:'#94a3b8' }}>No notifications</div>
+          <div className="empty-state">
+            <div className="empty-icon">🔔</div>
+            <p className="empty-text">No notifications at the moment</p>
+            <p className="empty-subtext">You're all caught up!</p>
+          </div>
         ) : (
-          <ul style={{ listStyle:'none', padding:0, margin:0, display:'grid', gap:8 }}>
+          <div className="notifications-list">
             {notifs.slice(0, 5).map(n => (
-              <li key={n._id} style={{
-                border:'1px solid #e2e8f0', borderRadius:8, padding:12, background: n.read ? '#fff' : '#f8fafc'
-              }}>
-                <div style={{ display:'flex', justifyContent:'space-between', gap:12 }}>
-                  <div>
-                    <div style={{ fontWeight:600 }}>{n.title || 'Update'}</div>
-                    <div style={{ color:'#475569', fontSize:14 }}>{n.message}</div>
-                    {n.meta && (
-                      <div style={{ marginTop:6, display:'flex', gap:8, flexWrap:'wrap', color:'#64748b', fontSize:12 }}>
-                        {Object.entries(n.meta).map(([k,v]) => (
-                          <span key={k}><strong>{k}:</strong> {String(v)}</span>
-                        ))}
-                      </div>
-                    )}
-                    <div style={{ color:'#94a3b8', fontSize:12, marginTop:6 }}>{new Date(n.createdAt).toLocaleString()}</div>
+              <div key={n._id} className={`notification-item ${!n.read ? 'unread' : ''}`}>
+                <div className="notification-icon">{getNotificationIcon(n.title)}</div>
+                <div className="notification-content">
+                  <div className="notification-title">{n.title || 'Update'}</div>
+                  <div className="notification-message">{n.message}</div>
+                  {n.meta && formatMetadata(n.meta) && formatMetadata(n.meta).length > 0 && (
+                    <div className="notification-metadata">
+                      {formatMetadata(n.meta).map((item, idx) => (
+                        <span key={idx} className="metadata-item">
+                          <strong>{item.label}:</strong> {item.value}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="notification-time">
+                    {new Date(n.createdAt).toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                   </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end' }}>
-                    {n.link && (
-                      <button className="btn" onClick={() => {
+                </div>
+                <div className="notification-actions">
+                  {n.link && (
+                    <button 
+                      className="notif-action-btn notif-open-btn" 
+                      onClick={() => {
                         if (n.link.startsWith('http')) {
                           window.open(n.link, '_blank');
                         } else {
                           navigate(n.link);
                         }
-                      }}>Open</button>
-                    )}
-                    {!n.read && (
-                      <button className="btn-secondary" onClick={()=>markRead(n._id)}>Mark Read</button>
-                    )}
-                  </div>
+                      }}
+                    >
+                      Open
+                    </button>
+                  )}
+                  {!n.read && (
+                    <button 
+                      className="notif-action-btn notif-mark-btn" 
+                      onClick={() => markRead(n._id)}
+                    >
+                      Mark Read
+                    </button>
+                  )}
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

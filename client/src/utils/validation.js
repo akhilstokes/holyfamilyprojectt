@@ -291,6 +291,10 @@ export const validators = {
       return 'Password cannot exceed 50 characters';
     }
     
+    if (value.includes(' ')) {
+      return 'Password cannot contain spaces';
+    }
+    
     if (!/(?=.*[a-z])/.test(value)) {
       return 'Password must contain at least one lowercase letter';
     }
@@ -301,6 +305,10 @@ export const validators = {
     
     if (!/(?=.*\d)/.test(value)) {
       return 'Password must contain at least one number';
+    }
+    
+    if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(value)) {
+      return 'Password must contain at least one special character (!@#$%^&*()_+-=[]{};\':"|,.<>/?)';
     }
     
     return null;
@@ -406,9 +414,9 @@ export const commonValidationRules = {
   userRegistration: {
     name: [validators.required, validators.name],
     email: [validators.required, validators.email],
-    phone: [validators.required, validators.phone],
+    phoneNumber: [validators.required, validators.phone],
     password: [validators.required, validators.password],
-    role: [validators.required, validators.role]
+    confirmPassword: [validators.required]
   },
   
   // Latex request

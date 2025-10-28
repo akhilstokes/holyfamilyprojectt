@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import './StaffDashboard.css';
 
 export default function StaffDashboard() {
   const [data, setData] = useState({ worker: null, attendance: null, route: null });
@@ -6,12 +7,14 @@ export default function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const token = localStorage.getItem('token');
+  const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const hasLoadedRef = useRef(false);
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      const res = await fetch('/api/workers/field/dashboard', {
+      const res = await fetch(`${apiBase}/api/workers/field/dashboard`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Failed to load');
@@ -22,11 +25,11 @@ export default function StaffDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, apiBase]);
 
-  const fetchShiftSchedule = async () => {
+  const fetchShiftSchedule = useCallback(async () => {
     try {
-      const res = await fetch('/api/workers/field/shift-schedule', {
+      const res = await fetch(`${apiBase}/api/workers/field/shift-schedule`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -36,12 +39,23 @@ export default function StaffDashboard() {
     } catch (e) {
       console.error('Failed to load shift schedule:', e);
     }
-  };
+  }, [token, apiBase]);
 
-  useEffect(() => { 
-    fetchDashboard(); 
-    fetchShiftSchedule();
-  }, [fetchDashboard, fetchShiftSchedule]);
+  useEffect(() => {
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+    let isActive = true;
+    (async () => {
+      if (!isActive) return;
+      await fetchDashboard();
+      if (!isActive) return;
+      await fetchShiftSchedule();
+    })();
+    return () => {
+      isActive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const action = async (type) => {
     try {
@@ -55,87 +69,155 @@ export default function StaffDashboard() {
     }
   };
 
-  if (loading) return <div style={{ padding: 16 }}>Loading...</div>;
-  if (error) return <div style={{ padding: 16, color: 'red' }}>{error}</div>;
+  if (loading) return <div className="loading-state">⏳ Loading your dashboard...</div>;
+  if (error) return <div className="error-state">❌ {error}</div>;
 
   const { worker, attendance, route } = data;
 
   return (
-    <div style={{ padding: 16 }}>
-      <h2>Staff Dashboard</h2>
+    <div className="staff-dashboard">
+      <div className="staff-dashboard-header">
+        <h2>👋 Welcome Back, {worker?.name || 'Staff Member'}!</h2>
+        <p>Here's your dashboard overview for today</p>
+      </div>
 
-      <section style={{ marginBottom: 16 }}>
-        <h3>Profile</h3>
-        {worker ? (
-          <div>
-            <div><strong>Name:</strong> {worker.name}</div>
-            <div><strong>Daily Wage:</strong> ₹ {worker.dailyWage || 0}</div>
-            <div><strong>Contact:</strong> {worker.contactNumber || '-'}</div>
-            <div><strong>Origin:</strong> {worker.origin}</div>
-          </div>
-        ) : <div>No profile linked</div>}
-      </section>
-
-      <section style={{ marginBottom: 16 }}>
-        <h3>Today's Shift</h3>
-        {shiftSchedule?.myAssignment ? (
-          <div style={{ 
-            background: '#e3f2fd', 
-            padding: '15px', 
-            borderRadius: '8px', 
-            border: '1px solid #2196f3',
-            marginBottom: '10px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <i className={`fas ${shiftSchedule.myAssignment.shiftType === 'Morning' ? 'fa-sun' : 'fa-moon'}`} 
-                 style={{ marginRight: '8px', color: '#1976d2' }}></i>
-              <strong style={{ color: '#1976d2' }}>{shiftSchedule.myAssignment.shiftType} Shift</strong>
+      <div className="dashboard-grid">
+        {/* Profile Card */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <div className="card-icon profile">
+              <i className="fas fa-user"></i>
             </div>
-            <div><strong>Start:</strong> {shiftSchedule.myAssignment.startTime}</div>
-            <div><strong>End:</strong> {shiftSchedule.myAssignment.endTime}</div>
+            <h3>Profile</h3>
           </div>
-        ) : (
-          <div style={{ color: '#666', fontStyle: 'italic' }}>No shift assigned for this week</div>
-        )}
-        <div style={{ marginTop: '10px' }}>
-          <a href="/staff/shift-schedule" style={{ 
-            color: '#1976d2', 
-            textDecoration: 'none', 
-            fontSize: '14px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '5px'
-          }}>
-            <i className="fas fa-clock"></i> View Full Schedule
-          </a>
-        </div>
-      </section>
-
-      <section style={{ marginBottom: 16 }}>
-        <h3>Attendance (Today)</h3>
-        <div>
-          <div><strong>Check-in:</strong> {attendance?.checkInAt ? new Date(attendance.checkInAt).toLocaleTimeString() : '-'}</div>
-          <div><strong>Check-out:</strong> {attendance?.checkOutAt ? new Date(attendance.checkOutAt).toLocaleTimeString() : '-'}</div>
-          {attendance?.isLate && (
-            <div style={{ color: '#d32f2f', fontWeight: 'bold' }}>⚠️ Late arrival</div>
-          )}
-        </div>
-        <div style={{ marginTop: 8 }}>
-          <button onClick={() => action('in')} disabled={!!attendance?.checkInAt}>Check In</button>{' '}
-          <button onClick={() => action('out')} disabled={!attendance?.checkInAt || !!attendance?.checkOutAt}>Check Out</button>
-        </div>
-      </section>
-
-      <section>
-        <h3>Today Route</h3>
-        {route ? (
-          <div>
-            <div><strong>Status:</strong> {route.status}</div>
-            <div><strong>Started:</strong> {route.startedAt ? new Date(route.startedAt).toLocaleTimeString() : '-'}</div>
-            <div><strong>Completed:</strong> {route.completedAt ? new Date(route.completedAt).toLocaleTimeString() : '-'}</div>
+          <div className="card-body">
+            {worker ? (
+              <>
+                <div className="info-row">
+                  <span className="info-label">Name</span>
+                  <span className="info-value">{worker.name}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Daily Wage</span>
+                  <span className="info-value">₹ {worker.dailyWage || 0}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Contact</span>
+                  <span className="info-value">{worker.contactNumber || '-'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Origin</span>
+                  <span className="info-value">{worker.origin || '-'}</span>
+                </div>
+              </>
+            ) : (
+              <div className="no-data">No profile linked</div>
+            )}
           </div>
-        ) : <div>No route assigned</div>}
-      </section>
+        </div>
+
+        {/* Shift Card */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <div className="card-icon shift">
+              <i className="fas fa-clock"></i>
+            </div>
+            <h3>Today's Shift</h3>
+          </div>
+          <div className="card-body">
+            {shiftSchedule?.myAssignment ? (
+              <>
+                <div className="shift-badge">
+                  <i className={`fas ${shiftSchedule.myAssignment.shiftType === 'Morning' ? 'fa-sun' : 'fa-moon'}`}></i>
+                  {shiftSchedule.myAssignment.shiftType} Shift
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Start Time</span>
+                  <span className="info-value">{shiftSchedule.myAssignment.startTime}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">End Time</span>
+                  <span className="info-value">{shiftSchedule.myAssignment.endTime}</span>
+                </div>
+                <a href="/staff/shift-schedule" className="view-schedule-link">
+                  <i className="fas fa-calendar-alt"></i>
+                  View Full Schedule
+                </a>
+              </>
+            ) : (
+              <div className="no-data">No shift assigned for this week</div>
+            )}
+          </div>
+        </div>
+
+        {/* Attendance Card */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <div className="card-icon attendance">
+              <i className="fas fa-clipboard-check"></i>
+            </div>
+            <h3>Attendance (Today)</h3>
+          </div>
+          <div className="card-body">
+            <div className="info-row">
+              <span className="info-label">Check-in</span>
+              <span className="info-value">{attendance?.checkInAt ? new Date(attendance.checkInAt).toLocaleTimeString() : '-'}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Check-out</span>
+              <span className="info-value">{attendance?.checkOutAt ? new Date(attendance.checkOutAt).toLocaleTimeString() : '-'}</span>
+            </div>
+            {attendance?.isLate && (
+              <div className="late-badge">
+                <i className="fas fa-exclamation-triangle"></i>
+                Late arrival
+              </div>
+            )}
+            <div className="attendance-actions">
+              <button className="btn-check-in" onClick={() => action('in')} disabled={!!attendance?.checkInAt}>
+                <i className="fas fa-sign-in-alt"></i>
+                Check In
+              </button>
+              <button className="btn-check-out" onClick={() => action('out')} disabled={!attendance?.checkInAt || !!attendance?.checkOutAt}>
+                <i className="fas fa-sign-out-alt"></i>
+                Check Out
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Route Card */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <div className="card-icon route">
+              <i className="fas fa-route"></i>
+            </div>
+            <h3>Today's Route</h3>
+          </div>
+          <div className="card-body">
+            {route ? (
+              <>
+                <div className="info-row">
+                  <span className="info-label">Status</span>
+                  <span className={`status-badge ${route.status?.toLowerCase().replace(/\s+/g, '-')}`}>
+                    {route.status}
+                  </span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Started</span>
+                  <span className="info-value">{route.startedAt ? new Date(route.startedAt).toLocaleTimeString() : '-'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Completed</span>
+                  <span className="info-value">{route.completedAt ? new Date(route.completedAt).toLocaleTimeString() : '-'}</span>
+                </div>
+              </>
+            ) : (
+              <div className="no-data">No route assigned</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

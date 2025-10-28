@@ -22,6 +22,51 @@ exports.listMyBarrelRequests = async (req, res) => {
   }
 };
 
+// Manager: List all barrel requests
+exports.listAllBarrelRequests = async (req, res) => {
+  try {
+    const list = await BarrelRequest.find()
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 });
+    return res.json(list);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Manager: Approve barrel request
+exports.approveBarrelRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await BarrelRequest.findByIdAndUpdate(
+      id,
+      { status: 'approved', adminNotes: req.body.notes || 'Approved by manager' },
+      { new: true }
+    ).populate('user', 'name email');
+    if (!doc) return res.status(404).json({ message: 'Request not found' });
+    return res.json(doc);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
+// Manager: Reject barrel request
+exports.rejectBarrelRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const doc = await BarrelRequest.findByIdAndUpdate(
+      id,
+      { status: 'rejected', adminNotes: reason || 'Rejected by manager' },
+      { new: true }
+    ).populate('user', 'name email');
+    if (!doc) return res.status(404).json({ message: 'Request not found' });
+    return res.json(doc);
+  } catch (e) {
+    return res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
 // Issue Reports
 exports.createIssueReport = async (req, res) => {
   try {

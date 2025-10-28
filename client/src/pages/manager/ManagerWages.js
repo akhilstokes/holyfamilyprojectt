@@ -19,12 +19,14 @@ const ManagerWages = () => {
 
   // Load employees when group changes
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setError('');
-        const api = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-        const hdrs = token ? { Authorization: `Bearer ${token}` } : {};
+    // Debounce the API call to prevent rate limiting
+    const timeoutId = setTimeout(async () => {
+      const loadUsers = async () => {
+        try {
+          setError('');
+          const api = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+          const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+          const hdrs = token ? { Authorization: `Bearer ${token}` } : {};
         
         // Determine role mapping
         const roleMapping = {
@@ -133,9 +135,13 @@ const ManagerWages = () => {
         setError(e?.message || 'Failed to load employees');
         setEmployees([]);
       }
-    };
-    
-    loadUsers();
+      };
+      
+      loadUsers();
+    }, 300); // 300ms debounce delay
+
+    // Cleanup timeout on unmount or dependency change
+    return () => clearTimeout(timeoutId);
   }, [form.group]);
 
   // If group is accountant and employees loaded, auto-select the first employee when none chosen
@@ -215,7 +221,37 @@ const ManagerWages = () => {
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error(`Save failed (${res.status})`);
+      
+      const savedData = await res.json();
       setSaveMsg('Payslip saved.');
+      
+      // Send salary notification to staff
+      try {
+        const notificationPayload = {
+          staffId: payload.workerId,
+          salaryData: {
+            _id: savedData.data?._id || savedData._id,
+            grossSalary: payload.grossSalary,
+            netSalary: payload.netPay,
+            workingDays: payload.workingDays,
+            deductions: (payload.grossSalary || 0) - (payload.netPay || 0)
+          },
+          month: payload.month,
+          year: payload.year
+        };
+        
+        await fetch(`${base}/api/salary-notifications/send`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(notificationPayload)
+        });
+        
+        setSaveMsg('Payslip saved and notification sent to staff.');
+      } catch (notificationError) {
+        console.warn('Failed to send salary notification:', notificationError);
+        setSaveMsg('Payslip saved (notification failed to send).');
+      }
+      
     } catch (e) {
       const msg = e?.message || 'Failed to save payslip';
       // Improve visibility if backend route is missing

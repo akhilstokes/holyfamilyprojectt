@@ -9,10 +9,22 @@ function normalizeWeekStart(d) {
   return dt;
 }
 
-// GET /api/schedules?from=YYYY-MM-DD&to=YYYY-MM-DD&group=field|lab
+// GET /api/schedules?from=YYYY-MM-DD&to=YYYY-MM-DD&group=field|lab|delivery
 exports.list = async (req, res) => {
   try {
-    const { from, to, group = 'field' } = req.query;
+    let { from, to, group = 'field' } = req.query;
+    
+    // Clean up group parameter (handle "field:1" or similar malformed values)
+    if (group && typeof group === 'string') {
+      group = group.split(':')[0].trim().toLowerCase();
+    }
+    
+    // Validate group
+    const validGroups = ['field', 'lab', 'delivery'];
+    if (!validGroups.includes(group)) {
+      group = 'field'; // Default to field if invalid
+    }
+    
     const q = { group };
     if (from || to) {
       q.weekStart = {};
@@ -21,6 +33,24 @@ exports.list = async (req, res) => {
     }
     const items = await WeeklyShiftSchedule.find(q).sort({ weekStart: -1 });
     res.json(items);
+  } catch (e) { res.status(500).json({ message: e.message }); }
+};
+
+// GET /api/schedules/overrides?weekStart=YYYY-MM-DD&group=field|lab|delivery
+exports.getOverrides = async (req, res) => {
+  try {
+    let { weekStart, group = 'field' } = req.query;
+    
+    // Clean up group parameter
+    if (group && typeof group === 'string') {
+      group = group.split(':')[0].trim().toLowerCase();
+    }
+    
+    if (!weekStart) return res.status(400).json({ message: 'weekStart required' });
+    const normalized = normalizeWeekStart(weekStart);
+    const doc = await WeeklyShiftSchedule.findOne({ weekStart: normalized, group }).select('overrides');
+    if (!doc) return res.json({ overrides: [] });
+    res.json({ overrides: doc.overrides || [] });
   } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
@@ -68,13 +98,32 @@ exports.removeOverride = async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
-// GET /api/schedules/by-week?weekStart=YYYY-MM-DD&group=field|lab
+// GET /api/schedules/by-week?weekStart=YYYY-MM-DD&group=field|lab|delivery
 exports.getByWeek = async (req, res) => {
   try {
-    const { weekStart, group = 'field' } = req.query;
+    let { weekStart, group = 'field' } = req.query;
+    
+    // Clean up group parameter
+    if (group && typeof group === 'string') {
+      group = group.split(':')[0].trim().toLowerCase();
+    }
+    
     if (!weekStart) return res.status(400).json({ message: 'weekStart required' });
     const doc = await WeeklyShiftSchedule.findOne({ weekStart: normalizeWeekStart(weekStart), group });
-    if (!doc) return res.status(404).json({ message: 'Not found' });
+    
+    // Return empty structure if not found instead of 404
+    if (!doc) {
+      return res.json({
+        weekStart: normalizeWeekStart(weekStart),
+        group,
+        assignments: [],
+        overrides: [],
+        morningStart: '09:00',
+        morningEnd: '17:00',
+        eveningStart: '18:00',
+        eveningEnd: '22:00'
+      });
+    }
     res.json(doc);
   } catch (e) { res.status(500).json({ message: e.message }); }
 };

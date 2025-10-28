@@ -66,10 +66,7 @@ const MobileOptimizedLayout = ({ children, title = "Field Operations" }) => {
 
   const quickActions = [
     { icon: 'fas fa-clock', label: 'Check In/Out', path: '/staff/attendance', color: '#28a745' },
-    { icon: 'fas fa-oil-can', label: 'Add Barrel', path: '/staff/operations/add-barrel', color: '#007bff' },
-    { icon: 'fas fa-weight', label: 'Weigh Latex', path: '/staff/weigh-latex', color: '#ffc107' },
     { icon: 'fas fa-camera', label: 'Capture Photo', action: 'photo', color: '#6f42c1' },
-    { icon: 'fas fa-road', label: 'Log Trip', path: '/staff/operations/trip-km', color: '#17a2b8' },
     { icon: 'fas fa-wallet', label: 'Salary', path: '/staff/salary', color: '#20c997' }
   ];
 

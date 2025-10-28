@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { httpFetch } from '../../services/http';
 import StockHistory from '../../components/common/StockHistory';
 import StockTransactionForm from '../../components/common/StockTransactionForm';
+import { formatDateTime, formatTableDateTime } from '../../utils/dateUtils';
 
 const ManagerStock = () => {
   const base = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
@@ -79,7 +80,7 @@ const ManagerStock = () => {
               </div>
               <div>
                 <div style={{ fontSize: 12, color:'var(--text-subtle)' }}>Updated At</div>
-                <div>{summary.updatedAt ? new Date(summary.updatedAt).toLocaleString() : '-'}</div>
+                <div>{formatDateTime(summary.updatedAt)}</div>
               </div>
             </div>
           </div>
@@ -93,7 +94,7 @@ const ManagerStock = () => {
               </div>
               <div>
                 <div style={{ fontSize: 12, color:'var(--text-subtle)' }}>Updated At</div>
-                <div>{summary.updatedAt ? new Date(summary.updatedAt).toLocaleString() : '-'}</div>
+                <div>{formatDateTime(summary.updatedAt)}</div>
               </div>
             </div>
           </div>
@@ -112,7 +113,7 @@ const ManagerStock = () => {
                   <tr key={it._id}>
                     <td style={{ color: '#0f172a' }}>{it.productName}</td>
                     <td style={{ color: '#0f172a' }}>{it.quantityInLiters}</td>
-                    <td style={{ color: '#0f172a' }}>{it.updatedAt ? new Date(it.updatedAt).toLocaleString() : '-'}</td>
+                    <td style={{ color: '#0f172a' }}>{formatTableDateTime(it.updatedAt)}</td>
                     <td style={{ color: '#0f172a' }}>
                       <button className="btn btn-sm btn-outline-primary" onClick={() => setSelectedProduct(it.productName)}>
                         View History

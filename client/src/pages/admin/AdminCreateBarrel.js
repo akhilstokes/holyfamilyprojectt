@@ -25,6 +25,8 @@ function AdminCreateBarrel() {
   const [activeTab, setActiveTab] = useState('create'); // 'create' | 'approve'
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [managerRequests, setManagerRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
 
   // Validate form on change
   useEffect(() => {
@@ -33,6 +35,31 @@ function AdminCreateBarrel() {
       setFormErrors(newErrors);
     }
   }, [form]);
+
+  // Load manager requests
+  const loadManagerRequests = async () => {
+    setRequestsLoading(true);
+    try {
+      const res = await fetch('/api/barrel-creation-requests?status=pending', {
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': token ? `Bearer ${token}` : undefined 
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setManagerRequests(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error('Failed to load manager requests:', e);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadManagerRequests();
+  }, []);
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -55,6 +82,24 @@ function AdminCreateBarrel() {
     const num = String(Math.floor(Math.random() * 99) + 1).padStart(2, '0');
     const id = `BHFP${num}`;
     setForm(prev => ({ ...prev, barrelId: id }));
+  };
+
+  const markRequestAsInProgress = async (requestId) => {
+    try {
+      const res = await fetch(`/api/barrel-creation-requests/${requestId}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': token ? `Bearer ${token}` : undefined 
+        },
+        body: JSON.stringify({ status: 'in-progress' })
+      });
+      if (res.ok) {
+        await loadManagerRequests();
+      }
+    } catch (e) {
+      console.error('Failed to update request:', e);
+    }
   };
 
   const submit = async (e) => {
@@ -131,6 +176,77 @@ function AdminCreateBarrel() {
   return (
     <div className="card" style={{ maxWidth: 860, margin: '0 auto' }}>
       <div className="card-body">
+        {/* Manager Barrel Requests */}
+        {managerRequests.length > 0 && (
+          <div style={{ 
+            marginBottom: 24, 
+            padding: 16, 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+            borderRadius: 8,
+            color: 'white'
+          }}>
+            <h3 style={{ margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+              📦 Manager Requests - Barrels Needed
+              <span style={{ fontSize: 14, fontWeight: 'normal', opacity: 0.9 }}>
+                ({managerRequests.length} {managerRequests.length === 1 ? 'request' : 'requests'})
+              </span>
+            </h3>
+            <div style={{ display: 'grid', gap: 12 }}>
+              {managerRequests.map(req => (
+                <div key={req._id} style={{ 
+                  background: 'rgba(255,255,255,0.95)', 
+                  padding: 12, 
+                  borderRadius: 6,
+                  color: '#1e293b',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', flex: 1 }}>
+                    <div style={{ 
+                      background: '#3b82f6', 
+                      color: 'white', 
+                      padding: '8px 16px', 
+                      borderRadius: 20, 
+                      fontWeight: 700,
+                      fontSize: 18
+                    }}>
+                      {req.quantity} {req.quantity === 1 ? 'Barrel' : 'Barrels'}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>
+                        For: {req.userName || req.userEmail || 'User'}
+                      </div>
+                      {req.notes && (
+                        <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+                          {req.notes}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                        Requested: {new Date(req.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => markRequestAsInProgress(req._id)}
+                    style={{
+                      background: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: 6,
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✓ Start Creating
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <button type="button" className={`btn ${activeTab === 'create' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('create')}>Create Barrel</button>

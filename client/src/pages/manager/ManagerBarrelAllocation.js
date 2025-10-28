@@ -1,4 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { 
+  validateBarrelEligibility, 
+  validateBarrelAllocation, 
+  validateBusinessRules,
+  getValidationSummary,
+  formatValidationErrors 
+} from '../../utils/barrelValidation';
+import { formatTableDateTime } from '../../utils/dateUtils';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -23,20 +31,33 @@ const ManagerBarrelAllocation = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyRows, setHistoryRows] = useState([]);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [validationWarnings, setValidationWarnings] = useState({});
+  const [showValidationDetails, setShowValidationDetails] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState([]); // Approved barrel requests
 
   const load = async () => {
     setLoading(true); setErr(''); setMsg('');
     try {
-      const [b, u] = await Promise.all([
+      const [b, u, r] = await Promise.all([
         fetch(`${API}/api/barrels`, { headers: authHeaders() }),
-        fetch(`${API}/api/user-management/staff?role=user&status=active&limit=500`, { headers: authHeaders() })
+        fetch(`${API}/api/user-management/staff?role=user&status=active&limit=500`, { headers: authHeaders() }),
+        fetch(`${API}/api/requests/barrels/manager/all`, { headers: authHeaders() }).catch(() => ({ ok: false }))
       ]);
       if (!b.ok) throw new Error(`Failed to load barrels (${b.status})`);
       const barrelsList = await b.json();
       const usersJson = u.ok ? await u.json() : { users: [] };
       const usersList = usersJson?.users || usersJson?.records || [];
+      
+      // Get approved requests that haven't been fulfilled
+      const requestsData = r.ok ? await r.json() : [];
+      const approvedRequests = Array.isArray(requestsData) 
+        ? requestsData.filter(req => req.status === 'approved')
+        : [];
+      
       setBarrels(Array.isArray(barrelsList) ? barrelsList : []);
       setUsers(Array.isArray(usersList) ? usersList : []);
+      setPendingRequests(approvedRequests);
     } catch (e) {
       setErr(e?.message || 'Failed to load data');
       setBarrels([]); setUsers([]);
@@ -83,12 +104,36 @@ const ManagerBarrelAllocation = () => {
   }, []);
 
   const available = useMemo(() => barrels.filter(b => b.status !== 'disposed' && String(b.barrelId || '').toLowerCase().includes(search.toLowerCase())), [barrels, search]);
+  
+  // Enhanced eligibility check with validation
   const isEligible = (b) => {
-    const assigned = b && b.assignedTo ? String(b.assignedTo) : '';
-    const r = recipient ? String(recipient) : '';
-    return !assigned || (assigned && r && assigned === r);
+    if (!recipient) return false;
+    const validation = validateBarrelEligibility(b, recipient);
+    return validation.isValid;
   };
+  
   const availableEligible = useMemo(() => available.filter(isEligible), [available, recipient]);
+  
+  // Validate all selected barrels
+  const validateSelectedBarrels = useMemo(() => {
+    if (!recipient || selected.length === 0) return { isValid: true, errors: [], warnings: [] };
+    
+    const errors = [];
+    const warnings = [];
+    
+    selected.forEach(barrelId => {
+      const barrel = barrels.find(b => b.barrelId === barrelId);
+      if (barrel) {
+        const validation = validateBarrelEligibility(barrel, recipient);
+        if (!validation.isValid) {
+          errors.push(...validation.errors);
+        }
+        warnings.push(...validation.warnings);
+      }
+    });
+    
+    return { isValid: errors.length === 0, errors, warnings };
+  }, [selected, recipient, barrels]);
   const availableSorted = useMemo(() => {
     const arr = [...available];
     arr.sort((a,b)=>{
@@ -129,14 +174,45 @@ const ManagerBarrelAllocation = () => {
 
   const dispatchNow = async () => {
     setErr(''); setMsg('');
-    if (!recipient) { setErr('Select a recipient'); return; }
-    if (selected.length === 0) { setErr('Select at least one barrel'); return; }
-    if (!sendDate) { setErr('Select a sending date'); return; }
+    
+    // Comprehensive validation
+    const formValidation = validateBarrelAllocation({
+      recipient,
+      selectedBarrels: selected,
+      sendDate,
+      count: countStr
+    });
+    
+    if (!formValidation.isValid) {
+      setErr(`Validation failed: ${Object.values(formValidation.errors).join(', ')}`);
+      return;
+    }
+    
+    // Validate selected barrels
+    if (!validateSelectedBarrels.isValid) {
+      setErr(`Barrel validation failed: ${validateSelectedBarrels.errors.join(', ')}`);
+      return;
+    }
+    
+    // Business rules validation
+    const businessValidation = validateBusinessRules(selected, recipient, barrels);
+    if (!businessValidation.isValid) {
+      setErr(`Business rules validation failed: ${businessValidation.errors.join(', ')}`);
+      return;
+    }
+    
+    // Show warnings if any
+    if (validateSelectedBarrels.warnings.length > 0 || businessValidation.warnings.length > 0) {
+      const allWarnings = [...validateSelectedBarrels.warnings, ...businessValidation.warnings];
+      const proceed = window.confirm(`Warnings:\n${allWarnings.join('\n')}\n\nDo you want to proceed?`);
+      if (!proceed) return;
+    }
+    
     // Confirm summary
     const recLabel = (users.find(u=>u._id===recipient)?.name) || 'user';
     const first = selected[0];
     const extra = selected.length > 1 ? ` and ${selected.length-1} more` : '';
-    const ok = window.confirm(`Assign ${first}${extra} to ${recLabel} on ${sendDate}?`);
+    const ok = window.confirm(`Assign ${first}${extra} to ${recLabel} on ${sendDate}?\n\nThis action cannot be undone. Barrels will be locked to this user until returned.`);
     if (!ok) return;
     setDispatching(true);
     try {
@@ -189,8 +265,92 @@ const ManagerBarrelAllocation = () => {
           <button onClick={()=>{ setShowHistory(true); loadHistory(); }}>History</button>
         </div>
       </div>
-      {err && <div style={{ color:'tomato', marginTop:8 }}>{err}</div>}
-      {msg && <div style={{ color:'seagreen', marginTop:8 }}>{msg}</div>}
+      {err && <div style={{ color:'tomato', marginTop:8, padding: 12, backgroundColor: '#fee', border: '1px solid #fcc', borderRadius: 4 }}>{err}</div>}
+      {msg && <div style={{ color:'seagreen', marginTop:8, padding: 12, backgroundColor: '#efe', border: '1px solid #cfc', borderRadius: 4 }}>{msg}</div>}
+      
+      {/* Approved Barrel Requests Section */}
+      {pendingRequests.length > 0 && (
+        <div style={{ marginTop: 16, padding: 16, backgroundColor: '#f0f9ff', border: '2px solid #3b82f6', borderRadius: 8 }}>
+          <h3 style={{ margin: '0 0 12px 0', color: '#1e40af', display: 'flex', alignItems: 'center', gap: 8 }}>
+            📋 Approved Barrel Requests Waiting for Assignment
+            <span style={{ fontSize: 14, fontWeight: 'normal', color: '#64748b' }}>
+              ({pendingRequests.length} {pendingRequests.length === 1 ? 'request' : 'requests'})
+            </span>
+          </h3>
+          <div style={{ display: 'grid', gap: 12 }}>
+            {pendingRequests.map(req => (
+              <div key={req._id} style={{ 
+                background: 'white', 
+                padding: 12, 
+                borderRadius: 6, 
+                border: '1px solid #bfdbfe',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flex: 1 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 15, color: '#1e293b' }}>
+                      {req.user?.name || req.user?.email || 'Unknown User'}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                      User ID: {req.user?._id}
+                    </div>
+                  </div>
+                  <div style={{ 
+                    background: '#dbeafe', 
+                    color: '#1e40af', 
+                    padding: '6px 12px', 
+                    borderRadius: 20, 
+                    fontWeight: 700,
+                    fontSize: 16
+                  }}>
+                    {req.quantity} {req.quantity === 1 ? 'Barrel' : 'Barrels'} Needed
+                  </div>
+                  {req.notes && (
+                    <div style={{ fontSize: 13, color: '#475569', fontStyle: 'italic' }}>
+                      Note: {req.notes}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                    Approved: {new Date(req.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setRecipient(req.user?._id || '');
+                    setCountStr(String(req.quantity || ''));
+                  }}
+                  style={{
+                    background: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Assign Barrels →
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Validation Status */}
+      {!validateSelectedBarrels.isValid && selected.length > 0 && (
+        <div style={{ color:'tomato', marginTop:8, padding: 12, backgroundColor: '#fee', border: '1px solid #fcc', borderRadius: 4 }}>
+          <strong>⚠️ Assignment Blocked:</strong> {validateSelectedBarrels.errors.join(', ')}
+        </div>
+      )}
+      
+      {(validateSelectedBarrels.warnings.length > 0 || validateBusinessRules(selected, recipient, barrels).warnings.length > 0) && selected.length > 0 && (
+        <div style={{ color:'orange', marginTop:8, padding: 12, backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: 4 }}>
+          <strong>⚠️ Warnings:</strong> {[...validateSelectedBarrels.warnings, ...validateBusinessRules(selected, recipient, barrels).warnings].join(', ')}
+        </div>
+      )}
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:12, marginTop:12 }}>
         <div>
@@ -252,15 +412,50 @@ const ManagerBarrelAllocation = () => {
             </tr>
           </thead>
           <tbody>
-            {available.map(b => (
-              <tr key={b._id}>
-                <td><input type="checkbox" checked={selected.includes(b.barrelId)} onChange={()=>toggle(b.barrelId)} disabled={!isEligible(b)} /></td>
-                <td>{b.barrelId}</td>
-                <td>{b.status}</td>
-                <td>{b.manufactureDate ? new Date(b.manufactureDate).toISOString().slice(0,10) : '-'}</td>
-                <td>{b.expiryDate ? new Date(b.expiryDate).toISOString().slice(0,10) : '-'}</td>
-              </tr>
-            ))}
+            {available.map(b => {
+              const validation = validateBarrelEligibility(b, recipient);
+              const isAssignedToOther = b.assignedTo && b.assignedTo !== recipient;
+              const assignedUser = isAssignedToOther ? users.find(u => u._id === b.assignedTo) : null;
+              
+              return (
+                <tr key={b._id} style={{ 
+                  backgroundColor: isAssignedToOther ? '#fff3cd' : validation.isValid ? 'inherit' : '#fee',
+                  opacity: !isEligible(b) ? 0.6 : 1
+                }}>
+                  <td>
+                    <input 
+                      type="checkbox" 
+                      checked={selected.includes(b.barrelId)} 
+                      onChange={()=>toggle(b.barrelId)} 
+                      disabled={!isEligible(b)} 
+                    />
+                  </td>
+                  <td>
+                    {b.barrelId}
+                    {isAssignedToOther && (
+                      <div style={{ fontSize: 10, color: 'red', marginTop: 2 }}>
+                        Assigned to: {assignedUser?.name || 'Unknown'}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <span style={{ 
+                      padding: '2px 6px', 
+                      borderRadius: '3px', 
+                      fontSize: '11px',
+                      backgroundColor: b.status === 'in-storage' ? '#d4edda' : 
+                                     b.status === 'in-use' ? '#fff3cd' : '#f8d7da',
+                      color: b.status === 'in-storage' ? '#155724' : 
+                             b.status === 'in-use' ? '#856404' : '#721c24'
+                    }}>
+                      {b.status}
+                    </span>
+                  </td>
+                  <td>{b.manufactureDate ? formatTableDateTime(b.manufactureDate) : '-'}</td>
+                  <td>{b.expiryDate ? formatTableDateTime(b.expiryDate) : '-'}</td>
+                </tr>
+              );
+            })}
             {available.length === 0 && (
               <tr><td colSpan={6} style={{ textAlign:'center', color:'#6b7280' }}>No barrels found</td></tr>
             )}
@@ -291,20 +486,83 @@ const ManagerBarrelAllocation = () => {
                     <th>User</th>
                     <th>Count</th>
                     <th>Barrel IDs</th>
-                    <th>Send Date</th>
+                    <th>Assigned Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {historyRows.map((r, idx)=> (
                     <tr key={idx}>
-                      <td>{r.user || '-'}</td>
-                      <td>{r.ids?.length || 0}</td>
-                      <td style={{ whiteSpace:'nowrap', maxWidth:480, overflow:'hidden', textOverflow:'ellipsis' }}>{(r.ids||[]).join(', ')}</td>
-                      <td>{r.date || '-'}</td>
+                      <td>
+                        <div style={{ fontWeight: 'bold' }}>{r.user || '-'}</div>
+                        {r.userEmail && (
+                          <div style={{ fontSize: '11px', color: '#666' }}>{r.userEmail}</div>
+                        )}
+                      </td>
+                      <td>
+                        <span style={{ 
+                          padding: '2px 6px', 
+                          borderRadius: '3px', 
+                          backgroundColor: '#e3f2fd',
+                          color: '#1976d2',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}>
+                          {r.ids?.length || 0}
+                        </span>
+                      </td>
+                      <td style={{ whiteSpace:'nowrap', maxWidth:480, overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {(r.ids||[]).map((id, i) => (
+                          <span key={i} style={{ 
+                            display: 'inline-block',
+                            margin: '1px',
+                            padding: '1px 4px',
+                            backgroundColor: '#f5f5f5',
+                            borderRadius: '2px',
+                            fontSize: '10px'
+                          }}>
+                            {id}
+                          </span>
+                        ))}
+                      </td>
+                      <td>{formatTableDateTime(r.date) || '-'}</td>
+                      <td>
+                        <span style={{ 
+                          padding: '2px 6px', 
+                          borderRadius: '3px', 
+                          fontSize: '11px',
+                          backgroundColor: r.status === 'assigned' ? '#d4edda' : 
+                                         r.status === 'returned' ? '#fff3cd' : '#f8d7da',
+                          color: r.status === 'assigned' ? '#155724' : 
+                                 r.status === 'returned' ? '#856404' : '#721c24'
+                        }}>
+                          {r.status || 'assigned'}
+                        </span>
+                      </td>
+                      <td>
+                        <button 
+                          style={{ 
+                            padding: '2px 6px', 
+                            fontSize: '10px',
+                            backgroundColor: '#007bff',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '2px',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            // Show detailed history for this assignment
+                            alert(`Assignment Details:\nUser: ${r.user}\nDate: ${r.date}\nBarrels: ${(r.ids||[]).join(', ')}\nStatus: ${r.status || 'assigned'}`);
+                          }}
+                        >
+                          Details
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {historyRows.length === 0 && (
-                    <tr><td colSpan={4} style={{ textAlign:'center', color:'#6b7280' }}>{historyLoading ? 'Loading...' : 'No history found'}</td></tr>
+                    <tr><td colSpan={6} style={{ textAlign:'center', color:'#6b7280' }}>{historyLoading ? 'Loading...' : 'No history found'}</td></tr>
                   )}
                 </tbody>
               </table>

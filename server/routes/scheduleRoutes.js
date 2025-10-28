@@ -8,6 +8,7 @@ const scheduleChangeCtrl = require('../controllers/scheduleChangeRequestControll
 router.post('/manager/submit', protect, adminOrManager, ctrl.managerSubmitSchedule);
 
 // Day overrides
+router.get('/overrides', protect, adminOrManager, ctrl.getOverrides);
 router.post('/overrides', protect, adminOrManager, ctrl.addOverride);
 router.delete('/overrides', protect, adminOrManager, ctrl.removeOverride);
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import './AccountantDashboard.css';
 
 const AccountantDashboard = () => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -55,61 +56,136 @@ const AccountantDashboard = () => {
     } catch {}
   };
 
-  return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <div>
-        <h2 style={{ margin: 0 }}>Accountant Dashboard</h2>
-        <div style={{ color: '#64748b' }}>Welcome, Accountant.</div>
-      </div>
+  // Format notification metadata in a user-friendly way
+  const formatMetadata = (meta) => {
+    if (!meta) return null;
+    
+    const friendlyLabels = {
+      sampleId: 'Sample ID',
+      customerName: 'Customer',
+      calculatedAmount: 'Amount',
+      marketRate: 'Market Rate',
+      companyRate: 'Company Rate',
+      quantity: 'Quantity',
+      drcPercentage: 'DRC %',
+      requestId: 'Request ID',
+      barrelCount: 'Barrel Count',
+      customer: 'Customer',
+      receivedAt: 'Received At'
+    };
 
-      <div className="dash-card" style={{ padding: 16 }}>
-        <h3 style={{ marginTop: 0 }}>Quick Actions</h3>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Link className="btn" to="/accountant/latex">Verify Latex Billing</Link>
-          <Link className="btn" to="/accountant/wages">Auto Wages</Link>
-          <Link className="btn" to="/accountant/stock">Stock Monitor</Link>
-          <Link className="btn" to="/accountant/payments">Bill Payments</Link>
+    return Object.entries(meta)
+      .filter(([k, v]) => v !== undefined && v !== null && v !== '')
+      .map(([key, value]) => ({
+        label: friendlyLabels[key] || key.replace(/([A-Z])/g, ' $1').trim(),
+        value: String(value)
+      }));
+  };
+
+  // Get notification icon based on title/type
+  const getNotificationIcon = (title) => {
+    if (!title) return '📋';
+    const lower = title.toLowerCase();
+    if (lower.includes('billing') || lower.includes('latex')) return '💰';
+    if (lower.includes('drc') || lower.includes('test')) return '🧪';
+    if (lower.includes('wages') || lower.includes('salary')) return '💵';
+    if (lower.includes('stock') || lower.includes('inventory')) return '📦';
+    if (lower.includes('payment') || lower.includes('bill')) return '💳';
+    if (lower.includes('delivery')) return '🚚';
+    return '📋';
+  };
+
+  return (
+    <div className="accountant-dashboard">
+      {/* Header Section */}
+      <div className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">Accountant Dashboard</h1>
+          <p className="dashboard-subtitle">Welcome back! Here's your financial overview.</p>
         </div>
       </div>
 
-      <div className="dash-card" style={{ padding: 16 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <h3 style={{ marginTop: 0 }}>Notifications</h3>
-          <span style={{ color:'#64748b', fontSize:12 }}>Unread: {unread}</span>
+      {/* Quick Actions */}
+      <div className="quick-actions-card">
+        <h2 className="section-title">Quick Actions</h2>
+        <div className="quick-actions-grid">
+          <Link className="action-button action-primary" to="/accountant/latex">
+            <span className="action-icon">💰</span>
+            <span className="action-text">Verify Latex Billing</span>
+          </Link>
+          <Link className="action-button action-secondary" to="/accountant/wages">
+            <span className="action-icon">💵</span>
+            <span className="action-text">Auto Wages</span>
+          </Link>
+          <Link className="action-button action-tertiary" to="/accountant/stock">
+            <span className="action-icon">📦</span>
+            <span className="action-text">Stock Monitor</span>
+          </Link>
+          <Link className="action-button action-info" to="/accountant/payments">
+            <span className="action-icon">💳</span>
+            <span className="action-text">Bill Payments</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="notifications-card">
+        <div className="notifications-header">
+          <h2 className="section-title">Notifications</h2>
+          {unread > 0 && (
+            <span className="unread-badge">{unread} new</span>
+          )}
         </div>
         {notifs.length === 0 ? (
-          <div style={{ color:'#94a3b8' }}>No notifications</div>
+          <div className="empty-state">
+            <div className="empty-icon">🔔</div>
+            <p className="empty-text">No notifications at the moment</p>
+            <p className="empty-subtext">You're all caught up!</p>
+          </div>
         ) : (
-          <ul style={{ listStyle:'none', padding:0, margin:0, display:'grid', gap:8 }}>
+          <div className="notifications-list">
             {notifs.map(n => (
-              <li key={n._id} style={{
-                border:'1px solid #e2e8f0', borderRadius:8, padding:12, background: n.read ? '#fff' : '#f8fafc'
-              }}>
-                <div style={{ display:'flex', justifyContent:'space-between', gap:12 }}>
-                  <div>
-                    <div style={{ fontWeight:600 }}>{n.title || 'Update'}</div>
-                    <div style={{ color:'#475569', fontSize:14 }}>{n.message}</div>
-                    {n.meta && (
-                      <div style={{ marginTop:6, display:'flex', gap:8, flexWrap:'wrap', color:'#64748b', fontSize:12 }}>
-                        {Object.entries(n.meta).map(([k,v]) => (
-                          <span key={k}><strong>{k}:</strong> {String(v)}</span>
-                        ))}
-                      </div>
-                    )}
-                    <div style={{ color:'#94a3b8', fontSize:12, marginTop:6 }}>{new Date(n.createdAt).toLocaleString()}</div>
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end' }}>
-                    {n.link && (
-                      <a className="btn" href={n.link} style={{ textDecoration:'none' }}>Open</a>
-                    )}
-                    {!n.read && (
-                      <button className="btn-secondary" onClick={()=>markRead(n._id)}>Mark Read</button>
-                    )}
+              <div key={n._id} className={`notification-item ${!n.read ? 'unread' : ''}`}>
+                <div className="notification-icon">{getNotificationIcon(n.title)}</div>
+                <div className="notification-content">
+                  <div className="notification-title">{n.title || 'Update'}</div>
+                  <div className="notification-message">{n.message}</div>
+                  {n.meta && formatMetadata(n.meta) && formatMetadata(n.meta).length > 0 && (
+                    <div className="notification-metadata">
+                      {formatMetadata(n.meta).map((item, idx) => (
+                        <span key={idx} className="metadata-item">
+                          <strong>{item.label}:</strong> {item.value}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="notification-time">
+                    {new Date(n.createdAt).toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                   </div>
                 </div>
-              </li>
+                <div className="notification-actions">
+                  {n.link && (
+                    <Link className="notif-action-btn notif-open-btn" to={n.link}>
+                      Open
+                    </Link>
+                  )}
+                  {!n.read && (
+                    <button 
+                      className="notif-action-btn notif-mark-btn" 
+                      onClick={() => markRead(n._id)}
+                    >
+                      Mark Read
+                    </button>
+                  )}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

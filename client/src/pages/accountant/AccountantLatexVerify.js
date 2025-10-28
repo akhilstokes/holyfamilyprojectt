@@ -8,6 +8,7 @@ import {
   validateLatexRequest,
   managerVerifyReq
 } from '../../services/accountantService';
+import { formatTableDateTime } from '../../utils/dateUtils';
 import { useConfirm } from '../../components/common/ConfirmDialog';
 import { validators, validateField, commonValidationRules } from '../../utils/validation';
 import ValidatedInput from '../../components/common/ValidatedInput';
@@ -344,7 +345,7 @@ export default function AccountantLatexVerify() {
               <tbody>
                 {filteredRows.map(r => (
                   <tr key={r._id}>
-                    <td>{new Date(r.submittedAt || r.createdAt).toLocaleString()}</td>
+                    <td>{formatTableDateTime(r.submittedAt || r.createdAt)}</td>
                     <td>
                       <span style={{ 
                         color: (!r.user?.name || r.user?.name === '-') ? '#d32f2f' : 'inherit',
@@ -378,7 +379,7 @@ export default function AccountantLatexVerify() {
                       </span>
                     </td>
                     {viewMode === 'history' && (
-                      <td>{new Date(r.updatedAt || r.createdAt).toLocaleString()}</td>
+                      <td>{formatTableDateTime(r.updatedAt || r.createdAt)}</td>
                     )}
                     {viewMode === 'current' && (
                       <td style={{ display: 'flex', gap: 8 }}>

@@ -16,8 +16,10 @@ const app = express();
 // ✅ CORS Setup: Allow React frontend and Vercel deployment
 const allowedOrigins = [
     'http://localhost:3000', 
-    'http://localhost:3001', 
+    'http://localhost:3001',
+    'http://localhost:5000',
     'http://127.0.0.1:3000',
+    'http://127.0.0.1:5000',
     'https://holyfamilyprojectt.vercel.app',
     'https://holyfamilyprojectt-b486fa3gw-akhilstokes-projects.vercel.app'
 ];
@@ -94,11 +96,14 @@ app.use('/api/repairs', require('./routes/repairRoutes'));
 app.use('/api/staff-barrels', require('./routes/staffBarrelRoutes'));
 app.use('/api/sales', require('./routes/salesRoutes'));
 app.use('/api/requests', require('./routes/requestRoutes'));
+// Manager to Admin barrel creation requests
+app.use('/api/barrel-creation-requests', require('./routes/barrelCreationRequestRoutes'));
 app.use('/api/chemicals', require('./routes/chemRoutes'));
 app.use('/api/chem-requests', require('./routes/chemicalRequestRoutes'));
 app.use('/api/uploads', require('./routes/uploadRoutes'));
 app.use('/api/salary', require('./routes/salaryRoutes'));
 app.use('/api/wages', require('./routes/wagesRoutes'));
+app.use('/api/salary-notifications', require('./routes/salaryNotificationRoutes'));
 app.use('/api/daily-wage', require('./routes/dailyWageRoutes'));
 app.use('/api/monthly-wage', require('./routes/monthlyWageRoutes'));
 app.use('/api/wage-templates', require('./routes/wageTemplateRoutes'));
@@ -119,6 +124,7 @@ app.use('/api/stock-history', require('./routes/stockHistoryRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/shifts', require('./routes/shiftRoutes'));
 app.use('/api/salary', require('./routes/salaryRoutes'));
+app.use('/api/barrels', require('./routes/barrelReturnRoutes'));
 app.use('/api/daily-wage', require('./routes/dailyWageRoutes'));
 app.use('/api/monthly-wage', require('./routes/monthlyWageRoutes'));
 app.use('/api/unified-salary', require('./routes/unifiedSalaryRoutes'));
@@ -160,35 +166,62 @@ app.post('/api/notifications/staff-trip-event', async (req, res) => {
     }
 });
 
-// Optional: Simple test route
-app.get('/', (req, res) => {
-    res.send('Holy Family Polymers API is running...');
+// Serve React build files (AFTER all API routes)
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+// Catch-all route to serve React app for any non-API routes
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
-// Seed default Lab Staff user if not exists
+// Seed default Lab Staff users if not exists
 (async () => {
     try {
         const User = require('./models/userModel');
-        const email = 'labstaff@xyz.com';
-        const existing = await User.findOne({ email }).lean();
-        if (!existing) {
-            await User.create({
+        const bcrypt = require('bcryptjs');
+        
+        const labStaffUsers = [
+            {
                 name: 'Lab Staff',
-                email,
+                email: 'labstaff@xyz.com',
                 phoneNumber: '9876543210',
                 password: 'labstaff@123',
-                role: 'lab',
+                role: 'lab_staff',
+                staffId: 'LAB000',
                 status: 'active'
-            });
-            console.log('Seeded default Lab Staff user:', email);
+            },
+            {
+                name: 'Lab Manager',
+                email: 'labmanager@xyz.com',
+                phoneNumber: '9876543211',
+                password: 'labmanager@123',
+                role: 'lab_manager',
+                staffId: 'LABMGR',
+                status: 'active'
+            }
+        ];
+
+        for (const userData of labStaffUsers) {
+            const existing = await User.findOne({ email: userData.email }).lean();
+            if (!existing) {
+                // Hash password
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(userData.password, salt);
+                
+                await User.create({
+                    ...userData,
+                    password: hashedPassword
+                });
+                console.log('Seeded default Lab user:', userData.email);
+            }
         }
     } catch (e) {
-        console.warn('Failed to seed default Lab Staff user:', e?.message || e);
+        console.warn('Failed to seed default Lab Staff users:', e?.message || e);
     }
 })();
 
 // Start the server only after DB connection is established
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
 const http = require('http');
 const setupWebSocketServer = require('./websocketServer');
 

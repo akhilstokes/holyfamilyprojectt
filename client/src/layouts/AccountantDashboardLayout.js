@@ -41,7 +41,7 @@ const AccountantDashboardLayout = ({ children }) => {
           <li className="nav-item"><NavLink to="/accountant/mark-attendance">Mark Attendance</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/leave">Leave</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/salaries">Salaries</NavLink></li>
-          <li className="nav-item"><NavLink to="/accountant/salary">Salary Management</NavLink></li>
+          <li className="nav-item"><NavLink to="/accountant/salary">My Salary</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/payments">Bill Payments</NavLink></li>
           <li className="nav-item"><NavLink to="/accountant/barrels">Delivery Intake/Verify</NavLink></li>
         </ul>

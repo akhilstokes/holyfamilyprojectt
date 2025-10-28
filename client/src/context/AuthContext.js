@@ -67,6 +67,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = useCallback(async (payload) => {
     const { data } = await axios.post(`${apiBase}/api/auth/register`, payload);
+    // Don't auto-login - let user login manually after registration
     return data;
   }, [apiBase]);
 

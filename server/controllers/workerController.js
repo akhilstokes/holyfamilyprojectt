@@ -246,7 +246,12 @@ exports.updateSelfWorker = async (req, res) => {
     const update = {};
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(req.body, key)) {
-        update[key] = req.body[key];
+        // Handle health field specially for nested updates
+        if (key === 'health' && typeof req.body[key] === 'object') {
+          update['health'] = { ...req.body[key] };
+        } else {
+          update[key] = req.body[key];
+        }
       }
     }
     
@@ -260,11 +265,11 @@ exports.updateSelfWorker = async (req, res) => {
       });
     }
     
-    // Update the worker profile
+    // Update the worker profile with proper handling of nested fields
     worker = await Worker.findOneAndUpdate(
       { user: staffUserId },
       { $set: update },
-      { new: true }
+      { new: true, upsert: true }
     ).populate('user', 'name email role');
     
     res.json(worker);

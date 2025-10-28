@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import './DashboardLayout.css';
 import { useAuth } from '../context/AuthContext';
 
 const StaffDashboardLayout = ({ children }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -22,21 +35,6 @@ const StaffDashboardLayout = ({ children }) => {
         <div className="sidebar-header">Staff Panel</div>
         <ul className="sidebar-nav">
           <li className="nav-item">
-            <NavLink to="/staff/profile">
-              <i className="fas fa-user nav-icon"></i> Profile
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/operations">
-              <i className="fas fa-clipboard-check nav-icon"></i> Operations
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/operations/upload-document">
-              <i className="fas fa-file-upload nav-icon"></i> Upload Document
-            </NavLink>
-          </li>
-          <li className="nav-item">
             <NavLink to="/staff/attendance">
               <i className="fas fa-user-clock nav-icon"></i> Attendance
             </NavLink>
@@ -44,11 +42,6 @@ const StaffDashboardLayout = ({ children }) => {
           <li className="nav-item">
             <NavLink to="/staff/salary">
               <i className="fas fa-wallet nav-icon"></i> Salary
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/salary-management">
-              <i className="fas fa-calculator nav-icon"></i> Salary Management
             </NavLink>
           </li>
           <li className="nav-item">
@@ -61,42 +54,31 @@ const StaffDashboardLayout = ({ children }) => {
               <i className="fas fa-clock nav-icon"></i> Shift Schedule
             </NavLink>
           </li>
-          <li className="nav-item">
-            <NavLink to="/staff/operations/add-barrel">
-              <i className="fas fa-oil-can nav-icon"></i> Add Barrel
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/operations/trip-km">
-              <i className="fas fa-road nav-icon"></i> Log Trip KM
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/inventory">
-              <i className="fas fa-warehouse nav-icon"></i> Inventory
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/weigh-latex">
-              <i className="fas fa-weight nav-icon"></i> Weigh Latex
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/dispatch-barrels">
-              <i className="fas fa-truck-loading nav-icon"></i> Dispatch Barrels
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/staff/return-barrels">
-              <i className="fas fa-undo nav-icon"></i> Return Barrels
-            </NavLink>
-          </li>
         </ul>
       </aside>
       <div className="main-content-wrapper">
         <header className="dashboard-header">
           <div>Staff</div>
-          <button className="btn btn-sm btn-outline-secondary" onClick={handleLogout}>Logout</button>
+          <div className="user-header-actions" style={{ marginLeft: 'auto' }}>
+            <div className="profile-menu" ref={menuRef}>
+              <button type="button" className="profile-link" title="Profile" onClick={() => setMenuOpen((m)=>!m)}>
+                <i className="fas fa-user-circle"></i>
+                <span>{(user && (user.name || 'Staff')) || 'Staff'}</span>
+              </button>
+              {menuOpen && (
+                <div className="profile-dropdown">
+                  <NavLink to="/staff/profile" className="dropdown-item" onClick={() => setMenuOpen(false)}>
+                    <i className="fas fa-user"></i>
+                    <span>Profile</span>
+                  </NavLink>
+                  <button className="dropdown-item" onClick={handleLogout}>
+                    <i className="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </header>
         <main className="dashboard-content">{children}</main>
       </div>

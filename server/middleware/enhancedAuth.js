@@ -496,8 +496,8 @@ const rateLimiter = (windowMs = 15 * 60 * 1000, maxRequests = 100) => {
     
     // More lenient limits for development
     const isDevelopment = process.env.NODE_ENV !== 'production';
-    const effectiveMaxRequests = isDevelopment ? 1000 : maxRequests;
-    const effectiveWindowMs = isDevelopment ? 60 * 1000 : windowMs; // 1 minute in dev, 15 minutes in prod
+    const effectiveMaxRequests = isDevelopment ? 5000 : maxRequests; // Increased to 5000 for dev
+    const effectiveWindowMs = isDevelopment ? 30 * 1000 : windowMs; // 30 seconds in dev, 15 minutes in prod
 
     return (req, res, next) => {
         const key = req.ip + ':' + req.user?._id;

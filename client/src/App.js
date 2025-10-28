@@ -31,11 +31,13 @@ import ManagerStock from "./pages/manager/ManagerStock";
 import ManagerChemicalHistory from "./pages/manager/ManagerChemicalHistory";
 import ManagerSellRequests from "./pages/manager/ManagerSellRequests";
 import ManagerBarrelAllocation from "./pages/manager/ManagerBarrelAllocation";
+import ManagerBarrelRequests from "./pages/manager/ManagerBarrelRequests";
 import ManagerChemicalRequests from "./pages/manager/ManagerChemicalRequests";
 import ManagerFaultyBarrels from "./pages/manager/ManagerFaultyBarrels";
 import ManagerCompleted from "./pages/manager/ManagerCompleted";
 import ManagerRepairApprovals from "./pages/manager/ManagerRepairApprovals";
 import ManagerLeaveHistory from "./pages/manager/ManagerLeaveHistory";
+import ManagerReturnBarrels from "./pages/manager/ManagerReturnBarrels";
 import LabProtectedRoute from "./components/common/LabProtectedRoute";
 import LabDashboard from "./pages/lab/LabDashboard";
 import LabDashboardLayout from "./layouts/LabDashboardLayout";
@@ -57,7 +59,7 @@ import AccountantProtectedRoute from "./components/common/AccountantProtectedRou
 import AccountantDashboardLayout from "./layouts/AccountantDashboardLayout";
 import AccountantLatexVerify from "./pages/accountant/AccountantLatexVerify";
 import AccountantWages from "./pages/accountant/AccountantWages";
-import AccountantSalaryManagement from "./pages/accountant/AccountantSalaryManagement";
+import AccountantMySalary from "./pages/accountant/AccountantMySalary";
 import AccountantStockMonitor from "./pages/accountant/AccountantStockMonitor";
 import AccountantAttendance from "./pages/accountant/AccountantAttendance";
 import AccountantAttendanceMark from "./pages/accountant/AccountantAttendanceMark";
@@ -99,8 +101,8 @@ import StaffDashboardLayout from "./layouts/StaffDashboardLayout";
 import StaffDashboard from "./pages/user_dashboard/StaffDashboard";
 import StaffProfile from "./pages/staff/StaffProfile";
 import StaffAttendance from "./pages/staff/StaffAttendance";
+import ReturnBarrels from "./pages/staff/ReturnBarrels";
 import StaffSalary from "./pages/staff/StaffSalary";
-import StaffSalaryManagement from "./pages/staff/StaffSalaryManagement";
 import StaffLeave from "./pages/staff/StaffLeave";
 import StaffShiftSchedule from "./pages/staff/StaffShiftSchedule";
 import MySchedule from "./pages/staff/MySchedule";
@@ -703,16 +705,6 @@ function App() {
         }
       />
       <Route
-        path="/staff/salary-management"
-        element={
-          <StaffProtectedRoute>
-            <StaffDashboardLayout>
-              <StaffSalaryManagement />
-            </StaffDashboardLayout>
-          </StaffProtectedRoute>
-        }
-      />
-      <Route
         path="/staff/salary/daily"
         element={
           <StaffProtectedRoute>
@@ -789,6 +781,16 @@ function App() {
           <StaffProtectedRoute>
             <StaffDashboardLayout>
               <BarrelQRScanner />
+            </StaffDashboardLayout>
+          </StaffProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/return-barrels"
+        element={
+          <StaffProtectedRoute>
+            <StaffDashboardLayout>
+              <ReturnBarrels />
             </StaffDashboardLayout>
           </StaffProtectedRoute>
         }
@@ -925,6 +927,16 @@ function App() {
         }
       />
       <Route
+        path="/manager/returned-barrels"
+        element={
+          <ManagerProtectedRoute>
+            <ManagerDashboardLayout>
+              <ManagerReturnBarrels />
+            </ManagerDashboardLayout>
+          </ManagerProtectedRoute>
+        }
+      />
+      <Route
         path="/manager/attendance"
         element={
           <ManagerProtectedRoute>
@@ -970,6 +982,16 @@ function App() {
           <ManagerProtectedRoute>
             <ManagerDashboardLayout>
               <ManagerBarrelAllocation />
+            </ManagerDashboardLayout>
+          </ManagerProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/barrel-requests"
+        element={
+          <ManagerProtectedRoute>
+            <ManagerDashboardLayout>
+              <ManagerBarrelRequests />
             </ManagerDashboardLayout>
           </ManagerProtectedRoute>
         }
@@ -1287,7 +1309,7 @@ function App() {
         element={
           <AccountantProtectedRoute>
             <AccountantDashboardLayout>
-              <AccountantSalaryManagement />
+              <AccountantMySalary />
             </AccountantDashboardLayout>
           </AccountantProtectedRoute>
         }

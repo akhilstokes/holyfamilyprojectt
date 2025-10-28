@@ -165,7 +165,13 @@ const UserRequests = () => {
   const submitBarrel = async () => {
     setSubmitting(true); setErr('');
     try {
-      await createRequest({ type: 'BARREL', quantity: Number(barrel.quantity) || 1, notes: barrel.notes });
+      const qty = Number(barrel.quantity) || 1;
+      if (qty < 1 || qty > 50) {
+        setErr('Quantity must be between 1 and 50 barrels');
+        setSubmitting(false);
+        return;
+      }
+      await createRequest({ type: 'BARREL', quantity: qty, notes: barrel.notes });
       setBarrel(initialBarrel);
       await load();
     } catch (e) { setErr('Failed to submit request'); }
@@ -198,8 +204,8 @@ const UserRequests = () => {
       {tab === 'BARREL' ? (
         <div className="dash-card" style={{ maxWidth: 520, display: 'grid', gap: 12 }}>
           <label>
-            Quantity
-            <input type="number" min={1} step={1} value={barrel.quantity} onChange={e => setBarrel({ ...barrel, quantity: e.target.value })} />
+            Quantity (Max: 50 barrels)
+            <input type="number" min={1} max={50} step={1} value={barrel.quantity} onChange={e => setBarrel({ ...barrel, quantity: e.target.value })} />
           </label>
           <label>
             Notes (optional)
@@ -286,7 +292,6 @@ const UserRequests = () => {
                   <th>Created</th>
                   <th>Type</th>
                   <th>Barrels</th>
-                  <th>Company Barrel</th>
                   <th>Subject/Notes</th>
                   <th>Status</th>
                 </tr>
@@ -296,10 +301,15 @@ const UserRequests = () => {
                   <tr key={r.id || r._id}>
                     <td>{new Date(r.createdAt || Date.now()).toLocaleString('en-IN')}</td>
                     <td>{r.type === 'SELL_BARRELS' ? 'SELL BARRELS' : r.type}</td>
-                    <td>{r.type === 'SELL_BARRELS' ? (r.barrelCount ?? r.count ?? '-') : '-'}</td>
-                    <td>{r.type === 'SELL_BARRELS' ? (r.companyBarrel || '-') : '-'}</td>
+                    <td>
+                      {r.type === 'SELL_BARRELS' 
+                        ? (r.barrelCount ?? r.count ?? '-') 
+                        : r.type === 'BARREL' 
+                        ? (r.quantity || 1)
+                        : '-'}
+                    </td>
                     <td>{r.type === 'BARREL' ? (r.notes || '-') : (r.subject || r.notes || '-')}</td>
-                    <td><span className={`badge status-${(r.status || 'Pending').toLowerCase().replace(/\s+/g,'-')}`}>{r.status || 'Pending'}</span></td>
+                    <td><span className={`badge status-${(r.status || 'pending').toLowerCase().replace(/\s+/g,'-')}`}>{r.status || 'pending'}</span></td>
                   </tr>
                 ))}
               </tbody>

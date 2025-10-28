@@ -9,11 +9,23 @@ const LoginPage = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
     const navigate = useNavigate();
     const location = useLocation();
     const { login, googleSignIn } = useAuth();
 
     const returnTo = location.state?.from || null;
+    
+    // Check if coming from registration
+    React.useEffect(() => {
+        if (location.state?.registrationSuccess) {
+            setSuccessMessage('✅ Registration successful! Please login with your credentials.');
+            // Pre-fill email if provided
+            if (location.state?.email) {
+                setFormData(prev => ({ ...prev, email: location.state.email }));
+            }
+        }
+    }, [location.state]);
 
     const { email, password } = formData;
 
@@ -51,12 +63,15 @@ const LoginPage = () => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
         
-        // Clear error when user starts typing
+        // Clear error and success message when user starts typing
         if (fieldErrors[name]) {
             setFieldErrors(prev => ({
                 ...prev,
                 [name]: ''
             }));
+        }
+        if (successMessage) {
+            setSuccessMessage('');
         }
     };
     
@@ -155,6 +170,12 @@ const LoginPage = () => {
                 </div>
 
                 <h2>Welcome Back</h2>
+                
+                {successMessage && (
+                    <div className="success-message" style={{marginBottom: '1rem', padding: '12px', background: '#d4edda', color: '#155724', borderRadius: '8px', border: '1px solid #c3e6cb', textAlign: 'center', fontWeight: '500'}}>
+                        {successMessage}
+                    </div>
+                )}
                 
                 {error && (
                     <div className="error-message">
