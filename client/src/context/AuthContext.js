@@ -14,11 +14,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const el = document && document.body;
       if (!el) return;
-      const roleClasses = ['role-admin','role-manager','role-accountant','role-delivery_staff','role-field_staff','role-user','role-lab','role-lab_manager','role-lab_staff'];
+      const roleClasses = ['role-admin', 'role-manager', 'role-accountant', 'role-delivery_staff', 'role-field_staff', 'role-user', 'role-lab', 'role-lab_manager', 'role-lab_staff'];
       roleClasses.forEach(c => el.classList.remove(c));
       const r = u && u.role ? `role-${u.role}` : null;
       if (r) el.classList.add(r);
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -111,9 +111,28 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setToken(null);
       saveAuth(null);
-      return null;
     }
   }, [apiBase, token, saveAuth]);
+
+  // Update user profile
+  const updateProfile = useCallback(async (userData) => {
+    if (!token) return null;
+    try {
+      const { data } = await axios.put(`${apiBase}/api/users/profile`, userData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (data) {
+        // Merge existing user data with updates to ensure roles etc are kept if not returned
+        const updatedUser = { ...user, ...data };
+        setUser(updatedUser);
+        saveAuth({ user: updatedUser, token });
+        return updatedUser;
+      }
+    } catch (e) {
+      console.error('Update profile error:', e);
+      throw e;
+    }
+  }, [apiBase, token, user, saveAuth]);
 
   const value = useMemo(() => ({
     user,
@@ -126,7 +145,8 @@ export const AuthProvider = ({ children }) => {
     googleSignIn,
     staffLogin,
     validateToken,
-  }), [user, token, loading, login, logout, register, googleSignIn, staffLogin, validateToken]);
+    updateProfile,
+  }), [user, token, loading, login, logout, register, googleSignIn, staffLogin, validateToken, updateProfile]);
 
   return (
     <AuthContext.Provider value={value}>

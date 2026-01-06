@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import '../staff/StaffShiftSchedule.css';
 
 const LabShiftSchedule = () => {
   const [schedule, setSchedule] = useState(null);

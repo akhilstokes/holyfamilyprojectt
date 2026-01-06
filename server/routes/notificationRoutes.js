@@ -62,4 +62,14 @@ router.put('/mark-all-read', async (req, res) => {
   }
 });
 
+// POST /api/notifications/clear - Clear all notifications
+router.post('/clear', async (req, res) => {
+  try {
+    await Notification.deleteMany({ userId: req.user._id });
+    res.json({ ok: true, message: 'All notifications cleared' });
+  } catch (e) {
+    res.status(500).json({ message: 'Failed to clear notifications' });
+  }
+});
+
 module.exports = router;

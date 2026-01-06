@@ -24,6 +24,24 @@ export default function UserLiveRate() {
     return { official: isNaN(official) ? null : official, company: isNaN(company) ? null : company, date };
   };
 
+  // Calculate effective rate based on DRC
+  const calculateEffectiveRate = () => {
+    if (!rate || !drc) return null;
+    const { company } = normalize(rate);
+    if (!company) return null;
+    const drcVal = parseFloat(drc);
+    if (isNaN(drcVal) || drcVal <= 0) return null;
+
+    // Formula: Company Rate * (DRC / 100)
+    // Company Rate is per Quintal (100kg)
+    const perQuintal = company * (drcVal / 100);
+    const perKg = perQuintal / 100;
+
+    return { perQuintal, perKg };
+  };
+
+  const effective = calculateEffectiveRate();
+
   const reloadLatest = () => {
     setLoadingLatest(true);
     getPublishedLatest('latex60')
@@ -94,10 +112,10 @@ export default function UserLiveRate() {
       <div className="dash-card" style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>Category: LATEX60</div>
-          {/* Optional DRC input (calculator buttons removed) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-              <span style={{ color: '#334155', fontWeight: 600 }}>DRC (%)</span>
+              <span style={{ color: '#334155', fontWeight: 600 }}>Effectve Price Calculator (DRC %)</span>
               <input
                 type="number"
                 min={0}
@@ -105,10 +123,24 @@ export default function UserLiveRate() {
                 step="0.01"
                 value={drc}
                 onChange={(e) => setDrc(e.target.value)}
-                placeholder="optional"
-                style={{ width: 120 }}
+                placeholder="Enter DRC"
+                style={{ width: 100, padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
               />
             </label>
+
+            {effective && (
+              <div className="effective-rate-box">
+                <div className="rate-item">
+                  <span className="label">Rate / Kg</span>
+                  <span className="value">₹{effective.perKg.toFixed(2)}</span>
+                </div>
+                <div className="rate-item separator">|</div>
+                <div className="rate-item">
+                  <span className="label">Rate / Quintal</span>
+                  <span className="value">₹{effective.perQuintal.toFixed(0)}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

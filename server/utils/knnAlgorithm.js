@@ -17,6 +17,8 @@ class KNNAlgorithm {
     this.trainingData = [];
     this.features = [];
     this.labels = [];
+    this.minMaxValues = []; // Store min/max for normalization
+    this.isNormalized = false;
   }
 
   /**
@@ -54,9 +56,10 @@ class KNNAlgorithm {
   /**
    * Normalize features to prevent scale bias
    * @param {Array} data - Training data
+   * @param {boolean} saveMinMax - Whether to save min/max values for later use
    * @returns {Array} Normalized data
    */
-  normalizeFeatures(data) {
+  normalizeFeatures(data, saveMinMax = false) {
     if (data.length === 0) return data;
     
     const numFeatures = data[0].length;
@@ -70,6 +73,11 @@ class KNNAlgorithm {
         min: Math.min(...values),
         max: Math.max(...values)
       });
+    }
+    
+    // Save min/max values if requested (for use during prediction)
+    if (saveMinMax) {
+      this.minMaxValues = minMax;
     }
     
     // Normalize each data point
@@ -95,7 +103,8 @@ class KNNAlgorithm {
       throw new Error('Features and labels must have the same length');
     }
 
-    this.features = normalize ? this.normalizeFeatures(features) : features;
+    this.isNormalized = normalize;
+    this.features = normalize ? this.normalizeFeatures(features, true) : features;
     this.labels = labels;
     this.trainingData = this.features.map((feature, index) => ({
       features: feature,
@@ -118,22 +127,11 @@ class KNNAlgorithm {
       throw new Error('Test point must have the same number of features as training data');
     }
 
-    // Normalize test point if needed
+    // Normalize test point if needed using saved min/max values from training
     let normalizedTestPoint = testPoint;
-    if (normalize) {
-      const numFeatures = testPoint.length;
-      const minMax = [];
-      
-      for (let i = 0; i < numFeatures; i++) {
-        const values = this.features.map(point => point[i]);
-        minMax.push({
-          min: Math.min(...values),
-          max: Math.max(...values)
-        });
-      }
-      
+    if (normalize && this.isNormalized && this.minMaxValues.length > 0) {
       normalizedTestPoint = testPoint.map((value, i) => {
-        const { min, max } = minMax[i];
+        const { min, max } = this.minMaxValues[i];
         return max === min ? 0 : (value - min) / (max - min);
       });
     }
@@ -290,7 +288,7 @@ class QualityClassificationKNN extends KNNAlgorithm {
 
   /**
    * Train model for quality classification
-   * Features: [drc_percentage, moisture_content, impurities, color_score, viscosity]
+   * Features: [drc_percentage, moisture_content, impurities, color_score]
    * Labels: quality categories (A, B, C, D)
    */
   trainQualityModel(qualityData) {
@@ -298,8 +296,7 @@ class QualityClassificationKNN extends KNNAlgorithm {
       record.drcPercentage || 0,
       record.moistureContent || 0,
       record.impurities || 0,
-      record.colorScore || 0,
-      record.viscosity || 0
+      record.colorScore || 0
     ]);
     
     const labels = qualityData.map(record => record.qualityGrade);
@@ -310,8 +307,8 @@ class QualityClassificationKNN extends KNNAlgorithm {
   /**
    * Classify quality of new sample
    */
-  classifyQuality(drcPercentage, moistureContent, impurities, colorScore, viscosity) {
-    const testPoint = [drcPercentage, moistureContent, impurities, colorScore, viscosity];
+  classifyQuality(drcPercentage, moistureContent, impurities, colorScore) {
+    const testPoint = [drcPercentage, moistureContent, impurities, colorScore];
     return this.predict(testPoint);
   }
 }

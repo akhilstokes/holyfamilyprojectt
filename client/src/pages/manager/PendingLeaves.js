@@ -1,249 +1,241 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import LeaveHistoryModal from '../../components/modals/LeaveHistoryModal';
 import './PendingLeaves.css';
-import LeaveHistoryModal from '../../components/common/LeaveHistoryModal';
 
 const PendingLeaves = () => {
-  const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const navigate = useNavigate();
-
-  // Tab management
-  const [activeTab, setActiveTab] = useState('leaves'); // 'leaves' or 'schedules'
-  
-  // Leave requests state
-  const [rows, setRows] = useState([]);
+  const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
-  // Schedule requests state
-  const [scheduleRequests, setScheduleRequests] = useState([]);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
-  const [scheduleError, setScheduleError] = useState('');
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showResponseModal, setShowResponseModal] = useState(false);
-  const [responseForm, setResponseForm] = useState({
-    action: '', // 'approve' or 'reject'
-    response: ''
-  });
-  const [submitting, setSubmitting] = useState(false);
-  
-  // Leave History Modal state
-  const [showLeaveHistoryModal, setShowLeaveHistoryModal] = useState(false);
-  const [selectedStaffForHistory, setSelectedStaffForHistory] = useState(null);
+  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const token = localStorage.getItem('token');
 
-  const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  useEffect(() => {
+    fetchLeaves();
+  }, []);
 
-  const load = async () => {
-    setLoading(true); setError('');
+  const fetchLeaves = async () => {
     try {
-      // Endpoint must be implemented on backend
-      const res = await fetch(`${base}/api/leave/pending`, { headers });
-      if (!res.ok) throw new Error(`Failed to load pending leaves (${res.status})`);
-      const ct = res.headers.get('content-type') || '';
-      if (!ct.includes('application/json')) throw new Error('Unexpected response for pending leaves');
-      const data = await res.json();
-      setRows(Array.isArray(data) ? data : (Array.isArray(data?.records) ? data.records : []));
-    } catch (e) {
-      setError(e?.message || 'Failed to load');
-      setRows([]);
+      const response = await fetch(`${API_BASE}/api/leave/pending`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLeaves(Array.isArray(data) ? data : []);
+      } else {
+        setLeaves([]);
+      }
+    } catch (error) {
+      console.error('Error fetching leaves:', error);
+      setLeaves([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Load schedule requests
-  const loadScheduleRequests = useCallback(async () => {
+  const handleLeaveAction = async (leaveId, action) => {
     try {
-      setScheduleLoading(true);
-      setScheduleError('');
-      
-      const response = await fetch(`${base}/api/schedules/change-requests/pending`, {
-        headers
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setScheduleRequests(data);
-      } else {
-        const errorData = await response.json();
-        setScheduleError(errorData.message || 'Failed to load schedule requests');
-      }
-    } catch (error) {
-      console.error('Error fetching schedule requests:', error);
-      setScheduleError('Failed to load schedule requests');
-    } finally {
-      setScheduleLoading(false);
-    }
-  }, [base, headers]);
-
-  useEffect(() => { 
-    load(); 
-    loadScheduleRequests();
-  }, [load, loadScheduleRequests]);
-
-  const act = async (row, action) => {
-    try {
-      const staffName = row?.staffName || row?.staff?.name || row?.staff?.email || 'this staff member';
-      const start = row?.startDate ? new Date(row.startDate).toLocaleDateString() : '';
-      const end = row?.endDate ? new Date(row.endDate).toLocaleDateString() : '';
-
-      if (action === 'approve') {
-        const ok = window.confirm(`Approve leave for ${staffName}\nFrom: ${start}  To: ${end}?`);
-        if (!ok) return;
-      } else {
-        const reason = window.prompt(`Enter rejection reason for ${staffName} (optional):`, '') || '';
-        const ok = window.confirm(`Reject leave for ${staffName}?`);
-        if (!ok) return;
-        const url = `${base}/api/leave/reject/${row._id}`;
-        const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ reason }) });
-        if (!res.ok) throw new Error(`${action} failed (${res.status})`);
-        await load();
-        return;
-      }
-
-      const url = `${base}/api/leave/approve/${row._id}`;
-      const res = await fetch(url, { method: 'POST', headers });
-      if (!res.ok) throw new Error(`${action} failed (${res.status})`);
-      await load();
-    } catch (e) {
-      setError(e?.message || `${action} failed`);
-    }
-  };
-
-  // Schedule request handlers
-  const handleScheduleApproveReject = (request, action) => {
-    setSelectedRequest(request);
-    setResponseForm({
-      action,
-      response: ''
-    });
-    setShowResponseModal(true);
-  };
-
-  const submitScheduleResponse = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    try {
-      const endpoint = responseForm.action === 'approve' ? 'approve' : 'reject';
-      const response = await fetch(`${base}/api/schedules/change-requests/${selectedRequest._id}/${endpoint}`, {
+      const endpoint = action === 'approve' ? 'approve' : 'reject';
+      const response = await fetch(`${API_BASE}/api/leave/${endpoint}/${leaveId}`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify({
-          response: responseForm.response
-        })
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.ok) {
-        const message = responseForm.action === 'approve' 
-          ? 'Schedule request approved successfully!' 
-          : 'Schedule request rejected successfully!';
-        alert(message);
-        setShowResponseModal(false);
-        setSelectedRequest(null);
-        setResponseForm({ action: '', response: '' });
-        loadScheduleRequests(); // Refresh the list
+        fetchLeaves(); // Refresh the list
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || `Failed to ${responseForm.action} request`);
+        alert(`Failed to ${action} leave request`);
       }
     } catch (error) {
-      console.error(`Error ${responseForm.action}ing request:`, error);
-      alert(`Failed to ${responseForm.action} request`);
-    } finally {
-      setSubmitting(false);
+      console.error(`Error ${action}ing leave:`, error);
+      alert(`Failed to ${action} leave request`);
     }
+  };
+
+  const getFilteredLeaves = () => {
+    if (filter === 'all') return leaves;
+    return leaves.filter(leave => leave.status === filter);
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
+    return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'short',
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return '#ffa500';
-      case 'approved': return '#28a745';
-      case 'rejected': return '#dc3545';
-      default: return '#6c757d';
-    }
+  const getDaysCount = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
   };
 
+  const getLeaveTypeIcon = (type) => {
+    const icons = {
+      sick: 'fa-thermometer-half',
+      casual: 'fa-coffee',
+      annual: 'fa-calendar-check',
+      emergency: 'fa-exclamation-triangle',
+      maternity: 'fa-baby',
+      paternity: 'fa-male'
+    };
+    return icons[type?.toLowerCase()] || 'fa-calendar-times';
+  };
+
+  const getLeaveTypeColor = (type) => {
+    const colors = {
+      sick: '#e74c3c',
+      casual: '#3498db',
+      annual: '#2ecc71',
+      emergency: '#f39c12',
+      maternity: '#e91e63',
+      paternity: '#9b59b6'
+    };
+    return colors[type?.toLowerCase()] || '#95a5a6';
+  };
+
+  if (loading) {
+    return (
+      <div className="pending-leaves">
+        <div className="loading-state">
+          <i className="fas fa-spinner fa-spin"></i>
+          <p>Loading leave requests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredLeaves = getFilteredLeaves();
+
   return (
-    <div className="pending-leaves-container">
-      <div className="header">
-        <h2>Staff Requests</h2>
-        <button 
-          onClick={() => {
-            if (activeTab === 'leaves') load();
-            else loadScheduleRequests();
-          }} 
-          disabled={loading || scheduleLoading}
-          className="refresh-btn"
-        >
-          {(loading || scheduleLoading) ? 'Refreshing...' : 'Refresh'}
-        </button>
+    <div className="pending-leaves">
+      {/* Header */}
+      <div className="leaves-header">
+        <div className="header-content">
+          <h1>
+            <i className="fas fa-calendar-times"></i>
+            Pending Leaves
+          </h1>
+          <p>Review leave requests</p>
+        </div>
+        <div className="header-actions">
+          <button className="refresh-btn" onClick={fetchLeaves}>
+            <i className="fas fa-sync-alt"></i>
+            Refresh
+          </button>
+          <button className="view-history-btn" onClick={() => setShowHistoryModal(true)}>
+            <i className="fas fa-history"></i>
+            View Leave History
+          </button>
+        </div>
       </div>
 
-      {/* Quick link under header to view full Leave History */}
-      <div style={{ display:'flex', justifyContent:'flex-end', marginTop: 8, gap: 8 }}>
-        <button 
-          className="btn-secondary" 
-          onClick={() => navigate('/manager/leave-history')}
-        >
-          Full Leave History
-        </button>
-        <button 
-          className="btn-primary" 
-          onClick={() => {
-            setSelectedStaffForHistory(null);
-            setShowLeaveHistoryModal(true);
-          }}
-          style={{ 
-            padding: '8px 16px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          📋 View Leave History
-        </button>
+      {/* Stats Cards */}
+      <div className="stats-row">
+        <div className="stat-card">
+          <div className="stat-icon pending">
+            <i className="fas fa-clock"></i>
+          </div>
+          <div className="stat-content">
+            <h3>{leaves.filter(l => l.status === 'pending').length}</h3>
+            <p>Pending</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon approved">
+            <i className="fas fa-check"></i>
+          </div>
+          <div className="stat-content">
+            <h3>{leaves.filter(l => l.status === 'approved').length}</h3>
+            <p>Approved</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon rejected">
+            <i className="fas fa-times"></i>
+          </div>
+          <div className="stat-content">
+            <h3>{leaves.filter(l => l.status === 'rejected').length}</h3>
+            <p>Rejected</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon total">
+            <i className="fas fa-calendar-alt"></i>
+          </div>
+          <div className="stat-content">
+            <h3>{leaves.length}</h3>
+            <p>Total Requests</p>
+          </div>
+        </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="tab-navigation">
-        <button 
-          className={`tab-btn ${activeTab === 'leaves' ? 'active' : ''}`}
-          onClick={() => setActiveTab('leaves')}
-        >
-          <i className="fas fa-calendar-times"></i>
-          Leave Requests
-          {rows.length > 0 && <span className="badge">{rows.length}</span>}
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'schedules' ? 'active' : ''}`}
-          onClick={() => setActiveTab('schedules')}
-        >
-          <i className="fas fa-calendar-alt"></i>
-          Schedule Requests
-          {scheduleRequests.length > 0 && <span className="badge">{scheduleRequests.length}</span>}
-        </button>
+      {/* Filter Tabs */}
+      <div className="filter-section">
+        <div className="filter-tabs">
+          <button 
+            className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            All Requests
+          </button>
+          <button 
+            className={`filter-tab ${filter === 'pending' ? 'active' : ''}`}
+            onClick={() => setFilter('pending')}
+          >
+            Pending
+          </button>
+          <button 
+            className={`filter-tab ${filter === 'approved' ? 'active' : ''}`}
+            onClick={() => setFilter('approved')}
+          >
+            Approved
+          </button>
+          <button 
+            className={`filter-tab ${filter === 'rejected' ? 'active' : ''}`}
+            onClick={() => setFilter('rejected')}
+          >
+            Rejected
+          </button>
+        </div>
+        <div className="schedule-requests-btn">
+          <button className="schedule-btn">
+            <i className="fas fa-calendar-plus"></i>
+            Schedule Requests
+          </button>
+        </div>
       </div>
 
-      {/* Leave Requests Tab */}
-      {activeTab === 'leaves' && (
-        <div className="tab-content">
-          {error && <div className="error-message">{error}</div>}
-          <div className="table-container">
-            <table className="dashboard-table">
+      {/* Leave Table */}
+      <div className="leaves-container">
+        {filteredLeaves.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <i className="fas fa-calendar-check"></i>
+            </div>
+            <h3>No leave requests found</h3>
+            <p>
+              {filter === 'all' 
+                ? 'There are no leave requests at the moment'
+                : `No ${filter} leave requests found`
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="leaves-table-container">
+            <table className="leaves-table">
               <thead>
                 <tr>
                   <th>Staff</th>
@@ -257,231 +249,99 @@ const PendingLeaves = () => {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
-                  const start = r.startDate ? new Date(r.startDate) : null;
-                  const end = r.endDate ? new Date(r.endDate) : null;
-                  return (
-                    <tr key={r._id}>
-                      <td>{r.staffName || r.staff?.name || r.staff?.email || '-'}</td>
-                      <td>{r.leaveType}</td>
-                      <td>{r.dayType || 'full'}</td>
-                      <td>{start ? start.toLocaleDateString() : '-'}</td>
-                      <td>{end ? end.toLocaleDateString() : '-'}</td>
-                      <td className="reason-cell" title={r.reason}>{r.reason || '-'}</td>
-                      <td>
-                        <span className={`status-badge ${r.status}`}>{r.status}</span>
-                      </td>
-                      <td>
-                        {r.status === 'pending' ? (
-                          <div className="action-buttons">
-                            <button className="btn btn-approve" onClick={() => act(r, 'approve')}>Approve</button>
-                            <button className="btn btn-reject" onClick={() => act(r, 'reject')}>Reject</button>
-                            <button 
-                              className="btn btn-info" 
-                              onClick={() => {
-                                setSelectedStaffForHistory(r.staff?._id || r.staffId);
-                                setShowLeaveHistoryModal(true);
-                              }}
-                              style={{ marginLeft: 4, fontSize: 12 }}
-                              title="View staff leave history"
-                            >
-                              History
-                            </button>
-                          </div>
-                        ) : (
-                          <span>-</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {!loading && rows.length === 0 && (
-                  <tr><td colSpan={8} className="no-data">No pending leave requests.</td></tr>
-                )}
+                {filteredLeaves.map((leave) => (
+                  <tr key={leave._id} className={`leave-row ${leave.status}`}>
+                    <td className="staff-cell">
+                      <div className="staff-info">
+                        <div className="staff-avatar">
+                          {(leave.staffName || leave.staff?.name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        <div className="staff-details">
+                          <div className="staff-name">{leave.staffName || leave.staff?.name || 'Unknown Staff'}</div>
+                          <div className="staff-email">{leave.staff?.email || leave.staff?.department || 'Staff Member'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div 
+                        className="type-badge"
+                        style={{ backgroundColor: getLeaveTypeColor(leave.leaveType) }}
+                      >
+                        <i className={`fas ${getLeaveTypeIcon(leave.leaveType)}`}></i>
+                        {leave.leaveType || 'Leave'}
+                      </div>
+                    </td>
+                    <td>
+                      <span className="day-type-badge">
+                        {leave.dayType === 'half' ? 'Half' : 'Full'}
+                      </span>
+                    </td>
+                    <td className="date-cell">{formatDate(leave.startDate)}</td>
+                    <td className="date-cell">{formatDate(leave.endDate)}</td>
+                    <td className="reason-cell">
+                      <div className="reason-text" title={leave.reason || 'No reason provided'}>
+                        {leave.reason || 'No reason provided'}
+                      </div>
+                    </td>
+                    <td>
+                      <div className={`status-badge ${leave.status}`}>
+                        {leave.status === 'pending' && <i className="fas fa-clock"></i>}
+                        {leave.status === 'approved' && <i className="fas fa-check"></i>}
+                        {leave.status === 'rejected' && <i className="fas fa-times"></i>}
+                        {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                      </div>
+                    </td>
+                    <td className="actions-cell">
+                      {leave.status === 'pending' ? (
+                        <div className="action-buttons">
+                          <button 
+                            className="action-btn approve-btn"
+                            onClick={() => handleLeaveAction(leave._id, 'approve')}
+                            title="Approve"
+                          >
+                            <i className="fas fa-check"></i>
+                            Approve
+                          </button>
+                          <button 
+                            className="action-btn reject-btn"
+                            onClick={() => handleLeaveAction(leave._id, 'reject')}
+                            title="Reject"
+                          >
+                            <i className="fas fa-times"></i>
+                            Reject
+                          </button>
+                          <button 
+                            className="action-btn history-btn"
+                            title="View History"
+                            onClick={() => setShowHistoryModal(true)}
+                          >
+                            <i className="fas fa-history"></i>
+                            History
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          className="action-btn history-btn"
+                          title="View History"
+                          onClick={() => setShowHistoryModal(true)}
+                        >
+                          <i className="fas fa-history"></i>
+                          History
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
-
-      {/* Schedule Requests Tab */}
-      {activeTab === 'schedules' && (
-        <div className="tab-content">
-          {scheduleError && <div className="error-message">{scheduleError}</div>}
-          {scheduleLoading ? (
-            <div className="loading">Loading schedule requests...</div>
-          ) : (
-            <div className="schedule-requests-list">
-              {scheduleRequests.length === 0 ? (
-                <div className="no-requests">
-                  <div className="no-requests-icon">
-                    <i className="fas fa-calendar-check"></i>
-                  </div>
-                  <h3>No pending schedule requests</h3>
-                  <p>There are no pending schedule change requests at the moment.</p>
-                </div>
-              ) : (
-                <div className="requests-grid">
-                  {scheduleRequests.map((request) => (
-                    <div key={request._id} className="request-card">
-                      <div className="request-header">
-                        <div className="staff-info">
-                          <div className="staff-name">
-                            <i className="fas fa-user"></i>
-                            {request.staff?.name || 'Unknown Staff'}
-                          </div>
-                          <div className="staff-id">
-                            ID: {request.staff?.staffId || request.staff?.email}
-                          </div>
-                        </div>
-                        <div 
-                          className="request-status"
-                          style={{ color: getStatusColor(request.status) }}
-                        >
-                          <i className="fas fa-clock"></i>
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                        </div>
-                      </div>
-
-                      <div className="request-details">
-                        <div className="request-date">
-                          <strong>Requested Date:</strong> {formatDate(request.requestDate)}
-                        </div>
-                        
-                        <div className="shift-change">
-                          <div className="shift-from">
-                            <span className="label">From:</span>
-                            <span className="shift-value current">{request.currentShift} Shift</span>
-                          </div>
-                          <i className="fas fa-arrow-right shift-arrow"></i>
-                          <div className="shift-to">
-                            <span className="label">To:</span>
-                            <span className="shift-value requested">
-                              {request.requestedShift === 'Off' ? 'Day Off' : `${request.requestedShift} Shift`}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="request-reason">
-                          <strong>Reason:</strong>
-                          <p>{request.reason}</p>
-                        </div>
-
-                        <div className="request-timestamps">
-                          <small>
-                            <i className="fas fa-clock"></i>
-                            Submitted: {formatDate(request.createdAt)}
-                          </small>
-                        </div>
-                      </div>
-
-                      <div className="request-actions">
-                        <button 
-                          className="btn btn-approve"
-                          onClick={() => handleScheduleApproveReject(request, 'approve')}
-                        >
-                          <i className="fas fa-check"></i>
-                          Approve
-                        </button>
-                        <button 
-                          className="btn btn-reject"
-                          onClick={() => handleScheduleApproveReject(request, 'reject')}
-                        >
-                          <i className="fas fa-times"></i>
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Response Modal for Schedule Requests */}
-      {showResponseModal && (
-        <div className="modal-overlay">
-          <div className="response-modal">
-            <div className="modal-header">
-              <h3>
-                {responseForm.action === 'approve' ? 'Approve' : 'Reject'} Schedule Request
-              </h3>
-              <button 
-                onClick={() => {
-                  setShowResponseModal(false);
-                  setSelectedRequest(null);
-                  setResponseForm({ action: '', response: '' });
-                }}
-                className="close-btn"
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-
-            <div className="modal-content">
-              <div className="request-summary">
-                <h4>Request Details:</h4>
-                <p><strong>Staff:</strong> {selectedRequest?.staff?.name}</p>
-                <p><strong>Date:</strong> {formatDate(selectedRequest?.requestDate)}</p>
-                <p><strong>Change:</strong> {selectedRequest?.currentShift} → {selectedRequest?.requestedShift}</p>
-                <p><strong>Reason:</strong> {selectedRequest?.reason}</p>
-              </div>
-
-              <form onSubmit={submitScheduleResponse}>
-                <div className="form-group">
-                  <label>
-                    {responseForm.action === 'approve' ? 'Approval Comments (Optional):' : 'Rejection Reason (Required):'}
-                  </label>
-                  <textarea
-                    value={responseForm.response}
-                    onChange={(e) => setResponseForm({...responseForm, response: e.target.value})}
-                    placeholder={
-                      responseForm.action === 'approve' 
-                        ? 'Add any comments about the approval...' 
-                        : 'Please provide a reason for rejection...'
-                    }
-                    rows="3"
-                    required={responseForm.action === 'reject'}
-                  />
-                </div>
-
-                <div className="modal-actions">
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setShowResponseModal(false);
-                      setSelectedRequest(null);
-                      setResponseForm({ action: '', response: '' });
-                    }}
-                    className="btn btn-cancel"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={submitting}
-                    className={`btn ${responseForm.action === 'approve' ? 'btn-approve' : 'btn-reject'}`}
-                  >
-                    {submitting ? 'Processing...' : 
-                     responseForm.action === 'approve' ? 'Approve Request' : 'Reject Request'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Leave History Modal */}
       <LeaveHistoryModal 
-        isOpen={showLeaveHistoryModal} 
-        onClose={() => {
-          setShowLeaveHistoryModal(false);
-          setSelectedStaffForHistory(null);
-        }}
-        staffId={selectedStaffForHistory}
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
       />
     </div>
   );

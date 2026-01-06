@@ -41,4 +41,9 @@ router.put('/:id/verify', protect, adminOrManager, ctrl.managerVerify);
 // Invoice
 router.get('/:id/invoice', protect, ctrl.getInvoice);
 
+// CRUD for Admin/Accountant
+router.post('/admin/create', protect, adminManagerAccountant, ctrl.createSellRequestAdmin);
+router.put('/:id/update', protect, adminManagerAccountant, ctrl.updateSellRequest);
+router.delete('/:id', protect, adminManagerAccountant, ctrl.deleteSellRequest);
+
 module.exports = router;

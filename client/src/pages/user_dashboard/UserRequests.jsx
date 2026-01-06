@@ -130,7 +130,7 @@ const UserRequests = () => {
         validateToken().then((u) => {
           const p = u?.phoneNumber || u?.phone || u?.mobile || u?.profile?.phone || '';
           if (p) setSellBarrels(prev => ({ ...prev, phone: p }));
-        }).catch(()=>{});
+        }).catch(() => { });
       }
       return;
     }
@@ -159,7 +159,7 @@ const UserRequests = () => {
           phone: isGoogle ? '' : (phone || prev.phone)
         }));
       }
-    } catch {}
+    } catch { }
   }, [authUser]);
 
   const submitBarrel = async () => {
@@ -199,10 +199,10 @@ const UserRequests = () => {
       </div>
 
       {err && <div className="alert error">{err}</div>}
-      {info && <div className="alert" style={{ color:'#0a7' }}>{info}</div>}
+      {info && <div className="alert" style={{ color: '#0a7' }}>{info}</div>}
 
       {tab === 'BARREL' ? (
-        <div className="dash-card" style={{ maxWidth: 520, display: 'grid', gap: 12 }}>
+        <div className="dash-card" style={{ display: 'grid', gap: 12 }}>
           <label>
             Quantity (Max: 50 barrels)
             <input type="number" min={1} max={50} step={1} value={barrel.quantity} onChange={e => setBarrel({ ...barrel, quantity: e.target.value })} />
@@ -214,8 +214,8 @@ const UserRequests = () => {
           <button className="btn" onClick={submitBarrel} disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Request'}</button>
         </div>
       ) : tab === 'SELL_BARRELS' ? (
-        <div className="dash-card" style={{ maxWidth: 640, display: 'grid', gap: 12 }}>
-          <div style={{ display:'grid', gap: 12, gridTemplateColumns:'1fr 1fr' }}>
+        <div className="dash-card" style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr' }}>
             <label>
               Name
               <input type="text" value={sellBarrels.name} onChange={e => setSellBarrels({ ...sellBarrels, name: e.target.value })} />
@@ -231,14 +231,14 @@ const UserRequests = () => {
               onChange={e => setSellBarrels({ ...sellBarrels, barrelCount: e.target.value })}
             />
           </label>
-          <div style={{ display:'flex', gap:12, color:'#2563eb', fontSize:13 }}>
+          <div style={{ display: 'flex', gap: 12, color: '#2563eb', fontSize: 13 }}>
             <span>Company Barrels: {myCompanyBarrels}</span>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button type="button" onClick={getLocation}>Use my location</button>
-            <span style={{ color:'#555' }}>{geoStatus}</span>
+            <span style={{ color: '#555' }}>{geoStatus}</span>
             {geo.lat && geo.lng && (
-              <span style={{ fontSize:12, color:'#2563eb' }}>Lat: {geo.lat.toFixed(5)}, Lng: {geo.lng.toFixed(5)}</span>
+              <span style={{ fontSize: 12, color: '#2563eb' }}>Lat: {geo.lat.toFixed(5)}, Lng: {geo.lng.toFixed(5)}</span>
             )}
           </div>
           <label>
@@ -248,7 +248,7 @@ const UserRequests = () => {
           <button className="btn" onClick={submitSellBarrels} disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Request'}</button>
         </div>
       ) : (
-        <div className="dash-card" style={{ maxWidth: 640, display: 'grid', gap: 12 }}>
+        <div className="dash-card" style={{ display: 'grid', gap: 12 }}>
           <label>
             Subject
             <input type="text" value={complaint.subject} onChange={e => setComplaint({ ...complaint, subject: e.target.value })} />
@@ -272,11 +272,11 @@ const UserRequests = () => {
 
       <div className="dash-card" style={{ marginTop: 16 }}>
         <h3 style={{ marginTop: 0 }}>My Requests</h3>
-        <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginBottom:8 }}>
-          <span style={{ background:'#eef6ff', color:'#2563eb', padding:'6px 10px', borderRadius:6 }}>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 8 }}>
+          <span style={{ background: '#eef6ff', color: '#2563eb', padding: '6px 10px', borderRadius: 6 }}>
             Total Sell Barrels: {items.filter(r => r.type === 'SELL_BARRELS').reduce((sum, r) => sum + (Number(r.barrelCount) || 0), 0)}
           </span>
-          <span style={{ background:'#f1f5f9', color:'#334155', padding:'6px 10px', borderRadius:6 }}>
+          <span style={{ background: '#f1f5f9', color: '#334155', padding: '6px 10px', borderRadius: 6 }}>
             Pending Sell Barrels: {items.filter(r => r.type === 'SELL_BARRELS' && String(r.status || '').toLowerCase() === 'pending').reduce((sum, r) => sum + (Number(r.barrelCount) || 0), 0)}
           </span>
         </div>
@@ -302,14 +302,14 @@ const UserRequests = () => {
                     <td>{new Date(r.createdAt || Date.now()).toLocaleString('en-IN')}</td>
                     <td>{r.type === 'SELL_BARRELS' ? 'SELL BARRELS' : r.type}</td>
                     <td>
-                      {r.type === 'SELL_BARRELS' 
-                        ? (r.barrelCount ?? r.count ?? '-') 
-                        : r.type === 'BARREL' 
-                        ? (r.quantity || 1)
-                        : '-'}
+                      {r.type === 'SELL_BARRELS'
+                        ? (r.barrelCount ?? r.count ?? '-')
+                        : r.type === 'BARREL'
+                          ? (r.quantity || 1)
+                          : '-'}
                     </td>
                     <td>{r.type === 'BARREL' ? (r.notes || '-') : (r.subject || r.notes || '-')}</td>
-                    <td><span className={`badge status-${(r.status || 'pending').toLowerCase().replace(/\s+/g,'-')}`}>{r.status || 'pending'}</span></td>
+                    <td><span className={`badge status-${(r.status || 'pending').toLowerCase().replace(/\s+/g, '-')}`}>{r.status || 'pending'}</span></td>
                   </tr>
                 ))}
               </tbody>

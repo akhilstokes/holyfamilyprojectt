@@ -6,6 +6,7 @@ const SalarySummary = require('../models/salarySummaryModel');
 const Notification = require('../models/Notification');
 const sendEmail = require('../utils/sendEmail');
 const mongoose = require('mongoose');
+const { logAudit } = require('../services/auditService');
 
 // Create or update salary template for a staff member
 exports.createSalaryTemplate = async (req, res) => {
@@ -230,6 +231,18 @@ exports.generateMonthlySalary = async (req, res) => {
       notes: notes || ''
     });
 
+    // Log audit
+    await logAudit({
+      action: 'salary_generated',
+      actor: req.user._id,
+      actorRole: req.user.role,
+      target: salary._id,
+      targetType: 'salary',
+      description: `Salary generated for ${month}/${year} - Net: ₹${salary.netSalary}`,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
+    });
+
     res.status(201).json({
       message: 'Monthly salary generated successfully',
       data: salary
@@ -382,6 +395,18 @@ exports.paySalary = async (req, res) => {
       amount: salary.netSalary,
       note: `Monthly salary payment - ${paymentMethod}`,
       createdBy: req.user._id
+    });
+
+    // Log audit
+    await logAudit({
+      action: 'salary_paid',
+      actor: req.user._id,
+      actorRole: req.user.role,
+      target: salary._id,
+      targetType: 'salary',
+      description: `Salary paid to ${salary.staff.name} for ${salary.month}/${salary.year} - ₹${salary.netSalary}`,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
     });
 
     // Notify staff

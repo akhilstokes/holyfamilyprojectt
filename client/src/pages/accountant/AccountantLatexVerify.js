@@ -1,18 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { 
-  fetchLatexRequests, 
-  updateLatexRequestAdmin, 
-  accountantCalculate, 
+import {
+  fetchLatexRequests,
+  updateLatexRequestAdmin,
   accountantCalculateWithCompanyRate,
   getCompanyRate,
-  validateLatexRequest,
-  managerVerifyReq
+  updateCompanyRate
 } from '../../services/accountantService';
 import { formatTableDateTime } from '../../utils/dateUtils';
 import { useConfirm } from '../../components/common/ConfirmDialog';
-import { validators, validateField, commonValidationRules } from '../../utils/validation';
+import { validators } from '../../utils/validation';
 import ValidatedInput from '../../components/common/ValidatedInput';
 import DateRangeInput from '../../components/common/DateRangeInput';
+import './AccountantLatexVerify.css'; // Import new CSS
 
 const statusColors = { pending: '#aa8800', approved: '#0b6e4f', rejected: '#b00020', paid: '#2a5bd7', TEST_COMPLETED: '#2563eb', ACCOUNT_CALCULATED: '#7c3aed' };
 
@@ -26,7 +25,8 @@ export default function AccountantLatexVerify() {
   const [dateTo, setDateTo] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [companyRate, setCompanyRate] = useState(0);
-  const [validationErrors, setValidationErrors] = useState({});
+  const [editingRate, setEditingRate] = useState(false);
+  const [newRate, setNewRate] = useState('');
   const confirm = useConfirm();
 
   const loadCompanyRate = async () => {
@@ -39,21 +39,49 @@ export default function AccountantLatexVerify() {
     }
   };
 
+  const handleUpdateRate = async () => {
+    const rateValue = parseFloat(newRate);
+    if (!rateValue || rateValue <= 0) {
+      alert('Please enter a valid rate greater than 0');
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Update Company Rate',
+      message: `Are you sure you want to update the company rate from ₹${companyRate}/kg to ₹${rateValue}/kg?`,
+      confirmText: 'Update',
+      cancelText: 'Cancel'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await updateCompanyRate(rateValue);
+      await loadCompanyRate();
+      setEditingRate(false);
+      setNewRate('');
+      alert('Company rate updated successfully!');
+    } catch (e) {
+      console.error('Failed to update company rate:', e);
+      alert(e?.response?.data?.message || 'Failed to update company rate');
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     try {
-      const params = { 
-        page, 
-        limit: viewMode === 'history' ? 50 : 20, 
-        status: status || undefined 
+      const params = {
+        page,
+        limit: viewMode === 'history' ? 50 : 20,
+        status: status || undefined
       };
-      
+
       // Add date range for history mode
       if (viewMode === 'history') {
         if (dateFrom) params.dateFrom = dateFrom;
         if (dateTo) params.dateTo = dateTo;
       }
-      
+
       const list = await fetchLatexRequests(params);
       setRows(list);
     } catch (e) {
@@ -63,17 +91,19 @@ export default function AccountantLatexVerify() {
     }
   };
 
-  useEffect(() => { 
-    load(); 
+  useEffect(() => {
+    load();
     loadCompanyRate();
-    /* eslint-disable-next-line */ 
+    /* eslint-disable-next-line */
   }, [page, status, viewMode, dateFrom, dateTo]);
 
   // Filter rows based on search term
   const filteredRows = useMemo(() => {
     if (!searchTerm) return rows;
-    return rows.filter(row => 
+    return rows.filter(row =>
       (row.user?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (row.overrideBuyerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (row.user?.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (row._id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (row.status || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -91,40 +121,45 @@ export default function AccountantLatexVerify() {
   // Enhanced validation function
   const validateRequest = async (request) => {
     const errors = {};
-    
-    // Check if user name exists (not delivery staff)
-    const userNameError = validators.name(request.user?.name, 'Customer Name');
-    if (userNameError) {
-      errors.userName = userNameError;
+
+    // Check if customer name exists (use overrideBuyerName or user.name)
+    const customerName = request.overrideBuyerName || request.user?.name;
+    if (!customerName || customerName === '-') {
+      errors.userName = 'Customer name is required. Please set overrideBuyerName or ensure user has a name.';
+    } else {
+      const userNameError = validators.name(customerName, 'Customer Name');
+      if (userNameError) {
+        errors.userName = userNameError;
+      }
     }
-    
+
     // Check if quantity is valid
     const quantityError = validators.quantity(request.quantity, 'Quantity');
     if (quantityError) {
       errors.quantity = quantityError;
     }
-    
+
     // Check if DRC percentage is valid
     const drcError = validators.drcPercentage(request.drcPercentage);
     if (drcError) {
       errors.drcPercentage = drcError;
     }
-    
+
     // Check if company rate is available
     const rateError = validators.rate(companyRate, 'Company Rate');
     if (rateError) {
       errors.companyRate = rateError;
     }
-    
+
     // Additional validations
-    if (!request.user?._id) {
-      errors.userId = 'User ID is required';
+    if (!request.user?._id && !request.overrideBuyerName) {
+      errors.userId = 'User ID or override buyer name is required';
     }
-    
+
     if (!request._id) {
       errors.requestId = 'Request ID is required';
     }
-    
+
     return errors;
   };
 
@@ -143,12 +178,12 @@ export default function AccountantLatexVerify() {
     if (!ok) return;
     try {
       await updateLatexRequestAdmin(id, { status: nextStatus });
-      
+
       // Send manager verification notification for approved items
       if (nextStatus === 'approved') {
         await sendManagerVerification(id, request);
       }
-      
+
       await load();
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || 'Failed to update status';
@@ -196,7 +231,7 @@ export default function AccountantLatexVerify() {
     // Use company rate automatically
     const ok = await confirm('Confirm calculation', `Calculate amount using company rate ₹${companyRate}/kg for request ${r._id}?`);
     if (!ok) return;
-    
+
     try {
       await accountantCalculateWithCompanyRate(r._id);
       await load();
@@ -210,18 +245,18 @@ export default function AccountantLatexVerify() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div className="verify-latex-container">
+      <div className="verify-header">
         <h2>Verify Latex Billing</h2>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button 
-            className={viewMode === 'current' ? 'btn' : 'btn-secondary'} 
+        <div className="view-mode-toggles">
+          <button
+            className={viewMode === 'current' ? 'btn' : 'btn-secondary'}
             onClick={() => { setViewMode('current'); setPage(1); }}
           >
             Current
           </button>
-          <button 
-            className={viewMode === 'history' ? 'btn' : 'btn-secondary'} 
+          <button
+            className={viewMode === 'history' ? 'btn' : 'btn-secondary'}
             onClick={() => { setViewMode('history'); setPage(1); }}
           >
             History
@@ -229,57 +264,63 @@ export default function AccountantLatexVerify() {
         </div>
       </div>
 
-      {/* Company Rate Display */}
-      <div style={{ 
-        display: 'flex', 
-        gap: 12, 
-        marginBottom: 16, 
-        padding: 12, 
-        backgroundColor: '#e3f2fd', 
-        borderRadius: 8,
-        alignItems: 'center'
-      }}>
-        <strong>Company Rate:</strong>
-        <span style={{ 
-          padding: '4px 12px', 
-          borderRadius: 4, 
-          backgroundColor: '#1976d2',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '600'
-        }}>
-          ₹{companyRate}/kg
-        </span>
-        <button 
-          className="btn-secondary" 
-          onClick={loadCompanyRate}
-          style={{ fontSize: '12px', padding: '4px 8px' }}
-        >
-          Refresh Rate
-        </button>
+      {/* Company Rate Display and Update */}
+      <div className="company-rate-section">
+        <span className="rate-label">Company Rate:</span>
+        <span className="rate-badge">₹{companyRate}/kg</span>
+
+        <div className="rate-actions">
+          {!editingRate ? (
+            <>
+              <button
+                className="btn-secondary"
+                onClick={loadCompanyRate}
+                title="Refresh current rate"
+              >
+                Refresh Rate
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  setEditingRate(true);
+                  setNewRate(companyRate.toString());
+                }}
+              >
+                Update Rate
+              </button>
+            </>
+          ) : (
+            <div className="rate-edit-group">
+              <input
+                type="number"
+                className="rate-input"
+                value={newRate}
+                onChange={(e) => setNewRate(e.target.value)}
+                placeholder="Enter new rate"
+                min="0"
+                step="0.01"
+              />
+              <button className="btn" onClick={handleUpdateRate}>Save</button>
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setEditingRate(false);
+                  setNewRate('');
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Status Statistics */}
       {viewMode === 'history' && Object.keys(statusStats).length > 0 && (
-        <div style={{ 
-          display: 'flex', 
-          gap: 12, 
-          marginBottom: 16, 
-          padding: 12, 
-          backgroundColor: '#f8f9fa', 
-          borderRadius: 8,
-          flexWrap: 'wrap'
-        }}>
+        <div className="stats-section">
           <strong>Status Summary:</strong>
           {Object.entries(statusStats).map(([statusName, count]) => (
-            <span key={statusName} style={{ 
-              padding: '4px 8px', 
-              borderRadius: 4, 
-              backgroundColor: statusColors[statusName] || '#6b7280',
-              color: 'white',
-              fontSize: '12px',
-              fontWeight: '500'
-            }}>
+            <span key={statusName} className="stat-badge" style={{ backgroundColor: statusColors[statusName] || '#6b7280' }}>
               {statusName}: {count}
             </span>
           ))}
@@ -287,8 +328,14 @@ export default function AccountantLatexVerify() {
       )}
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <select value={status} onChange={e => { setPage(1); setStatus(e.target.value); }}>
+      <div className="controls-toolbar">
+        <label htmlFor="status-filter" className="sr-only">Filter by status</label>
+        <select
+          id="status-filter"
+          className="filter-select"
+          value={status}
+          onChange={e => { setPage(1); setStatus(e.target.value); }}
+        >
           <option value="">All Status</option>
           <option value="pending">Pending</option>
           <option value="TEST_COMPLETED">Test Completed</option>
@@ -297,7 +344,7 @@ export default function AccountantLatexVerify() {
           <option value="rejected">Rejected</option>
           <option value="paid">Paid</option>
         </select>
-        
+
         {viewMode === 'history' && (
           <DateRangeInput
             fromDate={dateFrom}
@@ -306,22 +353,24 @@ export default function AccountantLatexVerify() {
             onToDateChange={e => { setDateTo(e.target.value); setPage(1); }}
             fromDateLabel="From Date"
             toDateLabel="To Date"
-            helperText="Select date range for historical data"
+            helperText=""
           />
         )}
-        
-        <ValidatedInput
-          name="searchTerm"
-          type="text"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          placeholder="Search customer, ID, or status..."
-          validationRules={[]}
-          helperText="Search by customer name, request ID, or status"
-          style={{ padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, minWidth: 200 }}
-        />
-        
-        <button className="btn" onClick={() => { setPage(1); load(); }}>Refresh</button>
+
+        <div className="search-container">
+          <ValidatedInput
+            name="searchTerm"
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search customer, ID, or status..."
+            validationRules={[]}
+            // Removed helperText to prevent overlap
+            aria-label="Search latex requests"
+          />
+        </div>
+
+        <button className="btn refresh-btn" onClick={() => { setPage(1); load(); }}>Refresh</button>
       </div>
 
       {loading ? <p>Loading...</p> : (
@@ -347,19 +396,25 @@ export default function AccountantLatexVerify() {
                   <tr key={r._id}>
                     <td>{formatTableDateTime(r.submittedAt || r.createdAt)}</td>
                     <td>
-                      <span style={{ 
-                        color: (!r.user?.name || r.user?.name === '-') ? '#d32f2f' : 'inherit',
-                        fontWeight: (!r.user?.name || r.user?.name === '-') ? 'bold' : 'normal'
-                      }}>
-                        {r.user?.name || '⚠️ User Name Missing'}
-                      </span>
+                      {(() => {
+                        const displayName = r.overrideBuyerName || r.user?.name || r.user?.email || null;
+                        const hasName = displayName && displayName !== '-';
+                        return (
+                          <span style={{
+                            color: !hasName ? '#d32f2f' : 'inherit',
+                            fontWeight: !hasName ? 'bold' : 'normal'
+                          }}>
+                            {displayName || '⚠️ User Name Missing'}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td>{r.quantity ? `${r.quantity}L` : '-'}</td>
                     <td>{r.drcPercentage ?? '-'}</td>
                     <td>{r.estimatedPayment ?? '-'}</td>
                     <td>{r.calculatedAmount ?? '-'}</td>
                     <td>
-                      <span style={{ 
+                      <span style={{
                         color: r.marketRate ? 'inherit' : '#1976d2',
                         fontWeight: r.marketRate ? 'normal' : 'bold'
                       }}>
@@ -367,7 +422,7 @@ export default function AccountantLatexVerify() {
                       </span>
                     </td>
                     <td>
-                      <span style={{ 
+                      <span style={{
                         color: statusColors[r.status] || '#333',
                         padding: '2px 6px',
                         borderRadius: 4,
@@ -382,7 +437,7 @@ export default function AccountantLatexVerify() {
                       <td>{formatTableDateTime(r.updatedAt || r.createdAt)}</td>
                     )}
                     {viewMode === 'current' && (
-                      <td style={{ display: 'flex', gap: 8 }}>
+                      <td className="action-buttons">
                         {r.status === 'TEST_COMPLETED' && (
                           <button className="btn" onClick={() => doCalculate(r)}>Calculate</button>
                         )}
@@ -405,15 +460,15 @@ export default function AccountantLatexVerify() {
         )
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div className="pagination">
+        <div className="pagination-controls">
           <button className="btn-secondary" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
           <span>Page {page}</span>
           <button className="btn-secondary" onClick={() => setPage(p => p + 1)}>Next</button>
         </div>
-        
+
         {viewMode === 'history' && (
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>
+          <div className="pagination-info">
             Showing {filteredRows.length} records
             {searchTerm && ` (filtered from ${rows.length} total)`}
             {dateFrom && dateTo && ` from ${dateFrom} to ${dateTo}`}

@@ -1,84 +1,140 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import UserModule from '../components/common/UserModule';
-import './DashboardLayout.css'; // Import the new CSS
+import './DashboardLayout.css';
 
 const DashboardLayout = ({ children }) => {
-    const navigate = useNavigate();
-    const { logout } = useAuth();
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+  const [notificationCount] = useState(1);
 
-    const handleLogout = async () => {
-        try {
-            await logout(); // update auth state and clear headers/storage
-            navigate('/login');
-        } catch (e) {
-            navigate('/login');
-        }
-    };
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (e) {
+      navigate('/login');
+    }
+  };
 
-    const [menuOpen, setMenuOpen] = useState(false);
-    const menuRef = useRef(null);
+  // Get current time for greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    else if (hour < 18) return "Good Afternoon";
+    else return "Good Evening";
+  };
 
-    useEffect(() => {
-        const handler = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
-                setMenuOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
+  const getInitials = (name) => {
+    if (!name) return 'AN';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
-    return (
-        <div className="dashboard-container">
-            {/* Sidebar */}
-            <aside className="sidebar">
-                <div className="sidebar-header">
-                    HFP Dashboard
-                </div>
-                <ul className="sidebar-nav">
-                  <li className="nav-item">
-                    <NavLink to="/user/profile">
-                      <i className="fas fa-user nav-icon"></i> Profile
-                    </NavLink>
-                  </li>
-                  <li className="nav-item">
-                    <NavLink to="/user/live-rate">
-                      <i className="fas fa-chart-line nav-icon"></i> Live Rate
-                    </NavLink>
-                  </li>
-                  <li className="nav-item">
-                    <NavLink to="/user/requests">
-                      <i className="fas fa-life-ring nav-icon"></i> Requests
-                    </NavLink>
-                  </li>
-                  <li className="nav-item">
-                    <NavLink to="/user/transactions">
-                      <i className="fas fa-receipt nav-icon"></i> Transactions
-                    </NavLink>
-                  </li>
-                  <li className="nav-item">
-                    <NavLink to="/user/notifications">
-                      <i className="fas fa-bell nav-icon"></i> Notifications
-                    </NavLink>
-                  </li>
-                </ul>
-                
-
-            </aside>
-
-            {/* Main Content */}
-            <div className="main-content-wrapper">
-                <header className="dashboard-header">
-                    <UserModule showIcons={true} showProfile={true} showLogout={true} />
-                </header>
-                <main className="dashboard-content">
-                    {children}
-                </main>
+  return (
+    <div className="mobile-dashboard">
+      {/* Mobile Sidebar */}
+      <div className="mobile-sidebar">
+        {/* Header */}
+        <div className="mobile-header">
+          <div className="header-content">
+            <div className="brand-info">
+              <div className="brand-icon">
+                <i className="fas fa-industry"></i>
+              </div>
+              <div className="brand-text">
+                <h3>HFP Portal</h3>
+                <span>Customer Dashboard</span>
+              </div>
             </div>
+            <button className="back-btn">
+              <i className="fas fa-chevron-left"></i>
+            </button>
+          </div>
         </div>
-    );
+
+        {/* User Welcome Card */}
+        <div className="user-welcome-card">
+          <div className="user-avatar-large">
+            <span>{getInitials(user?.name)}</span>
+          </div>
+          <div className="user-details">
+            <div className="greeting">{getGreeting()}</div>
+            <div className="user-name">{user?.name || 'akhil N.K'}</div>
+            <div className="user-status">Premium Member</div>
+          </div>
+        </div>
+
+        {/* Navigation Sections */}
+        <div className="nav-sections">
+          {/* Dashboard Section */}
+          <div className="nav-section">
+            <h4 className="section-title">DASHBOARD</h4>
+            <div className="nav-items">
+              <NavLink to="/user" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <div className="nav-icon-wrapper">
+                  <div className="nav-icon">
+                    <i className="fas fa-home"></i>
+                  </div>
+                </div>
+                <span className="nav-label">Overview</span>
+              </NavLink>
+              
+              <NavLink to="/user/my-actions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <div className="nav-icon-wrapper">
+                  <div className="nav-icon">
+                    <i className="fas fa-tasks"></i>
+                  </div>
+                </div>
+                <span className="nav-label">My Actions</span>
+              </NavLink>
+            </div>
+          </div>
+
+          {/* Account Section */}
+          <div className="nav-section">
+            <h4 className="section-title">ACCOUNT</h4>
+            <div className="nav-items">
+              <NavLink to="/user/profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <div className="nav-icon-wrapper">
+                  <div className="nav-icon">
+                    <i className="fas fa-user"></i>
+                  </div>
+                </div>
+                <span className="nav-label">Profile</span>
+              </NavLink>
+              
+              <NavLink to="/user/notifications" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <div className="nav-icon-wrapper">
+                  <div className="nav-icon">
+                    <i className="fas fa-bell"></i>
+                  </div>
+                  {notificationCount > 0 && (
+                    <div className="notification-dot">{notificationCount}</div>
+                  )}
+                </div>
+                <span className="nav-label">Notifications</span>
+              </NavLink>
+            </div>
+          </div>
+        </div>
+
+        {/* Sign Out Button */}
+        <div className="sidebar-footer">
+          <button onClick={handleLogout} className="sign-out-btn">
+            <div className="sign-out-icon">
+              <i className="fas fa-sign-out-alt"></i>
+            </div>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="main-content">
+        {children}
+      </div>
+    </div>
+  );
 };
 
 export default DashboardLayout;

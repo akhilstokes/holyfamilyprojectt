@@ -17,7 +17,39 @@ const Notifications = () => {
         const res = await axios.get(`${API}/api/notifications`, { headers });
         const data = res.data;
         const list = Array.isArray(data?.notifications) ? data.notifications : (Array.isArray(data) ? data : []);
-        setItems(list);
+        
+        // Filter notifications for regular users - ONLY price updates and approvals
+        const filteredList = list.filter(notif => {
+          const category = (notif.category || '').toLowerCase();
+          const title = (notif.title || '').toLowerCase();
+          const message = (notif.message || '').toLowerCase();
+          
+          // EXCLUDE pickup/delivery/operational notifications
+          if (title.includes('pickup') || title.includes('delivery') || title.includes('scheduled') ||
+              message.includes('pickup') || message.includes('delivery') || message.includes('scheduled')) {
+            return false;
+          }
+          
+          // ONLY INCLUDE: Price/Rate updates
+          if (category.includes('rate') || category.includes('price') || category.includes('live_rate')) {
+            return true;
+          }
+          if (title.includes('rate') || title.includes('price') || title.includes('live rate')) {
+            return true;
+          }
+          
+          // ONLY INCLUDE: Approval/Rejection notifications
+          if (title.includes('approved') || title.includes('rejected') || title.includes('approval')) {
+            return true;
+          }
+          if (message.includes('approved') || message.includes('rejected') || message.includes('approval')) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        setItems(filteredList);
       } catch (e) {
         console.error('Error loading notifications:', e);
         setItems([]);
@@ -51,7 +83,7 @@ const Notifications = () => {
     const backup = items;
     setItems([]);
     try {
-      await axios.post(`${API}/api/users/notifications/clear`, {}, { headers: tokenHeaders() });
+      await axios.post(`${API}/api/notifications/clear`, {}, { headers: tokenHeaders() });
     } catch (e) {
       setItems(backup);
     }

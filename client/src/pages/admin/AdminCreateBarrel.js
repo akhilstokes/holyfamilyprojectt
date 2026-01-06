@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { validateBarrelForm } from '../../utils/adminValidations';
 
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 function AdminCreateBarrel() {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
@@ -40,7 +42,7 @@ function AdminCreateBarrel() {
   const loadManagerRequests = async () => {
     setRequestsLoading(true);
     try {
-      const res = await fetch('/api/barrel-creation-requests?status=pending', {
+      const res = await fetch(`${API}/api/barrel-creation-requests?status=pending`, {
         headers: { 
           'Content-Type': 'application/json', 
           'Authorization': token ? `Bearer ${token}` : undefined 
@@ -131,7 +133,7 @@ function AdminCreateBarrel() {
         unit: form.unit || 'L',
       };
       
-      const res = await fetch('/api/barrels', {
+      const res = await fetch(`${API}/api/barrels`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
@@ -270,7 +272,7 @@ function AdminCreateBarrel() {
                   if (!/^BHFP\d{2}$/i.test(id)) { setActionMsg('Invalid ID. Use format BHFP01'); return; }
                   setActionMsg(''); setActionLoading(true);
                   try {
-                    const res = await fetch('/api/barrel-logistics/approve/purchase', {
+                    const res = await fetch(`${API}/api/barrel-logistics/approve/purchase`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : undefined },
                       body: JSON.stringify({ barrelId: id }),

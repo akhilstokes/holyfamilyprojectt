@@ -1,0 +1,439 @@
+/* Vehicle Information Styles */
+.vehicle-info-container {
+  padding: 0;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Header */
+.vehicle-info-header {
+  background: white;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.header-text h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.header-text p {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Content */
+.vehicle-info-content {
+  padding: 24px;
+  display: grid;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Info Cards */
+.info-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.card-header {
+  background: #f8fafc;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.card-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-header i {
+  color: #3b82f6;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+/* Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.form-input {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-display {
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #374151;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  min-width: 120px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: #3b82f6;
+  border: 2px solid #3b82f6;
+}
+
+.btn-outline:hover {
+  background: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Location Info */
+.location-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.location-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f0f9ff;
+  border: 2px solid #bae6fd;
+  border-radius: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  color: #0c4a6e;
+}
+
+.location-display i {
+  color: #0284c7;
+  font-size: 18px;
+}
+
+.location-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Quick Actions */
+.quick-actions-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.quick-actions-card h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 20px 0;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: #374151;
+}
+
+.action-btn:hover {
+  background: #f1f5f9;
+  border-color: #3b82f6;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn i {
+  font-size: 24px;
+  color: #3b82f6;
+}
+
+.action-btn span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  
+  .vehicle-info-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .vehicle-info-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+  }
+  
+  .header-actions {
+    width: 100%;
+  }
+  
+  .edit-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .vehicle-info-content {
+    padding: 16px;
+    gap: 20px;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .card-body {
+    padding: 20px;
+  }
+  
+  .location-actions {
+    flex-direction: column;
+  }
+  
+  .actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .action-btn {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vehicle-info-header {
+    padding: 16px;
+  }
+  
+  .header-content {
+    gap: 12px;
+  }
+  
+  .header-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .header-text h1 {
+    font-size: 24px;
+  }
+  
+  .header-text p {
+    font-size: 14px;
+  }
+  
+  .vehicle-info-content {
+    padding: 12px;
+    gap: 16px;
+  }
+  
+  .card-header {
+    padding: 16px 20px;
+  }
+  
+  .card-body {
+    padding: 16px;
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  
+  .edit-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* Loading State */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Form Validation */
+.form-input:invalid {
+  border-color: #ef4444;
+}
+
+.form-input:invalid:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Success States */
+.form-input:valid {
+  border-color: #10b981;
+}
+
+/* Animation for save success */
+@keyframes saveSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.btn-success.saving {
+  animation: saveSuccess 0.3s ease;
+}

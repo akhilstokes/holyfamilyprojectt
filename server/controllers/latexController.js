@@ -57,6 +57,11 @@ const submitLatexRequest = async (req, res) => {
 // Create a manual DRC test record from lab with minimal fields
 const createManualTest = async (req, res) => {
     try {
+        // ✅ Validate user is authenticated
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: 'User authentication required' });
+        }
+
         const { externalSampleId, buyerName, quantityLiters, drcPercentage, barrelCount } = req.body || {};
         if (!externalSampleId || !String(externalSampleId).trim()) return res.status(400).json({ message: 'externalSampleId is required' });
         if (!buyerName || !String(buyerName).trim()) return res.status(400).json({ message: 'buyerName is required' });
@@ -71,7 +76,7 @@ const createManualTest = async (req, res) => {
             bc = bcn;
         }
         const doc = new LatexRequest({
-            user: req.user?._id, // lab user as placeholder owner
+            user: req.user._id, // ✅ Required field
             externalSampleId: String(externalSampleId).trim(),
             overrideBuyerName: String(buyerName).trim(),
             quantity: qty,
@@ -85,14 +90,14 @@ const createManualTest = async (req, res) => {
             estimatedPayment: 0,
             // Testing status
             testCompletedAt: new Date(),
-            testedBy: req.user?._id,
+            testedBy: req.user._id,
             status: 'TEST_COMPLETED',
         });
         await doc.save();
         return res.status(201).json({ success: true, request: doc });
     } catch (e) {
         console.error('createManualTest error:', e);
-        return res.status(500).json({ message: 'Failed to create manual test' });
+        return res.status(500).json({ message: 'Failed to create manual test', error: e.message });
     }
 };
 // GET /api/latex/reports/drc?from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -100,7 +105,7 @@ const createManualTest = async (req, res) => {
 const getDrcReport = async (req, res) => {
     try {
         const { from, to } = req.query || {};
-        const q = { status: { $in: ['TEST_COMPLETED','ACCOUNT_CALCULATED','VERIFIED','paid'] } };
+        const q = { status: { $in: ['TEST_COMPLETED', 'ACCOUNT_CALCULATED', 'VERIFIED', 'paid'] } };
         if (from || to) {
             q.testCompletedAt = {};
             if (from) q.testCompletedAt.$gte = new Date(from + 'T00:00:00.000Z');
@@ -227,7 +232,7 @@ const getLatexRequest = async (req, res) => {
 const updateLatexRequest = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, actualPayment, adminNotes } = req.body || {};
+        const { status, actualPayment, adminNotes, quality, contactNumber, currentRate } = req.body || {};
 
         const request = await LatexRequest.findById(id);
 
@@ -238,20 +243,34 @@ const updateLatexRequest = async (req, res) => {
             });
         }
 
-        // Update fields
+        // Update fields only if provided
         if (status) {
-            const allowed = ['pending','COLLECTED','TEST_COMPLETED','ACCOUNT_CALCULATED','VERIFIED','approved','rejected','paid','cancelled'];
+            const allowed = ['pending', 'COLLECTED', 'TEST_COMPLETED', 'ACCOUNT_CALCULATED', 'VERIFIED', 'approved', 'rejected', 'paid', 'cancelled'];
             if (!allowed.includes(status)) {
-                return res.status(400).json({ success:false, message: 'Invalid status value' });
+                return res.status(400).json({ success: false, message: 'Invalid status value' });
             }
             request.status = status;
         }
-        if (actualPayment) request.finalPayment = parseFloat(actualPayment);
-        if (adminNotes) request.notes = adminNotes;
-        
+        if (actualPayment !== undefined) request.finalPayment = parseFloat(actualPayment);
+        if (adminNotes !== undefined) request.notes = adminNotes;
+
+        // Update optional fields if provided
+        if (quality !== undefined) {
+            const validQualities = ['premium', 'standard', 'average'];
+            if (!validQualities.includes(quality)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid quality value. Must be one of: ${validQualities.join(', ')}`
+                });
+            }
+            request.quality = quality;
+        }
+        if (contactNumber !== undefined) request.contactNumber = contactNumber;
+        if (currentRate !== undefined) request.currentRate = parseFloat(currentRate);
+
         if (status === 'approved' || status === 'rejected') {
             if (!req.user || !req.user._id) {
-                return res.status(401).json({ success:false, message: 'Unauthorized: user missing' });
+                return res.status(401).json({ success: false, message: 'Unauthorized: user missing' });
             }
             request.approvedAt = new Date();
             request.approvedBy = req.user._id;
@@ -261,6 +280,7 @@ const updateLatexRequest = async (req, res) => {
             request.paidAt = new Date();
         }
 
+        // Save with validation
         await request.save();
 
         res.status(200).json({
@@ -274,7 +294,17 @@ const updateLatexRequest = async (req, res) => {
         const msg = error?.message || 'Error updating latex request';
         // Mongoose validation errors -> 400
         if (error?.name === 'ValidationError') {
-            return res.status(400).json({ success:false, message: msg });
+            // Provide more detailed error message
+            const errors = Object.keys(error.errors).map(key => {
+                const err = error.errors[key];
+                if (err.kind === 'required') {
+                    return `${key} is required`;
+                } else if (err.kind === 'enum') {
+                    return `${key}: "${err.value}" is not valid. Valid values are: ${err.properties.enumValues.join(', ')}`;
+                }
+                return err.message;
+            });
+            return res.status(400).json({ success: false, message: errors.join('; ') });
         }
         res.status(500).json({ success: false, message: msg });
     }
@@ -455,8 +485,8 @@ const recordTestResult = async (req, res) => {
         if (Array.isArray(barrels) && barrels.length) {
             // sanitize
             const clean = barrels
-              .map(b => ({ drc: Number(b.drc), liters: b.liters != null ? Number(b.liters) : null }))
-              .filter(b => Number.isFinite(b.drc));
+                .map(b => ({ drc: Number(b.drc), liters: b.liters != null ? Number(b.liters) : null }))
+                .filter(b => Number.isFinite(b.drc));
             if (!clean.length) return res.status(400).json({ message: 'Invalid barrels array' });
             doc.barrels = clean;
             // weighted by liters if present
@@ -521,15 +551,36 @@ const accountantCalculate = async (req, res) => {
     }
 };
 
+// Helper function to get DRC-based rate tier
+function getDRCBasedRate(drcPercentage, baseCompanyRate) {
+    const drc = Number(drcPercentage || 0);
+    const baseRate = Number(baseCompanyRate || 9000);
+
+    // DRC-based pricing tiers
+    if (drc >= 60) {
+        // Premium quality: Full company rate
+        return baseRate;
+    } else if (drc >= 50) {
+        // Good quality: 83% of company rate
+        return Math.round(baseRate * 0.83);
+    } else if (drc >= 40) {
+        // Average quality: 67% of company rate
+        return Math.round(baseRate * 0.67);
+    } else {
+        // Low quality: 50% of company rate
+        return Math.round(baseRate * 0.50);
+    }
+}
+
 // PUT /api/latex/admin/calc-company-rate/:id
-// Accountant calculates amount using company rate automatically
+// Accountant calculates amount using company rate automatically with DRC-based pricing
 const accountantCalculateWithCompanyRate = async (req, res) => {
     try {
         const { id } = req.params;
         const doc = await LatexRequest.findById(id);
         if (!doc) return res.status(404).json({ message: 'Latex request not found' });
 
-        // Get the latest company rate
+        // Get the latest company rate (base rate for DRC 60%+)
         const Rate = require('../models/rateModel');
         const latestRate = await Rate.findOne({ status: 'published' }).sort({ effectiveDate: -1, createdAt: -1 });
         if (!latestRate || !latestRate.companyRate) {
@@ -538,22 +589,38 @@ const accountantCalculateWithCompanyRate = async (req, res) => {
 
         const drc = Number(doc.drcPercentage || 0);
         const qty = Number(doc.quantity || 0);
-        const rate = Number(latestRate.companyRate);
+        const baseCompanyRate = Number(latestRate.companyRate);
+
+        // Get DRC-based rate (adjusted based on quality)
+        const adjustedRate = getDRCBasedRate(drc, baseCompanyRate);
+
         const dryKg = qty * (drc / 100);
-        const amount = Math.round(dryKg * rate);
-        
-        doc.marketRate = rate;
+        const amount = Math.round(dryKg * adjustedRate);
+
+        doc.marketRate = adjustedRate;
         doc.calculatedAmount = amount;
         doc.accountCalculatedAt = new Date();
         doc.accountCalculatedBy = req.user._id;
         doc.status = 'ACCOUNT_CALCULATED';
         await doc.save();
-        
-        return res.json({ 
-            success: true, 
-            request: doc, 
-            calc: { qtyLiters: qty, drcPercent: drc, dryKg, rate, amount },
-            companyRate: rate
+
+        return res.json({
+            success: true,
+            request: doc,
+            calc: {
+                qtyLiters: qty,
+                drcPercent: drc,
+                dryKg,
+                baseRate: baseCompanyRate,
+                adjustedRate: adjustedRate,
+                amount
+            },
+            companyRate: baseCompanyRate,
+            appliedRate: adjustedRate,
+            rateTier: drc >= 60 ? 'Premium (100%)' :
+                drc >= 50 ? 'Good (83%)' :
+                    drc >= 40 ? 'Average (67%)' :
+                        'Low (50%)'
         });
     } catch (e) {
         console.error('accountantCalculateWithCompanyRate error:', e);
@@ -566,26 +633,26 @@ const accountantCalculateWithCompanyRate = async (req, res) => {
 const managerVerify = async (req, res) => {
     try {
         console.log('managerVerify called with:', { id: req.params.id, user: req.user });
-        
+
         const { id } = req.params;
         const doc = await LatexRequest.findById(id).populate('user', 'name email');
         if (!doc) {
             console.log('Latex request not found:', id);
             return res.status(404).json({ message: 'Latex request not found' });
         }
-        
-        console.log('Found document:', { 
-            id: doc._id, 
-            calculatedAmount: doc.calculatedAmount, 
+
+        console.log('Found document:', {
+            id: doc._id,
+            calculatedAmount: doc.calculatedAmount,
             marketRate: doc.marketRate,
-            status: doc.status 
+            status: doc.status
         });
-        
+
         if (!doc.calculatedAmount || !doc.marketRate) {
             console.log('Calculation not completed:', { calculatedAmount: doc.calculatedAmount, marketRate: doc.marketRate });
             return res.status(400).json({ message: 'Calculation not completed yet' });
         }
-        
+
         // Handle built-in tokens for verifiedBy
         let verifiedBy = null;
         if (req.user?._id) {
@@ -598,7 +665,7 @@ const managerVerify = async (req, res) => {
                 verifiedBy = req.user._id;
             }
         }
-        
+
         doc.verifiedAt = new Date();
         doc.verifiedBy = verifiedBy;
         doc.finalPayment = doc.calculatedAmount;
@@ -607,17 +674,17 @@ const managerVerify = async (req, res) => {
         doc.invoiceNumber = `INV-${String(doc._id).slice(-8).toUpperCase()}`;
         // Placeholder URL (can be replaced with real PDF service)
         doc.invoicePdfUrl = `/api/latex/invoice/${doc._id}`;
-        
-        console.log('Saving document with:', { 
-            verifiedAt: doc.verifiedAt, 
-            verifiedBy: doc.verifiedBy, 
+
+        console.log('Saving document with:', {
+            verifiedAt: doc.verifiedAt,
+            verifiedBy: doc.verifiedBy,
             status: doc.status,
-            invoiceNumber: doc.invoiceNumber 
+            invoiceNumber: doc.invoiceNumber
         });
-        
+
         await doc.save();
         console.log('Document saved successfully');
-        
+
         return res.json({ success: true, request: doc });
     } catch (e) {
         console.error('managerVerify error:', e);

@@ -1,11 +1,16 @@
-import React from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './AdminDashboardLayout.css';
 import { useAuth } from '../context/AuthContext';
 
 const AdminDashboardLayout = ({ children }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const location = useLocation();
+  const { logout, user } = useAuth();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const handleSignOut = async () => {
     try {
@@ -15,39 +20,236 @@ const AdminDashboardLayout = ({ children }) => {
     }
   };
 
+  // Click outside handler
+  useEffect(() => {
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/admin/home') return { title: 'Dashboard', subtitle: 'Admin overview and controls', icon: 'fa-tachometer-alt' };
+    if (path.includes('/attendance')) return { title: 'Attendance', subtitle: 'Staff attendance management', icon: 'fa-user-check' };
+    if (path.includes('/staff-management')) return { title: 'Staff Management', subtitle: 'Manage staff members', icon: 'fa-users-cog' };
+    if (path.includes('/staff')) return { title: 'Staff', subtitle: 'Staff information', icon: 'fa-users' };
+    if (path.includes('/expenses')) return { title: 'Expenses', subtitle: 'Expense management', icon: 'fa-receipt' };
+    if (path.includes('/yard-stock')) return { title: 'Yard Stock', subtitle: 'Yard inventory management', icon: 'fa-warehouse' };
+    if (path.includes('/godown-rubber-stock')) return { title: 'Godown Rubber Stock', subtitle: 'Rubber stock management', icon: 'fa-boxes' };
+    if (path.includes('/hanger-space')) return { title: 'Hanger Free Space', subtitle: 'Storage space management', icon: 'fa-warehouse' };
+    if (path.includes('/chemical-stock-history')) return { title: 'Chemical Stock History', subtitle: 'Chemical inventory history', icon: 'fa-flask' };
+    if (path.includes('/worker-schedule')) return { title: 'Worker Schedule', subtitle: 'Schedule management', icon: 'fa-calendar-alt' };
+    if (path.includes('/worker-documents')) return { title: 'Worker Documents', subtitle: 'Document management', icon: 'fa-file-alt' };
+    if (path.includes('/create-barrel')) return { title: 'Barrel', subtitle: 'Barrel management', icon: 'fa-drum' };
+    if (path.includes('/barrel-requests')) return { title: 'Barrel Requests', subtitle: 'Handle barrel requests', icon: 'fa-drum' };
+    if (path.includes('/chem-requests')) return { title: 'Chemical Requests', subtitle: 'Chemical request management', icon: 'fa-flask' };
+    if (path.includes('/rates')) return { title: 'Rates', subtitle: 'Rate management', icon: 'fa-chart-line' };
+    return { title: 'Administration', subtitle: 'System administration', icon: 'fa-user-shield' };
+  };
+
+  const pageInfo = getPageTitle();
+
+  const navigationItems = [
+    {
+      section: 'Overview',
+      items: [
+        { to: '/admin/home', icon: 'fa-tachometer-alt', label: 'Dashboard' },
+        { to: '/admin/attendance', icon: 'fa-user-check', label: 'Attendance' },
+      ]
+    },
+    {
+      section: 'Staff Management',
+      items: [
+        { to: '/admin/staff', icon: 'fa-users', label: 'Staff' },
+        { to: '/admin/staff-management', icon: 'fa-users-cog', label: 'Staff Management' },
+        { to: '/admin/worker-schedule', icon: 'fa-calendar-alt', label: 'Worker Schedule' },
+        { to: '/admin/worker-documents', icon: 'fa-file-alt', label: 'Worker Documents' },
+      ]
+    },
+    {
+      section: 'Inventory & Storage',
+      items: [
+        { to: '/admin/yard-stock', icon: 'fa-warehouse', label: 'Yard Stock' },
+        { to: '/admin/godown-rubber-stock', icon: 'fa-boxes', label: 'Godown Rubber Stock' },
+        { to: '/admin/hanger-space', icon: 'fa-warehouse', label: 'Hanger Free Space' },
+        { to: '/admin/chemical-stock-history', icon: 'fa-flask', label: 'Chemical Stock History' },
+      ]
+    },
+    {
+      section: 'Barrel Management',
+      items: [
+        { to: '/admin/create-barrel', icon: 'fa-drum', label: 'Barrel' },
+        { to: '/admin/barrel-requests', icon: 'fa-drum', label: 'Barrel Requests' },
+      ]
+    },
+    {
+      section: 'Operations',
+      items: [
+        { to: '/admin/expenses', icon: 'fa-receipt', label: 'Expenses' },
+        { to: '/admin/chem-requests', icon: 'fa-flask', label: 'Chemical Requests' },
+        { to: '/admin/rates', icon: 'fa-chart-line', label: 'Rates' },
+      ]
+    }
+  ];
+
   // Allow both children (explicit) and Outlet (nested routes) usage
   return (
-    <div className="admin-layout role-admin">
-      <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <img src="/images/logo.png" alt="HFP" />
-          <span>Admin Dashboard</span>
-        </div>
-        <nav className="admin-nav">
-          <NavLink to="/admin/home" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Home</NavLink>
-          <NavLink to="/admin/attendance" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Attendance</NavLink>
-          <NavLink to="/admin/staff" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Staff</NavLink>
-          <NavLink to="/admin/yard-stock" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Yard Stock</NavLink>
-          <NavLink to="/admin/godown-rubber-stock" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Godown Rubber Stock</NavLink>
-          <NavLink to="/admin/hanger-space" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Hanger Free Space</NavLink>
-          <NavLink to="/admin/chemical-stock-history" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Chemical Stock History</NavLink>
-          <NavLink to="/admin/worker-schedule" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Worker Schedule</NavLink>
-          <NavLink to="/admin/worker-documents" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Worker Documents</NavLink>
-          <NavLink to="/admin/create-barrel" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Barrel</NavLink>
-          <NavLink to="/admin/chem-requests" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Chemical Requests</NavLink>
-          <NavLink to="/admin/rates" className={({ isActive }) => isActive ? 'admin-link active' : 'admin-link'}>Rates</NavLink>
-        </nav>
-      </aside>
-      <main className="admin-content brand-gradient">
-        <div className="admin-header">
-          <h1>Administration</h1>
-          <button className="admin-signout" onClick={handleSignOut} title="Sign out">
-            <i className="fas fa-sign-out-alt" />
-            <span>Sign out</span>
+    <div className="admin-dashboard-container">
+      {/* Sidebar Overlay for Mobile */}
+      <div 
+        className={`admin-sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
+      {/* Sidebar */}
+      <aside className={`admin-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+        {/* Sidebar Header */}
+        <div className="admin-sidebar-header">
+          <div className="admin-brand">
+            <div className="admin-brand-icon">
+              <i className="fas fa-user-shield"></i>
+            </div>
+            <div className="admin-brand-text">
+              <h3>HFP Admin</h3>
+              <span>Control Panel</span>
+            </div>
+          </div>
+          <button 
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <i className={`fas ${sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
           </button>
         </div>
-        {children || <Outlet />}
-      </main>
+
+        {/* User Profile Card */}
+        <div className="admin-user-card">
+          <div className="admin-user-avatar">
+            {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+          </div>
+          <div className="admin-user-info">
+            <div className="admin-user-greeting">Welcome back,</div>
+            <div className="admin-user-name">{user?.name || user?.email || 'Administrator'}</div>
+            <div className="admin-user-role">System Administrator</div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="admin-nav">
+          {navigationItems.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="admin-nav-section">
+              <div className="admin-nav-title">{section.section}</div>
+              <div className="admin-nav-items">
+                {section.items.map((item, itemIndex) => (
+                  <NavLink
+                    key={itemIndex}
+                    to={item.to}
+                    className={({ isActive }) => 
+                      `admin-nav-item ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <div className="admin-nav-icon">
+                      <i className={`fas ${item.icon}`}></i>
+                    </div>
+                    <span className="admin-nav-label">{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div className="admin-sidebar-footer">
+          <button className="admin-logout-btn" onClick={handleSignOut}>
+            <i className="fas fa-sign-out-alt"></i>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className={`admin-main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
+        {/* Top Header */}
+        <header className="admin-top-header">
+          <div className="admin-header-left">
+            <button 
+              className="admin-mobile-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <i className="fas fa-bars"></i>
+            </button>
+            
+            <div className="admin-page-title">
+              <div className="admin-page-icon">
+                <i className={`fas ${pageInfo.icon}`}></i>
+              </div>
+              <div className="admin-page-info">
+                <h1>{pageInfo.title}</h1>
+                <p>{pageInfo.subtitle}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="admin-header-right">
+            {/* Profile Dropdown */}
+            <div className="admin-profile-dropdown" ref={menuRef}>
+              <button 
+                className="admin-profile-btn"
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              >
+                <div className="admin-profile-avatar">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                </div>
+                <div className="admin-profile-info">
+                  <div className="admin-profile-name">{user?.name || 'Administrator'}</div>
+                  <div className="admin-profile-role">System Administrator</div>
+                </div>
+                <i className={`fas fa-chevron-${profileMenuOpen ? 'up' : 'down'}`}></i>
+              </button>
+
+              {profileMenuOpen && (
+                <div className="admin-dropdown-menu">
+                  <NavLink 
+                    to="/user/profile/view" 
+                    className="admin-dropdown-item"
+                    onClick={() => setProfileMenuOpen(false)}
+                  >
+                    <i className="fas fa-user"></i>
+                    View Profile
+                  </NavLink>
+                  <NavLink 
+                    to="/user/profile" 
+                    className="admin-dropdown-item"
+                    onClick={() => setProfileMenuOpen(false)}
+                  >
+                    <i className="fas fa-edit"></i>
+                    Edit Profile
+                  </NavLink>
+                  <div className="admin-dropdown-item" onClick={handleSignOut}>
+                    <i className="fas fa-sign-out-alt"></i>
+                    Sign Out
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <main className="admin-content">
+          {children || <Outlet />}
+        </main>
+      </div>
     </div>
   );
 };

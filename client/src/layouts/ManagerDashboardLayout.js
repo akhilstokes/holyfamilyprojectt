@@ -1,70 +1,353 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import './DashboardLayout.css';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import './ManagerDashboardLayout.css';
 import { useAuth } from '../context/AuthContext';
 
 const ManagerDashboardLayout = ({ children }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const [sidebarOpen] = useState(true);
+  const location = useLocation();
+  const { logout, user } = useAuth();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [recentNotifications, setRecentNotifications] = useState([]);
   const menuRef = useRef(null);
+  const notifRef = useRef(null);
+
+  const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const token = localStorage.getItem('token');
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
-    } catch {
+    } finally {
       navigate('/login');
     }
   };
 
+  // Load notifications
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        if (!token) {
+          setUnreadCount(0);
+          setRecentNotifications([]);
+          return;
+        }
+
+        const res = await fetch(`${base}/api/notifications?limit=5`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data?.notifications) ? data.notifications : (Array.isArray(data) ? data : []);
+          setRecentNotifications(list);
+          setUnreadCount(Number(data?.unread || (list.filter(n => !n.read).length)));
+        } else {
+          setUnreadCount(0);
+          setRecentNotifications([]);
+        }
+      } catch {
+        setUnreadCount(0);
+        setRecentNotifications([]);
+      }
+    };
+
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 60000);
+    return () => clearInterval(interval);
+  }, [base, token]);
+
+  // Click outside handlers
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
-        // Menu close logic removed since menuOpen is not used
+        setProfileMenuOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotificationsOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/manager/home') return { title: 'Dashboard', subtitle: 'Manager overview and controls', icon: 'fa-tachometer-alt' };
+    if (path.includes('/live')) return { title: 'Live Check-ins', subtitle: 'Real-time staff check-ins', icon: 'fa-map-marker-alt' };
+    if (path.includes('/leaves')) return { title: 'Pending Leaves', subtitle: 'Review leave requests', icon: 'fa-calendar-times' };
+    if (path.includes('/attendance')) return { title: 'Attendance Verify', subtitle: 'Verify staff attendance', icon: 'fa-user-check' };
+    if (path.includes('/expenses')) return { title: 'Expenses', subtitle: 'Manage expenses', icon: 'fa-receipt' };
+    if (path.includes('/completed')) return { title: 'Complaints & Actions', subtitle: 'Handle complaints', icon: 'fa-exclamation-triangle' };
+    if (path.includes('/hanger-space')) return { title: 'Hanger Space', subtitle: 'Manage storage space', icon: 'fa-warehouse' };
+    if (path.includes('/shifts')) return { title: 'Shift Planning', subtitle: 'Plan staff shifts', icon: 'fa-clock' };
+    if (path.includes('/shift-management')) return { title: 'Shift Management', subtitle: 'Manage staff shifts and assignments', icon: 'fa-calendar-alt' };
+    if (path.includes('/sell-requests')) return { title: 'Sell Requests', subtitle: 'Manage sell requests', icon: 'fa-handshake' };
+    if (path.includes('/barrel-allocation')) return { title: 'Barrel Allocation', subtitle: 'Allocate barrels', icon: 'fa-boxes' };
+    if (path.includes('/returned-barrels')) return { title: 'Returned Barrels', subtitle: 'Track returned barrels', icon: 'fa-undo' };
+    if (path.includes('/latex-billing')) return { title: 'Latex Billing', subtitle: 'Manage latex billing', icon: 'fa-file-invoice' };
+    if (path.includes('/rates')) return { title: 'Set Live Rate', subtitle: 'Update live rates', icon: 'fa-chart-line' };
+    if (path.includes('/wages')) return { title: 'Wages', subtitle: 'Manage staff wages', icon: 'fa-money-bill-wave' };
+    if (path.includes('/staff-salary')) return { title: 'Staff Salary', subtitle: 'Handle staff salaries', icon: 'fa-coins' };
+    if (path.includes('/stock')) return { title: 'Stock', subtitle: 'Inventory management', icon: 'fa-boxes' };
+    if (path.includes('/chem-requests')) return { title: 'Chemical Requests', subtitle: 'Chemical request management', icon: 'fa-flask' };
+    if (path.includes('/notifications')) return { title: 'Send Notifications', subtitle: 'Broadcast notifications', icon: 'fa-bullhorn' };
+    return { title: 'Manager', subtitle: 'Management system', icon: 'fa-user-tie' };
+  };
+
+  const pageInfo = getPageTitle();
+
+  const navigationItems = [
+    {
+      section: 'Operations',
+      items: [
+        { to: '/manager/home', icon: 'fa-tachometer-alt', label: 'Dashboard' },
+        { to: '/manager/live', icon: 'fa-map-marker-alt', label: 'Live Check-ins' },
+        { to: '/manager/leaves', icon: 'fa-calendar-times', label: 'Pending Leaves' },
+        { to: '/manager/attendance', icon: 'fa-user-check', label: 'Attendance Verify' },
+        { to: '/manager/expenses', icon: 'fa-receipt', label: 'Expenses' },
+        { to: '/manager/completed', icon: 'fa-exclamation-triangle', label: 'Complaints & Actions' },
+      ]
+    },
+    {
+      section: 'Inventory & Space',
+      items: [
+        { to: '/manager/hanger-space', icon: 'fa-warehouse', label: 'Hanger Space' },
+        { to: '/manager/stock', icon: 'fa-boxes', label: 'Stock Management' },
+        { to: '/manager/barrel-allocation', icon: 'fa-boxes', label: 'Barrel Allocation' },
+        { to: '/manager/returned-barrels', icon: 'fa-undo', label: 'Returned Barrels' },
+      ]
+    },
+    {
+      section: 'Business & Finance',
+      items: [
+        { to: '/manager/sell-requests', icon: 'fa-handshake', label: 'Sell Requests' },
+        { to: '/manager/latex-billing', icon: 'fa-file-invoice', label: 'Latex Billing' },
+        { to: '/manager/rates', icon: 'fa-chart-line', label: 'Set Live Rate' },
+        { to: '/manager/wages', icon: 'fa-money-bill-wave', label: 'Wages' },
+        { to: '/manager/staff-salary', icon: 'fa-coins', label: 'Staff Salary' },
+      ]
+    },
+    {
+      section: 'Staff & Planning',
+      items: [
+        { to: '/manager/shifts', icon: 'fa-clock', label: 'Shift Planning' },
+        { to: '/manager/shift-management', icon: 'fa-calendar-alt', label: 'Shift Management' },
+        { to: '/manager/chem-requests', icon: 'fa-flask', label: 'Chemical Requests' },
+        { to: '/manager/notifications', icon: 'fa-bullhorn', label: 'Send Notifications' },
+      ]
+    }
+  ];
+
   return (
-    <div className="dashboard-container">
-      <aside className={`sidebar sidebar--flush-left ${sidebarOpen ? '' : 'sidebar--hidden'}`}>
-        <div className="sidebar-header">Manager</div>
-        <ul className="sidebar-nav">
-          <li className="nav-item"><NavLink to="/manager">Dashboard</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/home">Overview</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/live">Live Check-ins</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/leaves">Pending Leaves</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/attendance">Attendance Verify</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/completed">Complaint & action</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/hanger-space">Hanger Space</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/shifts">Shift Planning</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/sell-requests">Sell Requests</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/barrel-requests">Barrel Requests</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/barrel-allocation">Barrel Allocation</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/latex-billing">Latex Billing</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/rates">Set Live Rate</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/wages">Wages</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/staff-salary">Staff Salary</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/stock">Stock</NavLink></li>
-          <li className="nav-item"><NavLink to="/manager/chem-requests">Chemical Requests</NavLink></li>
-        </ul>
-      </aside>
-      <div className="main-content-wrapper">
-        <header className="dashboard-header" style={{ justifyContent: 'flex-end' }}>
-          <div className="user-header-actions">
-            <div className="profile-menu" ref={menuRef}>
-              <button type="button" className="profile-link" onClick={() => {}}>
-                <i className="fas fa-user-circle" />
-                <span>Profile</span>
-              </button>
+    <div className="manager-dashboard-container">
+      {/* Sidebar Overlay for Mobile */}
+      <div 
+        className={`manager-sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
+      {/* Sidebar */}
+      <aside className={`manager-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+        {/* Sidebar Header */}
+        <div className="manager-sidebar-header">
+          <div className="manager-brand">
+            <div className="manager-brand-icon">
+              <i className="fas fa-user-tie"></i>
             </div>
-            <button className="logout-button" onClick={handleLogout}>Logout</button>
+            <div className="manager-brand-text">
+              <h3>HFP Manager</h3>
+              <span>Control Panel</span>
+            </div>
+          </div>
+          <button 
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <i className={`fas ${sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
+          </button>
+        </div>
+
+        {/* User Profile Card */}
+        <div className="manager-user-card">
+          <div className="manager-user-avatar">
+            {user?.name ? user.name.charAt(0).toUpperCase() : 'M'}
+          </div>
+          <div className="manager-user-info">
+            <div className="manager-user-greeting">Welcome back,</div>
+            <div className="manager-user-name">{user?.name || user?.email || 'Manager'}</div>
+            <div className="manager-user-role">System Manager</div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="manager-nav">
+          {navigationItems.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="manager-nav-section">
+              <div className="manager-nav-title">{section.section}</div>
+              <div className="manager-nav-items">
+                {section.items.map((item, itemIndex) => (
+                  <NavLink
+                    key={itemIndex}
+                    to={item.to}
+                    className={({ isActive }) => 
+                      `manager-nav-item ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <div className="manager-nav-icon">
+                      <i className={`fas ${item.icon}`}></i>
+                    </div>
+                    <span className="manager-nav-label">{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div className="manager-sidebar-footer">
+          <button className="manager-logout-btn" onClick={handleLogout}>
+            <i className="fas fa-sign-out-alt"></i>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className={`manager-main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
+        {/* Top Header */}
+        <header className="manager-top-header">
+          <div className="manager-header-left">
+            <button 
+              className="manager-mobile-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <i className="fas fa-bars"></i>
+            </button>
+            
+            <div className="manager-page-title">
+              <div className="manager-page-icon">
+                <i className={`fas ${pageInfo.icon}`}></i>
+              </div>
+              <div className="manager-page-info">
+                <h1>{pageInfo.title}</h1>
+                <p>{pageInfo.subtitle}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="manager-header-right">
+            {/* Notifications */}
+            <div className="manager-notification-wrapper" ref={notifRef}>
+              <button 
+                className="manager-notification-btn"
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+              >
+                <i className="fas fa-bell"></i>
+                {unreadCount > 0 && (
+                  <div className="manager-notification-dot">{unreadCount > 99 ? '99+' : unreadCount}</div>
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              {notificationsOpen && (
+                <div className="manager-notification-dropdown">
+                  <div className="manager-notification-header">
+                    <h3>Notifications</h3>
+                    {unreadCount > 0 && (
+                      <span className="manager-unread-badge">{unreadCount} new</span>
+                    )}
+                  </div>
+                  <div className="manager-notification-list">
+                    {recentNotifications.length === 0 ? (
+                      <div className="manager-no-notifications">
+                        <i className="fas fa-bell-slash"></i>
+                        <p>No notifications</p>
+                      </div>
+                    ) : (
+                      recentNotifications.map((notif) => (
+                        <div
+                          key={notif._id}
+                          className={`manager-notification-item ${!notif.read ? 'unread' : ''}`}
+                          onClick={() => {
+                            if (notif.link) navigate(notif.link);
+                            setNotificationsOpen(false);
+                          }}
+                        >
+                          <div className="manager-notification-content">
+                            <div className="manager-notification-title">{notif.title}</div>
+                            <div className="manager-notification-message">{notif.message}</div>
+                            <div className="manager-notification-time">
+                              {new Date(notif.createdAt).toLocaleString()}
+                            </div>
+                          </div>
+                          {!notif.read && <div className="manager-notification-indicator"></div>}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Dropdown */}
+            <div className="manager-profile-dropdown" ref={menuRef}>
+              <button 
+                className="manager-profile-btn"
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              >
+                <div className="manager-profile-avatar">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'M'}
+                </div>
+                <div className="manager-profile-info">
+                  <div className="manager-profile-name">{user?.name || 'Manager'}</div>
+                  <div className="manager-profile-role">System Manager</div>
+                </div>
+                <i className={`fas fa-chevron-${profileMenuOpen ? 'up' : 'down'}`}></i>
+              </button>
+
+              {profileMenuOpen && (
+                <div className="manager-dropdown-menu">
+                  <NavLink 
+                    to="/user/profile/view" 
+                    className="manager-dropdown-item"
+                    onClick={() => setProfileMenuOpen(false)}
+                  >
+                    <i className="fas fa-user"></i>
+                    View Profile
+                  </NavLink>
+                  <NavLink 
+                    to="/user/profile" 
+                    className="manager-dropdown-item"
+                    onClick={() => setProfileMenuOpen(false)}
+                  >
+                    <i className="fas fa-edit"></i>
+                    Edit Profile
+                  </NavLink>
+                  <div className="manager-dropdown-item" onClick={handleLogout}>
+                    <i className="fas fa-sign-out-alt"></i>
+                    Sign Out
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
-        <main className="dashboard-content">{children}</main>
+
+        {/* Content Area */}
+        <main className="manager-content">
+          {children}
+        </main>
       </div>
     </div>
   );

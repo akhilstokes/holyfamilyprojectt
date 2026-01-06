@@ -33,6 +33,12 @@
   "scripts": {
     "test": "playwright test",
     "test:e2e": "playwright test tests/e2e",
+    "test:login-page": "playwright test tests/e2e/login.spec.js --reporter=html,list",
+    "test:staff-invite": "playwright test tests/e2e/admin-staff-invite.spec.js --reporter=html,list",
+    "test:dashboards": "playwright test tests/e2e/dashboard-pages.spec.js --reporter=html,list",
+    "test:rate-update": "playwright test tests/e2e/manager-rate-update.spec.js --reporter=html,list",
+    "test:forgot-password": "playwright test tests/e2e/forgot-password.spec.js --reporter=html,list",
+    "test:profile-edit": "playwright test tests/e2e/user-profile-edit.spec.js --reporter=html,list",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",

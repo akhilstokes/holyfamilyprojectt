@@ -16,7 +16,7 @@
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  box-shadow: 0 4px 18px rgba(17,24,39,0.06);
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.06);
 }
 
 /* Rates table */
@@ -54,32 +54,101 @@
 }
 
 /* Category label */
-.user-rate-history .dash-card > div:first-child {
+.user-rate-history .dash-card>div:first-child {
   color: #334155;
 }
 
 /* Responsive */
 @media (max-width: 640px) {
   .rates-table thead {
-    display: none; /* mobile-friendly stacked rows */
+    display: none;
+    /* mobile-friendly stacked rows */
   }
-  .rates-table, .rates-table tbody, .rates-table tr, .rates-table td {
+
+  .rates-table,
+  .rates-table tbody,
+  .rates-table tr,
+  .rates-table td {
     display: block;
     width: 100%;
   }
+
   .rates-table tr {
     margin-bottom: 10px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     overflow: hidden;
   }
+
   .rates-table td {
     display: grid;
     grid-template-columns: 140px 1fr;
     gap: 8px;
   }
+
   /* For 3-column table (Live latest): Date | Official Market Rate (INR) | Company Buying Rate */
-  .rates-table td:nth-child(1)::before { content: 'Date'; color: #64748b; }
-  .rates-table td:nth-child(2)::before { content: 'Official Market Rate (INR)'; color: #64748b; }
-  .rates-table td:nth-child(3)::before { content: 'Company Buying Rate'; color: #64748b; }
+  .rates-table td:nth-child(1)::before {
+    content: 'Date';
+    color: #64748b;
+  }
+
+  .rates-table td:nth-child(2)::before {
+    content: 'Official Market Rate (INR)';
+    color: #64748b;
+  }
+
+  .rates-table td:nth-child(3)::before {
+    content: 'Company Buying Rate';
+    color: #64748b;
+  }
+}
+
+/* Effective Rate Box */
+.effective-rate-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 4px 12px;
+  border-radius: 6px;
+  color: #15803d;
+  animation: fadeIn 0.3s ease;
+}
+
+.effective-rate-box .rate-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.effective-rate-box .rate-item.separator {
+  color: #86efac;
+  font-size: 1.2rem;
+  font-weight: 300;
+}
+
+.effective-rate-box .label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #166534;
+  font-weight: 700;
+}
+
+.effective-rate-box .value {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

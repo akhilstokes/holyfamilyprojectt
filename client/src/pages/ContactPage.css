@@ -1,82 +1,666 @@
-.contact-page {
-    max-width: 1200px;
-    margin: 4rem auto;
-    padding: 2rem;
-    text-align: center;
+/* Contact Page Styles - Matching HomePage Light Theme */
+
+/* Variables - Same as HomePage */
+:root {
+    --primary-light: #ffffff;
+    --primary-green: #10b981;
+    --primary-green-hover: #059669;
+    --primary-green-light: #34d399;
+    --text-dark: #1f2937;
+    --text-light: #6b7280;
+    --text-muted: #9ca3af;
+    --bg-light: #ffffff;
+    --bg-gray: #f9fafb;
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.15);
+    --gradient-hero: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    --font-primary: 'Inter', sans-serif;
+    --font-secondary: 'Roboto', sans-serif;
+    --navbar-height: 110px;
 }
 
-.contact-page h1 {
-    font-size: 2.8rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, #ff6b35, #ff9f66);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.contact-page {
+    font-family: var(--font-primary);
+    color: var(--text-dark);
+    background-color: var(--bg-light);
+    min-height: 100vh;
+    padding-top: var(--navbar-height);
+}
+
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Hero Section - Light Theme */
+.contact-hero {
+    background: var(--gradient-hero);
+    padding: 4rem 0;
+    text-align: center;
     position: relative;
 }
 
-.contact-page h1::after {
+.contact-hero::before {
     content: '';
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: -8px;
-    width: 80px;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 4px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, #ff6b35, #ff9f66);
+    background: linear-gradient(90deg, var(--primary-green) 0%, var(--primary-green-light) 100%);
 }
 
-.contact-page > p {
-    font-size: 1.1rem;
-    color: #4b5563; /* darker text on light background */
-    max-width: 700px;
-    margin: 0 auto 3rem auto;
+.hero-content h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    font-family: var(--font-secondary);
 }
 
-.contact-grid {
+.hero-content p {
+    font-size: 1.4rem;
+    color: var(--text-light);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Contact Content */
+.contact-content {
+    padding: 5rem 0;
+    background: var(--bg-light);
+}
+
+.contact-info-center {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.contact-info-center h2 {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 3rem;
+    font-family: var(--font-secondary);
+}
+
+/* Main Contact Grid */
+.contact-main-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: 2fr 1fr;
+    gap: 2.5rem;
+    margin-bottom: 4rem;
+    text-align: left;
+}
+
+/* Primary Contact Box */
+.primary-contact-box {
+    background: white;
+    padding: 3rem;
+    border-radius: 24px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid #f1f5f9;
+    transition: all 0.3s ease;
+}
+
+.primary-contact-box:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.contact-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.company-icon {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-light) 100%);
+    color: white;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.company-details h3 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+    font-family: var(--font-secondary);
+}
+
+.company-details p {
+    color: var(--primary-green);
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.contact-details {
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
 }
 
-.contact-card {
+.detail-row {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+.detail-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--primary-green);
+    border-radius: 12px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2.5rem 2rem;
-    background-color: #ffffff;
-    border-radius: 18px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-    text-decoration: none;
-    color: #1d1d1f;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.08);
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
-.contact-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
-    border-color: #ff6b35;
+.primary-contact-box:hover .detail-icon {
+    background: var(--primary-green);
+    color: white;
+    transform: scale(1.05);
 }
 
-.contact-icon {
-    font-size: 3rem;
-    color: #ff6b35;
-    margin-bottom: 1.5rem;
+.detail-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
-.contact-card h3 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #1d1d1f;
-}
-
-.contact-card p {
+.detail-label {
     font-size: 1rem;
-    color: #6b7280;
-    word-break: break-all;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-value {
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+/* Business Hours Box */
+.business-hours-box {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 24px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid #f1f5f9;
+    transition: all 0.3s ease;
+    height: fit-content;
+}
+
+.business-hours-box:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.hours-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.hours-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+
+.hours-header h3 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.hours-schedule {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.schedule-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.schedule-item:hover {
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.schedule-item.closed {
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.schedule-item.closed:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.schedule-item .day {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 1.1rem;
+}
+
+.schedule-item .time {
+    font-weight: 500;
+    color: var(--text-light);
+    font-size: 1rem;
+}
+
+.schedule-item.closed .time {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.current-status {
+    padding: 1rem;
+    background: rgba(16, 185, 129, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary-green);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+.status-indicator span {
+    font-weight: 600;
+    color: var(--primary-green);
+    font-size: 1.1rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+}
+
+.quick-actions h3 {
+    font-size: 2.4rem;
+    margin-bottom: 2.5rem;
+    color: var(--text-dark);
+    font-weight: 700;
+    font-family: var(--font-secondary);
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: white;
+    color: var(--text-dark);
+    text-decoration: none;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 1.2rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: var(--shadow-soft);
+    border: 1px solid #f1f5f9;
+    text-align: left;
+}
+
+.action-btn:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-hover);
+}
+
+.call-btn:hover {
+    border-color: rgba(34, 197, 94, 0.3);
+    background: rgba(34, 197, 94, 0.02);
+}
+
+.email-btn:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba(59, 130, 246, 0.02);
+}
+
+.directions-btn:hover {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.02);
+}
+
+.btn-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.call-btn .btn-icon {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+}
+
+.call-btn:hover .btn-icon {
+    background: #22c55e;
+    color: white;
+    transform: scale(1.1);
+}
+
+.email-btn .btn-icon {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.email-btn:hover .btn-icon {
+    background: #3b82f6;
+    color: white;
+    transform: scale(1.1);
+}
+
+.directions-btn .btn-icon {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.directions-btn:hover .btn-icon {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.1);
+}
+
+.btn-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.btn-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.btn-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+/* Map Section */
+.map-section {
+    padding: 4rem 0;
+    background: var(--bg-gray);
+}
+
+.map-section h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: var(--text-dark);
+    font-family: var(--font-secondary);
+}
+
+.map-container {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+}
+
+.map-container iframe {
+    width: 100%;
+    height: 400px;
+    border: none;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+    
+    .contact-info-center h2 {
+        font-size: 2rem;
+    }
+    
+    .contact-main-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .primary-contact-box,
+    .business-hours-box {
+        padding: 2rem;
+    }
+    
+    .action-buttons {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .contact-hero {
+        padding: 3rem 0;
+    }
+    
+    .hero-content h1 {
+        font-size: 2rem;
+    }
+    
+    .hero-content p {
+        font-size: 1rem;
+    }
+    
+    .contact-content {
+        padding: 3rem 0;
+    }
+    
+    .contact-info-center h2 {
+        font-size: 1.8rem;
+    }
+    
+    .contact-main-grid {
+        gap: 1.5rem;
+    }
+    
+    .primary-contact-box,
+    .business-hours-box {
+        padding: 1.5rem;
+    }
+    
+    .contact-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .company-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .company-details h3 {
+        font-size: 1.5rem;
+    }
+    
+    .detail-row {
+        gap: 1rem;
+    }
+    
+    .detail-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+    }
+    
+    .hours-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+    }
+    
+    .hours-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    
+    .action-btn {
+        padding: 1.5rem;
+        gap: 1rem;
+    }
+    
+    .btn-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.3rem;
+    }
+    
+    .quick-actions h3 {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 16px;
+    }
+    
+    .hero-content h1 {
+        font-size: 1.8rem;
+    }
+    
+    .contact-info-center h2 {
+        font-size: 1.6rem;
+    }
+    
+    .primary-contact-box,
+    .business-hours-box {
+        padding: 1.25rem;
+    }
+    
+    .contact-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+    
+    .company-details h3 {
+        font-size: 1.3rem;
+    }
+    
+    .detail-value {
+        font-size: 1rem;
+    }
+    
+    .hours-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .schedule-item {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .schedule-item .day,
+    .schedule-item .time {
+        font-size: 0.85rem;
+    }
+    
+    .action-btn {
+        padding: 1.25rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    
+    .btn-content {
+        align-items: center;
+    }
+    
+    .btn-title {
+        font-size: 1rem;
+    }
+    
+    .btn-subtitle {
+        font-size: 0.85rem;
+    }
+    
+    .quick-actions h3 {
+        font-size: 1.4rem;
+    }
+    
+    .map-section h2 {
+        font-size: 2rem;
+    }
 }

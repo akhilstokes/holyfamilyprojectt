@@ -94,6 +94,63 @@ exports.predictPrice = async (req, res) => {
 };
 
 /**
+ * Generate synthetic quality training data
+ */
+function generateSyntheticQualityData() {
+  const trainingData = [];
+  
+  // Grade A samples (DRC >= 65%)
+  for (let i = 0; i < 30; i++) {
+    trainingData.push({
+      drcPercentage: 65 + Math.random() * 10,  // 65-75%
+      moistureContent: Math.random() * 0.5,    // 0-0.5%
+      impurities: Math.random() * 0.5,          // 0-0.5%
+      colorScore: 8 + Math.random() * 2,        // 8-10
+      viscosity: 100 + Math.random() * 20,      // 100-120 cP
+      qualityGrade: 'A'
+    });
+  }
+  
+  // Grade B samples (DRC 60-65%)
+  for (let i = 0; i < 30; i++) {
+    trainingData.push({
+      drcPercentage: 60 + Math.random() * 5,
+      moistureContent: 0.5 + Math.random() * 1,
+      impurities: 0.5 + Math.random() * 1,
+      colorScore: 6 + Math.random() * 2,
+      viscosity: 90 + Math.random() * 20,
+      qualityGrade: 'B'
+    });
+  }
+  
+  // Grade C samples (DRC 55-60%)
+  for (let i = 0; i < 30; i++) {
+    trainingData.push({
+      drcPercentage: 55 + Math.random() * 5,
+      moistureContent: 1 + Math.random() * 1.5,
+      impurities: 1 + Math.random() * 1.5,
+      colorScore: 4 + Math.random() * 2,
+      viscosity: 80 + Math.random() * 20,
+      qualityGrade: 'C'
+    });
+  }
+  
+  // Grade D samples (DRC < 55%)
+  for (let i = 0; i < 30; i++) {
+    trainingData.push({
+      drcPercentage: 45 + Math.random() * 10,
+      moistureContent: 2 + Math.random() * 2,
+      impurities: 2 + Math.random() * 2,
+      colorScore: 2 + Math.random() * 3,
+      viscosity: 70 + Math.random() * 20,
+      qualityGrade: 'D'
+    });
+  }
+  
+  return trainingData;
+}
+
+/**
  * KNN-based Quality Classification Controller
  */
 exports.classifyQuality = async (req, res) => {
@@ -108,34 +165,53 @@ exports.classifyQuality = async (req, res) => {
       });
     }
 
-    // Get historical quality data
-    const qualityData = await SellRequest.find({
-      drcPct: { $exists: true },
-      status: 'VERIFIED'
-    })
-    .limit(500)
-    .select('drcPct collectionNotes status')
-    .lean();
+    let trainingData = [];
+    let dataSource = 'dataset';
 
-    if (qualityData.length < 20) {
-      return res.status(400).json({
-        success: false,
-        message: 'Insufficient quality data for classification'
-      });
+    // Try to load from dataset file first
+    try {
+      const DatasetLoader = require('../../utils/datasetLoader');
+      const loader = new DatasetLoader();
+      trainingData = loader.getAllData();
+      
+      if (trainingData.length > 0) {
+        console.log(`✅ Using dataset file: ${trainingData.length} samples`);
+        dataSource = 'dataset';
+      }
+    } catch (datasetError) {
+      console.log('Dataset file not found, trying database...');
+      
+      // Fallback to database
+      const qualityData = await SellRequest.find({
+        drcPct: { $exists: true },
+        status: 'VERIFIED'
+      })
+      .limit(500)
+      .select('drcPct collectionNotes status')
+      .lean();
+
+      if (qualityData.length >= 20) {
+        // Prepare training data from database
+        trainingData = qualityData.map(record => {
+          const qualityGrade = classifyQualityGrade(record.drcPct, record.collectionNotes);
+          return {
+            drcPercentage: record.drcPct || 0,
+            moistureContent: extractMoistureFromNotes(record.collectionNotes) || 0,
+            impurities: extractImpuritiesFromNotes(record.collectionNotes) || 0,
+            colorScore: extractColorScoreFromNotes(record.collectionNotes) || 5,
+            viscosity: extractViscosityFromNotes(record.collectionNotes) || 100,
+            qualityGrade: qualityGrade
+          };
+        });
+        console.log(`✅ Using database records: ${trainingData.length} samples`);
+        dataSource = 'database';
+      } else {
+        // Last resort: synthetic data
+        console.log('⚠️  Using synthetic training data as fallback');
+        trainingData = generateSyntheticQualityData();
+        dataSource = 'synthetic';
+      }
     }
-
-    // Prepare training data with quality grades
-    const trainingData = qualityData.map(record => {
-      const qualityGrade = classifyQualityGrade(record.drcPct, record.collectionNotes);
-      return {
-        drcPercentage: record.drcPct || 0,
-        moistureContent: extractMoistureFromNotes(record.collectionNotes) || 0,
-        impurities: extractImpuritiesFromNotes(record.collectionNotes) || 0,
-        colorScore: extractColorScoreFromNotes(record.collectionNotes) || 5,
-        viscosity: extractViscosityFromNotes(record.collectionNotes) || 100,
-        qualityGrade: qualityGrade
-      };
-    });
 
     // Train KNN model
     const qualityModel = new QualityClassificationKNN(3);
@@ -146,8 +222,7 @@ exports.classifyQuality = async (req, res) => {
       drcPercentage,
       moistureContent || 0,
       impurities || 0,
-      colorScore || 5,
-      viscosity || 100
+      colorScore || 5
     );
 
     res.status(200).json({
@@ -161,7 +236,8 @@ exports.classifyQuality = async (req, res) => {
         })),
         modelInfo: {
           k: qualityModel.k,
-          trainingSamples: trainingData.length
+          trainingSamples: trainingData.length,
+          dataSource: dataSource
         }
       }
     });

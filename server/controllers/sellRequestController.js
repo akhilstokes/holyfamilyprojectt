@@ -92,7 +92,7 @@ exports.assignFieldStaff = async (req, res) => {
     const doc = await SellRequest.findById(id);
     if (!doc) return res.status(404).json({ message: 'Request not found' });
     doc.assignedFieldStaffId = fieldStaffId;
-    if (['REQUESTED','FIELD_ASSIGNED'].includes(doc.status)) doc.status = 'FIELD_ASSIGNED';
+    if (['REQUESTED', 'FIELD_ASSIGNED'].includes(doc.status)) doc.status = 'FIELD_ASSIGNED';
     await doc.save();
     return res.json({ success: true, request: doc });
   } catch (e) {
@@ -110,7 +110,7 @@ exports.assignDeliveryStaff = async (req, res) => {
     const doc = await SellRequest.findById(id);
     if (!doc) return res.status(404).json({ message: 'Request not found' });
     doc.assignedDeliveryStaffId = deliveryStaffId;
-    if (['COLLECTED','DELIVER_ASSIGNED'].includes(doc.status)) doc.status = 'DELIVER_ASSIGNED';
+    if (['COLLECTED', 'DELIVER_ASSIGNED'].includes(doc.status)) doc.status = 'DELIVER_ASSIGNED';
     await doc.save();
     return res.json({ success: true, request: doc });
   } catch (e) {
@@ -317,5 +317,90 @@ exports.listLabPendingSellRequests = async (req, res) => {
   } catch (e) {
     console.error('listLabPendingSellRequests error:', e);
     return res.status(500).json({ message: 'Failed to load lab pending requests' });
+  }
+};
+
+// Admin: create sell request (on behalf of farmer or self)
+exports.createSellRequestAdmin = async (req, res) => {
+  try {
+    const { farmerId, totalVolumeKg, notes, location, locationAccuracy, capturedAddress } = req.body || {};
+
+    // If farmerId is provided, use it, otherwise try to resolve from authenticated user
+    let targetUserId = farmerId;
+    if (!targetUserId) {
+      targetUserId = await resolveUserId(req.user);
+    }
+
+    if (!targetUserId || !mongoose.isValidObjectId(targetUserId)) {
+      return res.status(400).json({ message: 'Valid farmerId or authenticated user required' });
+    }
+
+    if (!totalVolumeKg || Number(totalVolumeKg) <= 0) return res.status(400).json({ message: 'totalVolumeKg must be > 0' });
+
+    const payload = {
+      farmerId: targetUserId,
+      createdBy: await resolveUserId(req.user), // Created by the admin/staff
+      status: 'REQUESTED',
+      totalVolumeKg: Number(totalVolumeKg),
+      requestedAt: new Date(),
+      amount: 0,
+      notes: notes
+    };
+
+    if (location && location.type === 'Point' && Array.isArray(location.coordinates) && location.coordinates.length === 2) {
+      payload.location = { type: 'Point', coordinates: [Number(location.coordinates[0]), Number(location.coordinates[1])] };
+    }
+    if (locationAccuracy !== undefined) payload.locationAccuracy = Number(locationAccuracy);
+    if (capturedAddress) payload.capturedAddress = String(capturedAddress);
+
+    const doc = await SellRequest.create(payload);
+    return res.status(201).json({ success: true, request: doc });
+  } catch (e) {
+    console.error('createSellRequestAdmin error:', e);
+    return res.status(500).json({ message: 'Failed to create request' });
+  }
+};
+
+// Admin: update sell request
+exports.updateSellRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body || {};
+
+    const doc = await SellRequest.findById(id);
+    if (!doc) return res.status(404).json({ message: 'Request not found' });
+
+    // Allow updating specific fields
+    if (updates.totalVolumeKg !== undefined) doc.totalVolumeKg = Number(updates.totalVolumeKg);
+    if (updates.status !== undefined) doc.status = updates.status;
+    if (updates.notes !== undefined) doc.notes = updates.notes;
+    if (updates.drcPct !== undefined) doc.drcPct = Number(updates.drcPct);
+    if (updates.marketRate !== undefined) doc.marketRate = Number(updates.marketRate);
+    if (updates.amount !== undefined) doc.amount = Number(updates.amount);
+
+    // Recalculate if necessary (simple logic, might need more robust handling depending on business rules)
+    if (doc.drcPct && doc.marketRate && doc.totalVolumeKg) {
+      const dryKg = Number(doc.totalVolumeKg) * (Number(doc.drcPct) / 100);
+      doc.amount = Math.round(dryKg * Number(doc.marketRate));
+    }
+
+    await doc.save();
+    return res.json({ success: true, request: doc });
+  } catch (e) {
+    console.error('updateSellRequest error:', e);
+    return res.status(500).json({ message: 'Failed to update request' });
+  }
+};
+
+// Admin: delete sell request
+exports.deleteSellRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await SellRequest.findByIdAndDelete(id);
+    if (!doc) return res.status(404).json({ message: 'Request not found' });
+    return res.json({ success: true, message: 'Request deleted' });
+  } catch (e) {
+    console.error('deleteSellRequest error:', e);
+    return res.status(500).json({ message: 'Failed to delete request' });
   }
 };

@@ -1,38 +1,562 @@
+/* History Page Styles */
 .history-page {
-  padding: 40px;
-  max-width: 900px;
-  margin: 0 auto;
-  color: #1d1d1f; /* dark text on light background */
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
 }
-.history-page h1 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #1d1d1f;
-  font-weight: 700;
+
+/* Hero Section */
+.history-hero {
+    padding: 6rem 0 4rem;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.history-hero h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.history-hero p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Section Headers */
+.section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.section-header h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.section-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Timeline Section */
+.timeline-section {
+    padding: 4rem 0;
 }
 
 .timeline {
-  margin-top: 30px;
-  position: relative;
-  padding-left: 20px;
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, #ff6b35, #e55a2b);
+    transform: translateX(-50%);
 }
 
 .timeline-item {
-  display: flex;
-  margin-bottom: 20px;
+    position: relative;
+    margin-bottom: 4rem;
+    width: 50%;
 }
 
-.timeline-year {
-  font-weight: bold;
-  color: #ff6b35;
-  width: 80px;
+.timeline-item.left {
+    left: 0;
+    padding-right: 3rem;
+}
+
+.timeline-item.right {
+    left: 50%;
+    padding-left: 3rem;
 }
 
 .timeline-content {
-  background: #ffffff;
-  padding: 15px;
-  border-radius: 12px;
-  border: 1px solid rgba(0,0,0,0.08);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  color: #4b5563;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.timeline-content:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-image {
+    height: 200px;
+    overflow: hidden;
+}
+
+.timeline-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.timeline-content:hover .timeline-image img {
+    transform: scale(1.1);
+}
+
+.timeline-info {
+    padding: 2rem;
+}
+
+.timeline-year {
+    position: absolute;
+    top: -15px;
+    right: 2rem;
+    background: #ff6b35;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.timeline-item.right .timeline-year {
+    right: auto;
+    left: 2rem;
+}
+
+.timeline-icon {
+    position: absolute;
+    top: 50%;
+    width: 50px;
+    height: 50px;
+    background: #ff6b35;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    border: 4px solid #2a5298;
+    transform: translateY(-50%);
+}
+
+.timeline-item.left .timeline-icon {
+    right: -28px;
+}
+
+.timeline-item.right .timeline-icon {
+    left: -28px;
+}
+
+.timeline-info h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.timeline-info p {
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+}
+
+/* Achievements Section */
+.achievements-section {
+    padding: 4rem 0;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.achievement-item {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.achievement-item:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.achievement-icon {
+    background: #ff6b35;
+    color: white;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+}
+
+.achievement-value {
+    font-size: 3rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.achievement-item h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.achievement-item p {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.5;
+}
+
+/* Vision Section */
+.vision-section {
+    padding: 4rem 0;
+}
+
+.vision-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.vision-text h2 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    color: white;
+}
+
+.vision-text p {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.vision-features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.feature-item i {
+    color: #ff6b35;
+    font-size: 1.2rem;
+}
+
+.feature-item span {
+    color: white;
+    font-weight: 500;
+}
+
+.vision-image {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.vision-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Leadership Section */
+.leadership-section {
+    padding: 4rem 0;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.leadership-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.leader-item {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.leader-item:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.leader-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto 1.5rem;
+    border: 4px solid #ff6b35;
+}
+
+.leader-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.leader-info h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: white;
+}
+
+.leader-title {
+    color: #ff6b35;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.leader-description {
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+}
+
+/* History CTA */
+.history-cta {
+    padding: 4rem 0;
+    text-align: center;
+}
+
+.cta-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.cta-content p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: #ff6b35;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #e55a2b;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: white;
+    border: 2px solid white;
+}
+
+.btn-secondary:hover {
+    background: white;
+    color: #2a5298;
+    transform: translateY(-2px);
+}
+
+/* Footer */
+.footer {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 3rem 0 1rem;
+    margin-top: 2rem;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.footer-section h3,
+.footer-section h4 {
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.footer-section p,
+.footer-section li {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+}
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-section ul li {
+    margin-bottom: 0.5rem;
+}
+
+.footer-section a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-section a:hover {
+    color: #ff6b35;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .nav-links {
+        display: none;
+    }
+    
+    .history-hero h1 {
+        font-size: 2rem;
+    }
+    
+    .timeline::before {
+        left: 30px;
+    }
+    
+    .timeline-item {
+        width: 100%;
+        left: 0 !important;
+        padding-left: 80px !important;
+        padding-right: 0 !important;
+    }
+    
+    .timeline-icon {
+        left: 5px !important;
+        right: auto !important;
+    }
+    
+    .timeline-year {
+        left: 2rem !important;
+        right: auto !important;
+    }
+    
+    .vision-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .vision-features {
+        grid-template-columns: 1fr;
+    }
+    
+    .leadership-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .achievements-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .history-hero {
+        padding: 2rem 0;
+    }
+    
+    .timeline-section,
+    .achievements-section,
+    .vision-section,
+    .leadership-section,
+    .history-cta {
+        padding: 2rem 0;
+    }
+    
+    .timeline-item {
+        padding-left: 60px !important;
+    }
+    
+    .timeline-info {
+        padding: 1.5rem;
+    }
+    
+    .achievement-item,
+    .leader-item {
+        padding: 1.5rem;
+    }
+    
+    .achievements-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header h2 {
+        font-size: 2rem;
+    }
+    
+    .vision-text h2 {
+        font-size: 2rem;
+    }
 }

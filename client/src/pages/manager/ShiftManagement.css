@@ -1,0 +1,200 @@
+/* Simple Shift Management Styles */
+.shift-management {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Header */
+.shift-header {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.shift-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shift-header h1 i {
+  color: #3b82f6;
+}
+
+.shift-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+/* Shift Grid */
+.shift-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.day-column {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.day-header {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  padding: 16px;
+  text-align: center;
+}
+
+.day-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.shift-slots {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.shift-slot {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.shift-slot.morning {
+  border-color: #fbbf24;
+  background: #fef3c7;
+}
+
+.shift-slot.evening {
+  border-color: #8b5cf6;
+  background: #f3e8ff;
+}
+
+.shift-time {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.shift-type {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.staff-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.staff-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.assign-btn {
+  width: 100%;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color 0.2s;
+}
+
+.assign-btn:hover {
+  background: #2563eb;
+}
+
+/* Save Section */
+.save-section {
+  text-align: center;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .shift-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .shift-management {
+    padding: 16px;
+  }
+  
+  .shift-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .shift-header {
+    padding: 20px;
+  }
+  
+  .shift-header h1 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .shift-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .shift-header {
+    padding: 16px;
+  }
+  
+  .shift-header h1 {
+    font-size: 20px;
+  }
+}

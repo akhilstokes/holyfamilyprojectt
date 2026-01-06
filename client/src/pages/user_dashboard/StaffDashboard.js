@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import './StaffDashboard.css';
 
 export default function StaffDashboard() {
@@ -6,9 +6,19 @@ export default function StaffDashboard() {
   const [shiftSchedule, setShiftSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
   const token = localStorage.getItem('token');
   const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const hasLoadedRef = useRef(false);
+
+  // Function to get time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    if (hour < 21) return 'Good Evening';
+    return 'Good Night';
+  };
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -69,151 +79,113 @@ export default function StaffDashboard() {
     }
   };
 
-  if (loading) return <div className="loading-state">⏳ Loading your dashboard...</div>;
-  if (error) return <div className="error-state">❌ {error}</div>;
+  if (loading) return <div className="loading">Loading...</div>;
+  if (error) return <div className="error">Error: {error}</div>;
 
   const { worker, attendance, route } = data;
 
   return (
-    <div className="staff-dashboard">
-      <div className="staff-dashboard-header">
-        <h2>👋 Welcome Back, {worker?.name || 'Staff Member'}!</h2>
-        <p>Here's your dashboard overview for today</p>
+    <div className="dashboard">
+      <div className="header">
+        <h1>{getGreeting()}, {worker?.name || 'Staff Member'}</h1>
+        <p>Today is {new Date().toLocaleDateString()}</p>
       </div>
-
-      <div className="dashboard-grid">
-        {/* Profile Card */}
-        <div className="dashboard-card">
+      
+      <div className="cards">
+        {/* Shift Card - 1st position */}
+        <div className="card shift-card">
           <div className="card-header">
-            <div className="card-icon profile">
-              <i className="fas fa-user"></i>
-            </div>
-            <h3>Profile</h3>
-          </div>
-          <div className="card-body">
-            {worker ? (
-              <>
-                <div className="info-row">
-                  <span className="info-label">Name</span>
-                  <span className="info-value">{worker.name}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Daily Wage</span>
-                  <span className="info-value">₹ {worker.dailyWage || 0}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Contact</span>
-                  <span className="info-value">{worker.contactNumber || '-'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Origin</span>
-                  <span className="info-value">{worker.origin || '-'}</span>
-                </div>
-              </>
-            ) : (
-              <div className="no-data">No profile linked</div>
-            )}
-          </div>
-        </div>
-
-        {/* Shift Card */}
-        <div className="dashboard-card">
-          <div className="card-header">
-            <div className="card-icon shift">
-              <i className="fas fa-clock"></i>
-            </div>
+            <div className="icon">🕒</div>
             <h3>Today's Shift</h3>
           </div>
-          <div className="card-body">
+          <div className="card-content">
             {shiftSchedule?.myAssignment ? (
               <>
-                <div className="shift-badge">
-                  <i className={`fas ${shiftSchedule.myAssignment.shiftType === 'Morning' ? 'fa-sun' : 'fa-moon'}`}></i>
-                  {shiftSchedule.myAssignment.shiftType} Shift
+                <div className="shift-type">
+                  <span className="badge">{shiftSchedule.myAssignment.shiftType} Shift</span>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">Start Time</span>
-                  <span className="info-value">{shiftSchedule.myAssignment.startTime}</span>
+                <div className="time-slots">
+                  <div className="time-slot">
+                    <span className="time-label">Start</span>
+                    <span className="time-value">{shiftSchedule.myAssignment.startTime}</span>
+                  </div>
+                  <div className="time-slot">
+                    <span className="time-label">End</span>
+                    <span className="time-value">{shiftSchedule.myAssignment.endTime}</span>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">End Time</span>
-                  <span className="info-value">{shiftSchedule.myAssignment.endTime}</span>
-                </div>
-                <a href="/staff/shift-schedule" className="view-schedule-link">
-                  <i className="fas fa-calendar-alt"></i>
-                  View Full Schedule
-                </a>
               </>
             ) : (
-              <div className="no-data">No shift assigned for this week</div>
+              <div className="no-data">No shift assigned for today</div>
             )}
           </div>
         </div>
 
-        {/* Attendance Card */}
-        <div className="dashboard-card">
+        {/* Attendance Card - 2nd position */}
+        <div className="card attendance-card">
           <div className="card-header">
-            <div className="card-icon attendance">
-              <i className="fas fa-clipboard-check"></i>
-            </div>
-            <h3>Attendance (Today)</h3>
+            <div className="icon">✅</div>
+            <h3>Attendance</h3>
           </div>
-          <div className="card-body">
-            <div className="info-row">
-              <span className="info-label">Check-in</span>
-              <span className="info-value">{attendance?.checkInAt ? new Date(attendance.checkInAt).toLocaleTimeString() : '-'}</span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">Check-out</span>
-              <span className="info-value">{attendance?.checkOutAt ? new Date(attendance.checkOutAt).toLocaleTimeString() : '-'}</span>
-            </div>
-            {attendance?.isLate && (
-              <div className="late-badge">
-                <i className="fas fa-exclamation-triangle"></i>
-                Late arrival
+          <div className="card-content">
+            <div className="attendance-status">
+              <div className="status-item">
+                <span className="status-label">Check-in</span>
+                <span className="status-time">
+                  {attendance?.checkInAt ? new Date(attendance.checkInAt).toLocaleTimeString() : 'Not checked in'}
+                </span>
               </div>
-            )}
-            <div className="attendance-actions">
-              <button className="btn-check-in" onClick={() => action('in')} disabled={!!attendance?.checkInAt}>
-                <i className="fas fa-sign-in-alt"></i>
+              <div className="status-item">
+                <span className="status-label">Check-out</span>
+                <span className="status-time">
+                  {attendance?.checkOutAt ? new Date(attendance.checkOutAt).toLocaleTimeString() : 'Not checked out'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="action-buttons">
+              <button 
+                onClick={() => action('in')} 
+                disabled={!!attendance?.checkInAt}
+                className="btn btn-checkin"
+              >
                 Check In
               </button>
-              <button className="btn-check-out" onClick={() => action('out')} disabled={!attendance?.checkInAt || !!attendance?.checkOutAt}>
-                <i className="fas fa-sign-out-alt"></i>
+              <button 
+                onClick={() => action('out')} 
+                disabled={!attendance?.checkInAt || !!attendance?.checkOutAt}
+                className="btn btn-checkout"
+              >
                 Check Out
               </button>
             </div>
           </div>
         </div>
 
-        {/* Route Card */}
-        <div className="dashboard-card">
+        {/* Profile Card - 3rd position */}
+        <div className="card profile-card">
           <div className="card-header">
-            <div className="card-icon route">
-              <i className="fas fa-route"></i>
-            </div>
-            <h3>Today's Route</h3>
+            <div className="icon">👤</div>
+            <h3>My Profile</h3>
           </div>
-          <div className="card-body">
-            {route ? (
+          <div className="card-content">
+            {worker ? (
               <>
                 <div className="info-row">
-                  <span className="info-label">Status</span>
-                  <span className={`status-badge ${route.status?.toLowerCase().replace(/\s+/g, '-')}`}>
-                    {route.status}
-                  </span>
+                  <span className="label">Name</span>
+                  <span className="value">{worker.name}</span>
                 </div>
                 <div className="info-row">
-                  <span className="info-label">Started</span>
-                  <span className="info-value">{route.startedAt ? new Date(route.startedAt).toLocaleTimeString() : '-'}</span>
+                  <span className="label">Daily Wage</span>
+                  <span className="value">₹{worker.dailyWage || 0}</span>
                 </div>
                 <div className="info-row">
-                  <span className="info-label">Completed</span>
-                  <span className="info-value">{route.completedAt ? new Date(route.completedAt).toLocaleTimeString() : '-'}</span>
+                  <span className="label">Phone</span>
+                  <span className="value">{worker.contactNumber || 'Not provided'}</span>
                 </div>
               </>
             ) : (
-              <div className="no-data">No route assigned</div>
+              <div className="no-data">No profile information available</div>
             )}
           </div>
         </div>

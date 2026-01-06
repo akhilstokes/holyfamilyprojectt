@@ -1,287 +1,355 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import './LabDashboard.css';
 
 const LabDashboard = () => {
-  const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
-  const navigate = useNavigate();
-  const [summary, setSummary] = useState(null);
-  const [error, setError] = useState('');
-  const [notifs, setNotifs] = useState([]);
-  const [unread, setUnread] = useState(0);
+  const [activeTab, setActiveTab] = useState('pending');
+  const [selectedBarrel, setSelectedBarrel] = useState(null);
+  const [drcValue, setDrcValue] = useState('');
+  const [testNotes, setTestNotes] = useState('');
 
-  useEffect(() => {
-    const load = async () => {
-      setError('');
-      try {
-        const res = await fetch(`${base}/api/lab/summary`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          setSummary(data);
-        } else {
-          setSummary(null);
-        }
-      } catch (e) {
-        setError(e?.message || 'Failed to load');
-        setSummary(null);
-      }
-    };
-    load();
-  }, [base, headers]);
+  // Mock data for pending barrels from delivery staff
+  const pendingBarrels = [
+    { 
+      barrelId: 'BRL001', 
+      userId: 'USR123', 
+      userName: 'John Smith',
+      deliveryDate: '2025-01-02',
+      deliveryStaff: 'Mike Johnson',
+      vehicleNumber: 'KA01AB1234',
+      status: 'PENDING_TEST'
+    },
+    { 
+      barrelId: 'BRL002', 
+      userId: 'USR124', 
+      userName: 'Sarah Wilson',
+      deliveryDate: '2025-01-02',
+      deliveryStaff: 'Mike Johnson',
+      vehicleNumber: 'KA01AB1234',
+      status: 'PENDING_TEST'
+    },
+    { 
+      barrelId: 'BRL003', 
+      userId: 'USR125', 
+      userName: 'David Brown',
+      deliveryDate: '2025-01-01',
+      deliveryStaff: 'Lisa Davis',
+      vehicleNumber: 'KA02CD5678',
+      status: 'PENDING_TEST'
+    }
+  ];
 
-  useEffect(() => {
-    const loadNotifs = async () => {
-      try {
-        // Check if user is authenticated before making the request
-        if (!token) {
-          console.log('No authentication token found, skipping notifications');
-          setNotifs([]);
-          setUnread(0);
-          return;
-        }
+  // Mock data for completed tests
+  const completedTests = [
+    { 
+      barrelId: 'BRL004', 
+      userId: 'USR126', 
+      userName: 'Emma Taylor',
+      testDate: '2025-01-01',
+      drcValue: 92.5,
+      testNotes: 'Good quality, meets standards',
+      status: 'COMPLETED',
+      sentToAccountant: true
+    },
+    { 
+      barrelId: 'BRL005', 
+      userId: 'USR127', 
+      userName: 'Robert Lee',
+      testDate: '2025-01-01',
+      drcValue: 88.3,
+      testNotes: 'Acceptable quality',
+      status: 'COMPLETED',
+      sentToAccountant: true
+    }
+  ];
 
-        const res = await fetch(`${base}/api/notifications?limit=10`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          const list = Array.isArray(data?.notifications) ? data.notifications : (Array.isArray(data) ? data : []);
-          setNotifs(list);
-          setUnread(Number(data?.unread || (list.filter(n=>!n.read).length)));
-        } else if (res.status === 401) {
-          // Unauthorized - user needs to login
-          console.log('User not authenticated, redirecting to login');
-          navigate('/login');
-          return;
-        } else {
-          setNotifs([]);
-          setUnread(0);
-        }
-      } catch {
-        setNotifs([]);
-        setUnread(0);
-      }
-    };
-    loadNotifs();
-    const id = setInterval(loadNotifs, 30000);
-    return () => clearInterval(id);
-  }, [base, headers, token, navigate]);
-
-  const markRead = async (id) => {
-    try {
-      const res = await fetch(`${base}/api/notifications/${id}/read`, { method: 'PATCH', headers });
-      if (res.ok) {
-        setNotifs(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
-        setUnread(u => Math.max(0, u - 1));
-      }
-    } catch {}
+  const handleStartTest = (barrel) => {
+    setSelectedBarrel(barrel);
+    setDrcValue('');
+    setTestNotes('');
   };
 
-  const buildNotificationUrl = (notification) => {
-    const { title, meta, link } = notification;
-    
-    // If notification has a specific link, use it
-    if (link) {
-      return link;
+  const handleSubmitTest = () => {
+    if (!drcValue || drcValue < 0 || drcValue > 100) {
+      alert('Please enter a valid DRC value between 0 and 100');
+      return;
     }
-    
-    // Route based on notification title/type
-    if (title?.toLowerCase().includes('pickup scheduled') || title?.toLowerCase().includes('sample')) {
-      // For sample/pickup related notifications, go to sample check-in with data
-      const params = new URLSearchParams();
-      if (meta?.sampleId) params.set('sampleId', meta.sampleId);
-      if (meta?.customer) params.set('customerName', meta.customer);
-      if (meta?.barrelCount) params.set('barrelCount', meta.barrelCount);
-      if (meta?.receivedAt) params.set('receivedAt', meta.receivedAt);
-      // Add barrel IDs if available in meta
-      if (meta?.barrels && Array.isArray(meta.barrels)) {
-        meta.barrels.forEach((barrel, idx) => {
-          if (barrel?.barrelId) params.set(`barrel_${idx}`, barrel.barrelId);
-          if (barrel?.liters) params.set(`liters_${idx}`, barrel.liters);
-        });
-      }
-      return `/lab/check-in?${params.toString()}`;
-    }
-    
-    if (title?.toLowerCase().includes('delivery')) {
-      // For delivery notifications, go to delivery tasks
-      return '/delivery/tasks';
-    }
-    
-    if (title?.toLowerCase().includes('drc') || title?.toLowerCase().includes('analysis')) {
-      // For DRC/analysis notifications, go to DRC update
-      const params = new URLSearchParams();
-      if (meta?.sampleId) params.set('sampleId', meta.sampleId);
-      return `/lab/drc-update?${params.toString()}`;
-    }
-    
-    // Default fallback - go to lab dashboard
-    return '/lab/dashboard';
-  };
 
-  // Format notification metadata in a user-friendly way
-  const formatMetadata = (meta) => {
-    if (!meta) return null;
-    
-    const friendlyLabels = {
-      sampleId: 'Sample ID',
-      customerName: 'Customer',
-      calculatedAmount: 'Amount',
-      marketRate: 'Market Rate',
-      quantity: 'Quantity',
-      drcPercentage: 'DRC %',
-      requestId: 'Request ID',
-      barrelCount: 'Barrel Count',
-      customer: 'Customer',
-      receivedAt: 'Received At'
-    };
+    // Here you would typically send the data to your backend
+    console.log('Submitting test results:', {
+      barrelId: selectedBarrel.barrelId,
+      userId: selectedBarrel.userId,
+      drcValue: parseFloat(drcValue),
+      testNotes,
+      testDate: new Date().toISOString().split('T')[0],
+      testedBy: 'Lab Staff' // This would come from auth context
+    });
 
-    return Object.entries(meta)
-      .filter(([k, v]) => v !== undefined && v !== null && v !== '')
-      .map(([key, value]) => ({
-        label: friendlyLabels[key] || key.replace(/([A-Z])/g, ' $1').trim(),
-        value: String(value)
-      }));
-  };
-
-  // Get notification icon based on title/type
-  const getNotificationIcon = (title) => {
-    if (!title) return '📋';
-    const lower = title.toLowerCase();
-    if (lower.includes('billing') || lower.includes('payment')) return '💰';
-    if (lower.includes('drc') || lower.includes('test')) return '🧪';
-    if (lower.includes('pickup') || lower.includes('scheduled')) return '📦';
-    if (lower.includes('sample')) return '🔬';
-    if (lower.includes('delivery')) return '🚚';
-    return '📋';
+    alert(`Test results submitted for Barrel ${selectedBarrel.barrelId}\nDRC Value: ${drcValue}%\nResults sent to Accountant for billing.`);
+    setSelectedBarrel(null);
+    setDrcValue('');
+    setTestNotes('');
   };
 
   return (
     <div className="lab-dashboard">
-      {/* Header Section */}
-      <div className="dashboard-header">
-        <div>
-          <h1 className="dashboard-title">Lab Dashboard</h1>
-          <p className="dashboard-subtitle">Welcome back! Here's what's happening in the lab today.</p>
+      <header className="dashboard-header">
+        <h1>🧪 Lab Testing Dashboard</h1>
+        <div className="user-info">
+          <span>Lab Staff - Barrel Testing</span>
         </div>
-      </div>
+      </header>
 
-      {error && <div className="error-banner">{error}</div>}
+      <nav className="dashboard-nav">
+        <button 
+          className={activeTab === 'pending' ? 'active' : ''}
+          onClick={() => setActiveTab('pending')}
+        >
+          Pending Tests ({pendingBarrels.length})
+        </button>
+        <button 
+          className={activeTab === 'completed' ? 'active' : ''}
+          onClick={() => setActiveTab('completed')}
+        >
+          Completed Tests
+        </button>
+        <button 
+          className={activeTab === 'queue' ? 'active' : ''}
+          onClick={() => setActiveTab('queue')}
+        >
+          Testing Queue
+        </button>
+      </nav>
 
-      {/* KPI Cards */}
-      <div className="kpi-grid">
-        <div className="kpi-card kpi-pending">
-          <div className="kpi-icon">⏳</div>
-          <div className="kpi-content">
-            <div className="kpi-label">Samples Pending</div>
-            <div className="kpi-value">{summary?.pendingCount ?? 0}</div>
-          </div>
-        </div>
-        <div className="kpi-card kpi-completed">
-          <div className="kpi-icon">✅</div>
-          <div className="kpi-content">
-            <div className="kpi-label">Analyzed Today</div>
-            <div className="kpi-value">{summary?.doneToday ?? 0}</div>
-          </div>
-        </div>
-        <div className="kpi-card kpi-average">
-          <div className="kpi-icon">📊</div>
-          <div className="kpi-content">
-            <div className="kpi-label">Avg DRC Today</div>
-            <div className="kpi-value">{summary?.avgDrcToday ?? 0}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="quick-actions-card">
-        <h2 className="section-title">Quick Actions</h2>
-        <div className="quick-actions-grid">
-          <Link className="action-button action-primary" to="/lab/check-in">
-            <span className="action-icon">🔬</span>
-            <span className="action-text">Sample Check-In</span>
-          </Link>
-          <Link className="action-button action-secondary" to="/lab/drc-update">
-            <span className="action-icon">📝</span>
-            <span className="action-text">Update DRC</span>
-          </Link>
-          <Link className="action-button action-tertiary" to="/lab/queue">
-            <span className="action-icon">📋</span>
-            <span className="action-text">View Queue</span>
-          </Link>
-          <Link className="action-button action-info" to="/lab/reports">
-            <span className="action-icon">📊</span>
-            <span className="action-text">Reports</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      <div className="notifications-card">
-        <div className="notifications-header">
-          <h2 className="section-title">Notifications</h2>
-          {unread > 0 && (
-            <span className="unread-badge">{unread} new</span>
-          )}
-        </div>
-        {notifs.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🔔</div>
-            <p className="empty-text">No notifications at the moment</p>
-            <p className="empty-subtext">You're all caught up!</p>
-          </div>
-        ) : (
-          <div className="notifications-list">
-            {notifs.map(n => (
-              <div key={n._id} className={`notification-item ${!n.read ? 'unread' : ''}`}>
-                <div className="notification-icon">{getNotificationIcon(n.title)}</div>
-                <div className="notification-content">
-                  <div className="notification-title">{n.title || 'Update'}</div>
-                  <div className="notification-message">{n.message}</div>
-                  {n.meta && formatMetadata(n.meta) && (
-                    <div className="notification-metadata">
-                      {formatMetadata(n.meta).map((item, idx) => (
-                        <span key={idx} className="metadata-item">
-                          <strong>{item.label}:</strong> {item.value}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="notification-time">
-                    {new Date(n.createdAt).toLocaleString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </div>
-                </div>
-                <div className="notification-actions">
-                  {n.link && (
-                    <button 
-                      className="notif-action-btn notif-open-btn" 
-                      onClick={() => {
-                        const url = buildNotificationUrl(n);
-                        navigate(url);
-                      }}
-                    >
-                      Open
-                    </button>
-                  )}
-                  {!n.read && (
-                    <button 
-                      className="notif-action-btn notif-mark-btn" 
-                      onClick={() => markRead(n._id)}
-                    >
-                      Mark Read
-                    </button>
-                  )}
-                </div>
+      <main className="dashboard-content">
+        {activeTab === 'pending' && (
+          <div className="pending-tests-section">
+            <div className="section-header">
+              <h2>Pending Barrel Tests</h2>
+              <div className="stats-summary">
+                <span className="stat-item">
+                  <strong>{pendingBarrels.length}</strong> Barrels Awaiting Test
+                </span>
               </div>
-            ))}
+            </div>
+            
+            <div className="barrels-grid">
+              {pendingBarrels.map((barrel) => (
+                <div key={barrel.barrelId} className="barrel-card">
+                  <div className="barrel-header">
+                    <h3>Barrel ID: {barrel.barrelId}</h3>
+                    <span className="status pending">PENDING TEST</span>
+                  </div>
+                  
+                  <div className="barrel-details">
+                    <div className="detail-row">
+                      <span className="label">User:</span>
+                      <span className="value">{barrel.userName} ({barrel.userId})</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="label">Delivery Date:</span>
+                      <span className="value">{barrel.deliveryDate}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="label">Delivery Staff:</span>
+                      <span className="value">{barrel.deliveryStaff}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="label">Vehicle:</span>
+                      <span className="value">{barrel.vehicleNumber}</span>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    className="btn-primary"
+                    onClick={() => handleStartTest(barrel)}
+                  >
+                    Start DRC Test
+                  </button>
+                </div>
+              ))}
+              
+              {pendingBarrels.length === 0 && (
+                <div className="no-data">
+                  <div className="no-data-icon">🧪</div>
+                  <p>No barrels pending for testing</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
-      </div>
+
+        {activeTab === 'completed' && (
+          <div className="completed-tests-section">
+            <div className="section-header">
+              <h2>Completed Tests</h2>
+            </div>
+            
+            <div className="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Barrel ID</th>
+                    <th>User</th>
+                    <th>Test Date</th>
+                    <th>DRC Value</th>
+                    <th>Status</th>
+                    <th>Sent to Accountant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completedTests.map((test) => (
+                    <tr key={test.barrelId}>
+                      <td><strong>{test.barrelId}</strong></td>
+                      <td>{test.userName}</td>
+                      <td>{test.testDate}</td>
+                      <td>
+                        <span className="drc-value">{test.drcValue}%</span>
+                      </td>
+                      <td>
+                        <span className="status completed">COMPLETED</span>
+                      </td>
+                      <td>
+                        {test.sentToAccountant ? (
+                          <span className="status sent">✓ SENT</span>
+                        ) : (
+                          <span className="status pending">PENDING</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'queue' && (
+          <div className="queue-section">
+            <div className="section-header">
+              <h2>Testing Queue Management</h2>
+            </div>
+            
+            <div className="queue-stats">
+              <div className="stat-card">
+                <h3>Today's Tests</h3>
+                <div className="stat-number">{completedTests.filter(t => t.testDate === '2025-01-02').length}</div>
+              </div>
+              <div className="stat-card">
+                <h3>Pending Tests</h3>
+                <div className="stat-number">{pendingBarrels.length}</div>
+              </div>
+              <div className="stat-card">
+                <h3>Average DRC</h3>
+                <div className="stat-number">
+                  {completedTests.length > 0 
+                    ? (completedTests.reduce((sum, test) => sum + test.drcValue, 0) / completedTests.length).toFixed(1)
+                    : '0'
+                  }%
+                </div>
+              </div>
+            </div>
+            
+            <div className="queue-instructions">
+              <h3>Testing Instructions</h3>
+              <ul>
+                <li>Receive barrels from delivery staff with scanned IDs</li>
+                <li>Test each barrel for DRC (Distillation Recovery Coefficient) value</li>
+                <li>Enter DRC percentage (0-100%)</li>
+                <li>Add testing notes if required</li>
+                <li>Submit results directly to Accountant for billing</li>
+                <li>Do not view or modify billing calculations</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* DRC Test Modal */}
+      {selectedBarrel && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>DRC Test - Barrel {selectedBarrel.barrelId}</h2>
+              <button 
+                className="close-btn"
+                onClick={() => setSelectedBarrel(null)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="barrel-info">
+                <h3>Barrel Information</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <span className="label">Barrel ID:</span>
+                    <span className="value">{selectedBarrel.barrelId}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">User:</span>
+                    <span className="value">{selectedBarrel.userName}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">User ID:</span>
+                    <span className="value">{selectedBarrel.userId}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">Delivery Date:</span>
+                    <span className="value">{selectedBarrel.deliveryDate}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="test-form">
+                <h3>DRC Test Results</h3>
+                <div className="form-group">
+                  <label htmlFor="drcValue">DRC Value (%):</label>
+                  <input
+                    type="number"
+                    id="drcValue"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={drcValue}
+                    onChange={(e) => setDrcValue(e.target.value)}
+                    placeholder="Enter DRC percentage (0-100)"
+                    className="drc-input"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="testNotes">Test Notes (Optional):</label>
+                  <textarea
+                    id="testNotes"
+                    value={testNotes}
+                    onChange={(e) => setTestNotes(e.target.value)}
+                    placeholder="Add any observations or notes about the test..."
+                    rows="3"
+                    className="notes-input"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <button 
+                className="btn-secondary"
+                onClick={() => setSelectedBarrel(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={handleSubmitTest}
+                disabled={!drcValue}
+              >
+                Submit Test Results
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

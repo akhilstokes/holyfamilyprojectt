@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
 const Navbar = () => {
     const { isAuthenticated, logout, user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
     const [scrolled, setScrolled] = useState(false);
+
+    const isHome = location.pathname === '/';
 
     useEffect(() => {
         const handler = (e) => {
@@ -37,64 +40,54 @@ const Navbar = () => {
     };
 
     return (
-        <>
-        <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
+        <nav className={`navbar${scrolled ? ' scrolled' : ''} ${isHome ? 'home-nav' : ''}`}>
             <div className="navbar-container">
-                {/* Logo */}
-                <Link to="/" className="navbar-logo">
-                    <div className="navbar-logo">
-                        <img 
-                            src="/images/logo.png" 
-                            alt="Company Logo" 
-                            className="company-logo" 
+                {/* Logo Section */}
+                <div className="navbar-logo">
+                    <Link to="/" className="navbar-brand-logo">
+                        <img
+                            src="/images/logo.png"
+                            alt="Company Logo"
+                            className="company-logo"
                         />
-                    </div>
-                </Link>
+                    </Link>
+                </div>
 
-                {/* Menu Links */}
-                <ul className="nav-menu">
-                    <li className="nav-item">
-                        <NavLink to="/" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                            Home
-                        </NavLink>
-                    </li>
-                    <li className="nav-item">
-                        <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                            About
-                        </NavLink>
-                    </li>
-                    <li className="nav-item">
-                        <NavLink to="/history" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                            History
-                        </NavLink>
-                    </li>
-                    <li className="nav-item">
-                        <NavLink to="/gallery" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                            Gallery
-                        </NavLink>
-                    </li>
-                    <li className="nav-item">
-                        <NavLink to="/contact" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                            Contact
-                        </NavLink>
-                    </li>
-                    <li className="nav-item">
-                        {null}
-                    </li>
-                </ul>
+                {/* Navigation Menu */}
+                <div className="navbar-menu">
+                    <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                        Home
+                    </NavLink>
+                    <NavLink to="/about" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                        About
+                    </NavLink>
+                    <NavLink to="/history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                        History
+                    </NavLink>
+                    <NavLink to="/gallery" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                        Gallery
+                    </NavLink>
+                    <NavLink to="/awards" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                        Awards
+                    </NavLink>
+                    <NavLink to="/contact" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                        Contact
+                    </NavLink>
+                </div>
 
-                {/* Auth Buttons / Profile */}
-                {!isAuthenticated ? (
-                    <div className="nav-auth-buttons">
-                        <Link to="/login" className="nav-button btn-login">Login</Link>
-                    </div>
-                ) : (
-                    <div className="nav-auth-buttons">
+                {/* Auth Section */}
+                <div className="navbar-auth">
+                    {!isAuthenticated ? (
+                        <div className="auth-buttons">
+                            <Link to="/register" className="auth-btn register-btn">Sign Up</Link>
+                            <Link to="/login" className="auth-btn login-btn">Sign In</Link>
+                        </div>
+                    ) : (
                         <div className="profile-menu" ref={menuRef}>
-                            <button type="button" className="nav-button btn-login" onClick={() => setMenuOpen(v => !v)}>
-                                <i className="fas fa-user-circle" style={{ marginRight: 6 }}></i>
+                            <button type="button" className="profile-btn" onClick={() => setMenuOpen(v => !v)}>
+                                <i className="fas fa-user-circle"></i>
                                 {user?.name ? `Hi, ${user.name.split(' ')[0]}` : 'Profile'}
-                                <i className="fas fa-caret-down" style={{ marginLeft: 6 }}></i>
+                                <i className="fas fa-caret-down"></i>
                             </button>
                             {menuOpen && (
                                 <div className="profile-dropdown">
@@ -106,16 +99,18 @@ const Navbar = () => {
                                         <i className="fas fa-pen"></i>
                                         <span>Edit Profile</span>
                                     </NavLink>
+                                    <div className="dropdown-divider"></div>
+                                    <button className="dropdown-item logout-item" onClick={handleLogout}>
+                                        <i className="fas fa-sign-out-alt"></i>
+                                        <span>Logout</span>
+                                    </button>
                                 </div>
                             )}
                         </div>
-                        <button className="nav-button btn-register" onClick={handleLogout}>Logout</button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </nav>
-        
-        </>
     );
 };
 

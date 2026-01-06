@@ -338,3 +338,9 @@ Real-time staff attendance monitoring • Updates every 30 seconds
 **Version**: 2.0 - Complete Redesign
 **File**: `client/src/pages/manager/LiveCheckins.js`
 
+
+
+
+
+
+

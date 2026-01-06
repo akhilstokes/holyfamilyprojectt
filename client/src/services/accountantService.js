@@ -98,3 +98,19 @@ export async function validateLatexRequest(id) {
   const res = await axios.get(`${API}/api/latex/admin/validate/${id}`, { headers: authHeaders() });
   return res.data;
 }
+
+// Tax Filing CRUD
+export async function addTaxRecord(data) {
+  const res = await axios.post(`${API}/api/accountant/tax/record`, data, { headers: authHeaders() });
+  return res.data;
+}
+
+export async function updateTaxRecord(id, data) {
+  const res = await axios.put(`${API}/api/accountant/tax/record/${id}`, data, { headers: authHeaders() });
+  return res.data;
+}
+
+export async function deleteTaxRecord(id) {
+  const res = await axios.delete(`${API}/api/accountant/tax/record/${id}`, { headers: authHeaders() });
+  return res.data;
+}

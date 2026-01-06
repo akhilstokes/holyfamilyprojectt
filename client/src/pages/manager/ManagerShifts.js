@@ -18,7 +18,25 @@ const ManagerShifts = () => {
   ), [token]);
   const today = useMemo(() => iso(new Date()), []);
   const [weekStart, setWeekStart] = useState(weekStartOf(today));
-  const [form, setForm] = useState({ morningStart: '09:00', morningEnd: '13:00', eveningStart: '13:30', eveningEnd: '18:00', what: 'collection' });
+  
+  // Get default shift times based on group
+  const getDefaultShiftTimes = (groupType) => {
+    switch(groupType) {
+      case 'field':
+        // Field Standard per request: Morning 09:00-17:00, Evening 18:00-22:00
+        return { morningStart: '09:00', morningEnd: '17:00', eveningStart: '18:00', eveningEnd: '22:00', what: 'collection' };
+      case 'accountant':
+        return { morningStart: '08:00', morningEnd: '17:00', eveningStart: '17:00', eveningEnd: '17:00', what: 'collection' };
+      case 'delivery':
+        return { morningStart: '08:00', morningEnd: '17:00', eveningStart: '17:00', eveningEnd: '17:00', what: 'collection' };
+      case 'lab':
+        return { morningStart: '09:00', morningEnd: '17:00', eveningStart: '17:00', eveningEnd: '17:00', what: 'collection' };
+      default:
+        return { morningStart: '09:00', morningEnd: '13:00', eveningStart: '13:30', eveningEnd: '18:00', what: 'collection' };
+    }
+  };
+  
+  const [form, setForm] = useState(getDefaultShiftTimes('field'));
   const [assignments, setAssignments] = useState([]); // [{ staff, shiftType }]
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,6 +50,7 @@ const ManagerShifts = () => {
   // Inline assign state
   const [assigningIdx, setAssigningIdx] = useState(-1);
   const [infoMsg, setInfoMsg] = useState('');
+  const [presetGroup, setPresetGroup] = useState('field');
   // Helpers
   const onlyDigits = (v) => String(v || '').replace(/\D+/g, '');
   const noSpaces = (v) => String(v || '').replace(/\s+/g, '');
@@ -89,18 +108,13 @@ const ManagerShifts = () => {
     loadStaff();
   }, [base, headers, group]);
 
-  // When switching to Lab group, default to a single 09:00–17:00 shift
+  // Update shift times when group changes
   useEffect(() => {
-    if (group === 'lab') {
-      setForm((prev) => ({
-        ...prev,
-        morningStart: '09:00',
-        morningEnd: '17:00',
-        // Set evening to a no-op window
-        eveningStart: '17:00',
-        eveningEnd: '17:00'
-      }));
-    }
+    const newTimes = getDefaultShiftTimes(group);
+    setForm((prev) => ({
+      ...prev,
+      ...newTimes
+    }));
   }, [group]);
 
   // Basic conflict detection & validation: duplicate staff or empty IDs, no spaces in IDs, time ranges, repeatCount
@@ -170,6 +184,11 @@ const ManagerShifts = () => {
     finally { setLoading(false); }
   };
 
+  const applyPreset = () => {
+    const preset = getDefaultShiftTimes(presetGroup);
+    setForm(preset);
+  };
+
   const onForm = (e) => {
     const { name, value } = e.target;
     // prevent spaces in time fields
@@ -178,8 +197,43 @@ const ManagerShifts = () => {
   };
 
   const addAssignment = () => setAssignments((s) => [...s, { staff: '', shiftType: 'Morning' }]);
-  const setAssignment = (i, key, value) => setAssignments((s) => s.map((it, idx) => idx === i ? { ...it, [key]: key === 'staff' ? noSpaces(value) : value } : it));
+  const setAssignment = (i, key, value) => {
+    if (key === 'staff' && value === '__SELECT_ALL__') {
+      // Handle "Select All Staff" option
+      const newAssignments = staffOptions.map(opt => ({ 
+        staff: opt.value, 
+        shiftType: assignments[i]?.shiftType || 'Morning' 
+      }));
+      setAssignments((s) => {
+        const updated = [...s];
+        updated[i] = newAssignments[0];
+        return [...updated, ...newAssignments.slice(1)];
+      });
+      return;
+    }
+    setAssignments((s) => s.map((it, idx) => idx === i ? { ...it, [key]: key === 'staff' ? noSpaces(value) : value } : it));
+  };
   const removeAssignment = (i) => setAssignments((s) => s.filter((_, idx) => idx !== i));
+
+  // Bulk add all staff to a shift
+  const addAllStaffToShift = (shiftType) => {
+    if (staffOptions.length === 0) {
+      setError('No staff members available. Please select a Target Group first.');
+      return;
+    }
+    const existingStaffIds = new Set(assignments.map(a => a.staff).filter(Boolean));
+    const newAssignments = staffOptions
+      .filter(opt => !existingStaffIds.has(opt.value))
+      .map(opt => ({ staff: opt.value, shiftType }));
+    if (newAssignments.length > 0) {
+      setAssignments((s) => [...s, ...newAssignments]);
+      setInfoMsg(`✓ Added ${newAssignments.length} staff member(s) to ${shiftType} shift.`);
+      setTimeout(() => setInfoMsg(''), 5000);
+    } else {
+      setInfoMsg('All staff members are already assigned. Remove some to add others.');
+      setTimeout(() => setInfoMsg(''), 5000);
+    }
+  };
 
   const assignNow = async (i) => {
     try {
@@ -301,85 +355,172 @@ const ManagerShifts = () => {
           <label style={{ display:'flex', flexDirection:'column', gap:4 }}>
             <span>Task</span>
             <select name="what" value={form.what} onChange={onForm}>
-              <option value="collection">Collection</option>
               <option value="empty_barrel_pickup">Empty Barrel Pickup</option>
               <option value="production_support">Production Support</option>
               <option value="rubber_band_packing">Rubber Band Packing</option>
               <option value="admin_back_office">Admin / Back Office</option>
             </select>
           </label>
-          {group === 'lab' && (
-            <div style={{ display:'flex', alignItems:'flex-end' }}>
-              <button type="button" className="btn btn-outline" onClick={() => setForm({ morningStart:'09:00', morningEnd:'17:00', eveningStart:'17:00', eveningEnd:'17:00' })}>
-                Apply Lab Standard (09:00–17:00)
-              </button>
-            </div>
-          )}
+          <div style={{ display:'flex', alignItems:'flex-end', gap:8 }}>
+            <button type="button" className="btn btn-outline" onClick={() => setForm(getDefaultShiftTimes(group))}>
+              Reset to {group.charAt(0).toUpperCase() + group.slice(1)} Standard
+            </button>
+            <select value={presetGroup} onChange={(e)=>setPresetGroup(e.target.value)} style={{ fontSize:14 }}>
+              <option value="field">Field Standard</option>
+              <option value="delivery">Delivery Standard</option>
+              <option value="lab">Lab Standard</option>
+              <option value="accountant">Accountant Standard</option>
+              <option value="company">Company Standard</option>
+            </select>
+            <button type="button" className="btn btn-primary" onClick={applyPreset}>
+              Apply Preset
+            </button>
+          </div>
         </div>
 
         <div>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <h3 style={{ margin: 0 }}>Assignments</h3>
-            <button type="button" className="btn" onClick={addAssignment}>Add</button>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12, marginBottom:12 }}>
+            <div>
+              <h3 style={{ margin: 0 }}>Assignments ({assignments.length})</h3>
+              {staffOptions.length > 0 && (
+                <div style={{ fontSize:12, color:'#64748b', marginTop:4 }}>
+                  {staffOptions.length} staff member(s) available for {group.charAt(0).toUpperCase() + group.slice(1)} group
+                </div>
+              )}
+            </div>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              <button type="button" className="btn btn-outline" onClick={() => addAllStaffToShift('Morning')} disabled={staffOptions.length === 0}>
+                ✓ Add All to Morning ({staffOptions.length})
+              </button>
+              <button type="button" className="btn btn-outline" onClick={() => addAllStaffToShift('Evening')} disabled={staffOptions.length === 0}>
+                ✓ Add All to Evening ({staffOptions.length})
+              </button>
+              <button type="button" className="btn" onClick={addAssignment}>+ Add Single</button>
+            </div>
           </div>
           <div style={{ marginTop: 8, overflowX:'auto' }}>
             <table className="dashboard-table" style={{ minWidth: 680 }}>
-              <thead><tr><th>#</th><th>Staff ID</th><th>Shift</th><th>Actions</th></tr></thead>
+              <thead>
+                <tr>
+                  <th style={{ width: 50 }}>#</th>
+                  <th>Staff Member</th>
+                  <th>Shift Type</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
               <tbody>
                 {assignments.map((a, i) => (
                   <tr key={i}>
                     <td>{i+1}</td>
-                    <td>
+                    <td style={{ minWidth: 200 }}>
                       {staffOptions.length > 0 ? (
-                        <select value={a.staff} onChange={(e)=> setAssignment(i,'staff', e.target.value)}>
-                          <option value="">Select staff</option>
-                          {staffOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
+                        <div>
+                          <select 
+                            value={a.staff} 
+                            onChange={(e)=> setAssignment(i,'staff', e.target.value)}
+                            style={{ width:'100%', padding:'8px 12px', borderRadius:6, border:'1px solid #d1d5db' }}
+                          >
+                            <option value="">Select staff...</option>
+                            {staffOptions.length > 1 && (
+                              <option value="__SELECT_ALL__" style={{ fontWeight:'bold', color:'#059669', backgroundColor:'#f0fdf4' }}>
+                                ✓ Select All Staff ({staffOptions.length})
+                              </option>
+                            )}
+                            {staffOptions.map(opt => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                          {/* Selected staff display */}
+                          {!!a.staff && a.staff !== '__SELECT_ALL__' && (
+                            <div style={{ fontSize:12, color:'#059669', marginTop:6, fontWeight:500 }}>
+                              ✓ {staffOptions.find(o=>o.value===a.staff)?.label || a.staff}
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <input
-                          type="text"
-                          placeholder="User ObjectId or Staff ID (no spaces)"
-                          value={a.staff}
-                          onChange={(e)=>setAssignment(i,'staff', e.target.value)}
-                          onKeyDown={(e)=>{ if (e.key === ' ') e.preventDefault(); }}
-                        />
-                      )}
-                      {/* Selected staff display */}
-                      {!!a.staff && (
-                        <div style={{ fontSize:12, color:'#64748b', marginTop:4 }}>
-                          {staffOptions.find(o=>o.value===a.staff)?.label || a.staff}
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="User ObjectId or Staff ID (no spaces)"
+                            value={a.staff}
+                            onChange={(e)=>setAssignment(i,'staff', e.target.value)}
+                            onKeyDown={(e)=>{ if (e.key === ' ') e.preventDefault(); }}
+                            style={{ width:'100%', padding:'8px 12px', borderRadius:6, border:'1px solid #d1d5db' }}
+                          />
+                          {!!a.staff && (
+                            <div style={{ fontSize:12, color:'#64748b', marginTop:4 }}>
+                              {staffOptions.find(o=>o.value===a.staff)?.label || a.staff}
+                            </div>
+                          )}
                         </div>
                       )}
                     </td>
-                    <td>
-                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <select value={a.shiftType} onChange={(e)=>setAssignment(i,'shiftType', e.target.value)}>
+                    <td style={{ minWidth: 180 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                        <select 
+                          value={a.shiftType} 
+                          onChange={(e)=>setAssignment(i,'shiftType', e.target.value)}
+                          style={{ padding:'8px 12px', borderRadius:6, border:'1px solid #d1d5db', minWidth:120 }}
+                        >
                           <option>Morning</option>
                           <option>Evening</option>
                         </select>
-                        <span style={{ fontSize:12, color:'#64748b' }}>
+                        <span style={{ fontSize:12, color:'#64748b', whiteSpace:'nowrap' }}>
                           {a.shiftType === 'Evening' ? `${form.eveningStart} - ${form.eveningEnd}` : `${form.morningStart} - ${form.morningEnd}`}
                         </span>
                       </div>
                     </td>
-                    <td>
-                      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                        <button type="button" className="btn btn-primary" disabled={assigningIdx===i || loading} onClick={()=>assignNow(i)}>
-                          {assigningIdx===i ? 'Assigning...' : 'Assign Now'}
+                    <td style={{ minWidth: 150 }}>
+                      <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                        <button 
+                          type="button" 
+                          className="btn btn-primary" 
+                          disabled={assigningIdx===i || loading || !a.staff || a.staff === '__SELECT_ALL__'} 
+                          onClick={()=>assignNow(i)}
+                          style={{ fontSize:13 }}
+                        >
+                          {assigningIdx===i ? '⏳ Assigning...' : '✓ Assign Now'}
                         </button>
-                        <button type="button" className="btn btn-outline" onClick={()=>removeAssignment(i)}>Remove</button>
+                        <button 
+                          type="button" 
+                          className="btn btn-outline" 
+                          onClick={()=>removeAssignment(i)}
+                          style={{ fontSize:13 }}
+                        >
+                          ✕ Remove
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {assignments.length === 0 && (
-                  <tr><td colSpan={4} style={{ textAlign:'center', color:'#9aa' }}>No assignments</td></tr>
+                  <tr>
+                    <td colSpan={4} style={{ textAlign:'center', color:'#9ca3af', padding:'32px', fontSize:14 }}>
+                      <div>No assignments yet</div>
+                      <div style={{ marginTop:8, fontSize:12, color:'#64748b' }}>
+                        Click "Add Single" to add one staff member, or use "Add All to Morning/Evening" for bulk assignment
+                      </div>
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
-            {infoMsg && <div className="alert success" style={{ marginTop:8 }}>{infoMsg}</div>}
+            {infoMsg && (
+              <div className="alert success" style={{ 
+                marginTop:12, 
+                padding:12, 
+                backgroundColor:'#d1fae5', 
+                color:'#065f46', 
+                border:'1px solid #6ee7b7', 
+                borderRadius:6,
+                display:'flex',
+                alignItems:'center',
+                gap:8
+              }}>
+                <span>✓</span>
+                <span>{infoMsg}</span>
+              </div>
+            )}
             {conflicts.length > 0 && (
               <div style={{ marginTop: 8, color: '#b45309', background:'#fff7ed', border:'1px solid #fed7aa', padding:8, borderRadius:6 }}>
                 <b>Conflicts detected</b>
@@ -463,9 +604,15 @@ const ManagerShifts = () => {
           </label>
           <label style={{ display:'flex', flexDirection:'column', gap:4 }}>
             <span>Staff</span>
-            <select value={ov.staff} onChange={(e)=> setOv(s=>({ ...s, staff: e.target.value }))}>
-              <option value="">Select staff</option>
-              {staffOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            <select 
+              value={ov.staff} 
+              onChange={(e)=> setOv(s=>({ ...s, staff: e.target.value }))}
+              style={{ width:'100%', padding:'8px 12px', borderRadius:6, border:'1px solid #d1d5db' }}
+            >
+              <option value="">Select staff...</option>
+              {staffOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
             </select>
           </label>
           <label style={{ display:'flex', flexDirection:'column', gap:4 }}>

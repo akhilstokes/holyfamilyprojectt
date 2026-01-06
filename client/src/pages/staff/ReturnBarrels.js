@@ -23,20 +23,50 @@ const ReturnBarrels = () => {
     const value = e.target.value;
     setScannerInput(value);
     
+    // Set scanning state when user starts typing
+    if (value.length > 0) {
+      setIsScanning(true);
+    } else {
+      setIsScanning(false);
+    }
+    
     // Simulate scanner behavior - if input ends with Enter or is long enough, process it
     if (value.includes('\n') || value.length > 8) {
       const barrelId = value.replace('\n', '').trim();
       if (barrelId) {
         processScannedBarrel(barrelId);
         setScannerInput('');
+        setIsScanning(false);
       }
     }
   };
 
+  // Handle Enter key press for manual input
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && scannerInput.trim()) {
+      processScannedBarrel(scannerInput.trim());
+      setScannerInput('');
+      setIsScanning(false);
+    }
+  };
+
+  // Validate barrel ID format: BHFP + 1-3 digits
+  const validateBarrelId = (barrelId) => {
+    const regex = /^BHFP\d{1,3}$/;
+    return regex.test(barrelId);
+  };
+
   // Process scanned barrel ID
   const processScannedBarrel = async (barrelId) => {
+    // Validate format
+    if (!validateBarrelId(barrelId)) {
+      setMessage('❌ Invalid format! Use: BHFP + 1-3 digits (e.g., BHFP1, BHFP12, BHFP123)');
+      setTimeout(() => setMessage(''), 5000);
+      return;
+    }
+
     if (scannedBarrels.find(barrel => barrel.barrelId === barrelId)) {
-      setMessage('Barrel already scanned');
+      setMessage('⚠️ Barrel already scanned');
       setTimeout(() => setMessage(''), 3000);
       return;
     }
@@ -52,10 +82,10 @@ const ReturnBarrels = () => {
       };
       
       setScannedBarrels(prev => [...prev, newBarrel]);
-      setMessage(`Barrel ${barrelId} scanned successfully`);
+      setMessage(`✅ Barrel ${barrelId} scanned successfully`);
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      setMessage('Error scanning barrel');
+      setMessage('❌ Error scanning barrel');
       setTimeout(() => setMessage(''), 3000);
     } finally {
       setLoading(false);
@@ -144,25 +174,51 @@ const ReturnBarrels = () => {
       )}
 
       <div className="scanner-section">
+        <div className="scanner-status-banner">
+          {isScanning ? (
+            <div className="status-indicator scanning">
+              <div className="pulse-dot"></div>
+              <span className="status-text">🔴 Scanning...</span>
+              <div className="scanning-animation">
+                <div className="scan-line"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="status-indicator ready">
+              <div className="ready-icon">✓</div>
+              <span className="status-text">🟢 Ready to Scan</span>
+              <span className="status-subtext">Scan or type Barrel ID below</span>
+            </div>
+          )}
+        </div>
+        
         <div className="scanner-input-container">
-          <label htmlFor="scanner">Scanner Input:</label>
+          <label htmlFor="scanner">Barrel ID Input:</label>
           <input
             ref={scannerRef}
             id="scanner"
             type="text"
             value={scannerInput}
             onChange={handleScannerInput}
-            placeholder="Scan barrel ID or type manually..."
-            className="scanner-input"
+            onKeyPress={handleKeyPress}
+            placeholder="Scan with barcode scanner or type manually and press Enter..."
+            className={`scanner-input ${isScanning ? 'active' : ''}`}
             disabled={loading}
+            autoFocus
           />
-          <div className="scanner-status">
-            {isScanning ? (
-              <span className="scanning">🔴 Scanning...</span>
-            ) : (
-              <span className="ready">🟢 Ready to scan</span>
-            )}
-          </div>
+          <button 
+            className="manual-add-btn"
+            onClick={() => {
+              if (scannerInput.trim()) {
+                processScannedBarrel(scannerInput.trim());
+                setScannerInput('');
+                setIsScanning(false);
+              }
+            }}
+            disabled={!scannerInput.trim() || loading}
+          >
+            Add Barrel
+          </button>
         </div>
       </div>
 
@@ -207,10 +263,26 @@ const ReturnBarrels = () => {
       </div>
 
       <div className="instructions">
-        <h4>Instructions:</h4>
+        <h4>📋 Instructions:</h4>
+        <div className="format-example">
+          <strong>✅ Valid Barrel ID Format:</strong>
+          <div className="format-box">
+            <span className="format-label">BHFP</span> + <span className="format-label">1-3 digits</span>
+          </div>
+          <div className="examples">
+            <span className="valid-example">✅ BHFP1</span>
+            <span className="valid-example">✅ BHFP12</span>
+            <span className="valid-example">✅ BHFP123</span>
+          </div>
+          <div className="examples invalid">
+            <span className="invalid-example">❌ bhfp90 (lowercase)</span>
+            <span className="invalid-example">❌ BHFP1234 (4 digits)</span>
+            <span className="invalid-example">❌ abcd78 (wrong prefix)</span>
+          </div>
+        </div>
         <ul>
-          <li>Scan or manually enter barrel IDs</li>
-          <li>Each scanned barrel will be added to the list</li>
+          <li>Scan or manually enter barrel IDs in the correct format</li>
+          <li>Each valid barrel will be added to the list</li>
           <li>Click "Complete Return" when all barrels are scanned</li>
           <li>Manager will be notified and can reassign barrels</li>
         </ul>

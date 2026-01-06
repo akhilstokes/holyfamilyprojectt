@@ -76,7 +76,7 @@ const latexRequestSchema = new mongoose.Schema({
   paymentMethod: { 
     type: String,
     enum: ['cash', 'bank_transfer', 'cheque', 'upi'],
-    default: null
+    default: undefined // Use undefined instead of null for optional fields
   },
   paymentReference: { 
     type: String,

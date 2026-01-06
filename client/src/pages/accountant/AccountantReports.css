@@ -1,0 +1,236 @@
+/* AccountantReports.css */
+/* Main Container */
+.reports-container {
+    padding: 24px;
+    background-color: #f8fafc;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Header */
+.reports-header {
+    background: white;
+    padding: 24px 32px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+}
+
+.header-content h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 4px 0;
+}
+
+.header-content p {
+    color: #64748b;
+    margin: 0;
+    font-size: 14px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.month-select,
+.year-input {
+    padding: 10px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #334155;
+    background-color: white;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.month-select:focus,
+.year-input:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+}
+
+.year-input {
+    width: 100px;
+}
+
+/* Reports Grid */
+.reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.report-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.report-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.1);
+}
+
+.report-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: white;
+    font-size: 24px;
+}
+
+.icon-blue {
+    background: #3b82f6;
+}
+
+.icon-red {
+    background: #ef4444;
+}
+
+.icon-green {
+    background: #10b981;
+}
+
+.icon-purple {
+    background: #8b5cf6;
+}
+
+.icon-orange {
+    background: #f97316;
+}
+
+.icon-teal {
+    background: #14b8a6;
+}
+
+.icon-indigo {
+    background: #6366f1;
+}
+
+.icon-pink {
+    background: #ec4899;
+}
+
+.report-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+}
+
+.report-description {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0 0 20px 0;
+    flex-grow: 1;
+    line-height: 1.5;
+}
+
+.report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.btn-generate {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background-color: #f0f9ff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-generate:hover {
+    background-color: #e0f2fe;
+    border-color: #7dd3fc;
+}
+
+.btn-generate:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Quick Actions Section */
+.quick-actions-section {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 16px 0;
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.quick-action-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.quick-action-card:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.action-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.action-icon {
+    color: #0ea5e9;
+    font-size: 18px;
+}
+
+.action-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.action-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+}

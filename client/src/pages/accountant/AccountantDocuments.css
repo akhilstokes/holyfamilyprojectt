@@ -1,0 +1,203 @@
+.accountant-documents {
+    padding: 24px;
+    background-color: var(--bg-primary, #f4f6f8);
+    min-height: calc(100vh - 64px);
+}
+
+.docs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.docs-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary, #1e293b);
+}
+
+.docs-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-upload {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary-color, #0ea5e9);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-upload:hover {
+    background: var(--primary-dark, #0284c7);
+    transform: translateY(-1px);
+}
+
+/* Documents Grid */
+.documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.doc-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.doc-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.doc-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background: var(--bg-secondary, #f1f5f9);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--primary-color, #0ea5e9);
+    margin-bottom: 16px;
+}
+
+.doc-content {
+    flex: 1;
+}
+
+.doc-category {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.doc-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.doc-desc {
+    font-size: 13px;
+    color: var(--text-secondary, #64748b);
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 38px;
+}
+
+.doc-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: auto;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 12px;
+}
+
+.doc-footer {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.btn-icon-action {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.btn-icon-action:hover {
+    background: #f8fafc;
+    color: #0ea5e9;
+    border-color: #cbd5e1;
+}
+
+.btn-icon-action.delete:hover {
+    color: #ef4444;
+    background: #fef2f2;
+}
+
+/* Modal Styles Reuse existing modal styles or specific ones */
+.upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f8fafc;
+}
+
+.upload-area:hover,
+.upload-area.drag-active {
+    border-color: #0ea5e9;
+    background: #f0f9ff;
+}
+
+.selected-file {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #e0f2fe;
+    color: #0369a1;
+    border-radius: 6px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Empty State */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 64px 0;
+    color: #94a3b8;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #cbd5e1;
+}

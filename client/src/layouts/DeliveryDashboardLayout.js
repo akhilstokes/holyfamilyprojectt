@@ -1,73 +1,312 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import './DashboardLayout.css';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import './DeliveryDashboardLayout.css';
 import { useAuth } from '../context/AuthContext';
 
 const DeliveryDashboardLayout = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout, user } = useAuth();
-  const [sidebarOpen] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [quickStats, setQuickStats] = useState({
+    pending: 0,
+    completed: 0,
+    earnings: 0
+  });
   const menuRef = useRef(null);
 
   const handleLogout = async () => {
-    try { await logout(); } finally { navigate('/login'); }
+    try { 
+      await logout(); 
+    } finally { 
+      navigate('/login'); 
+    }
   };
 
   useEffect(() => {
-    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    const handler = (e) => { 
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setProfileMenuOpen(false); 
+      }
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    fetchQuickStats();
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  const fetchQuickStats = async () => {
+    try {
+      const response = await fetch('/api/delivery/quick-stats', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setQuickStats(data);
+      } else {
+        // Show zero stats when API is not available
+        setQuickStats({
+          pending: 0,
+          completed: 0,
+          earnings: 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching quick stats:', error);
+      // Show zero stats when API fails
+      setQuickStats({
+        pending: 0,
+        completed: 0,
+        earnings: 0
+      });
+    }
+  };
+
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/delivery') return { title: 'Dashboard', subtitle: 'Overview of your delivery activities', icon: 'fa-tachometer-alt' };
+    if (path.includes('/route-plan')) return { title: 'Route Plan', subtitle: 'Plan your delivery routes', icon: 'fa-route' };
+    if (path.includes('/tasks')) return { title: 'My Tasks', subtitle: 'View and manage your tasks', icon: 'fa-tasks' };
+    if (path.includes('/assigned-requests')) return { title: 'Assigned Requests', subtitle: 'Handle assigned delivery requests', icon: 'fa-clipboard-list' };
+    if (path.includes('/task-history')) return { title: 'Task History', subtitle: 'View completed tasks', icon: 'fa-history' };
+    if (path.includes('/shift-schedule')) return { title: 'My Schedule', subtitle: 'View your work schedule', icon: 'fa-calendar-alt' };
+    if (path.includes('/barrel-intake')) return { title: 'Barrel Intake', subtitle: 'Manage barrel intake process', icon: 'fa-box-open' };
+    if (path.includes('/leave')) return { title: 'Leave Management', subtitle: 'Apply and manage leave', icon: 'fa-calendar-times' };
+    if (path.includes('/salary')) return { title: 'My Salary', subtitle: 'View salary information', icon: 'fa-money-bill-wave' };
+    return { title: 'Delivery', subtitle: 'Delivery management system', icon: 'fa-truck' };
+  };
+
+  const pageInfo = getPageTitle();
+
+  const navigationItems = [
+    {
+      section: 'Main',
+      items: [
+        { to: '/delivery', icon: 'fa-tachometer-alt', label: 'Dashboard' },
+        { to: '/delivery/route-plan', icon: 'fa-route', label: 'Route Plan' },
+        { to: '/delivery/tasks', icon: 'fa-tasks', label: 'My Tasks' },
+      ]
+    },
+    {
+      section: 'Operations',
+      items: [
+        { to: '/delivery/assigned-requests', icon: 'fa-clipboard-list', label: 'Assigned Requests' },
+        { to: '/delivery/barrel-intake', icon: 'fa-box-open', label: 'Barrel Intake' },
+        { to: '/delivery/task-history', icon: 'fa-history', label: 'Task History' },
+      ]
+    },
+    {
+      section: 'Personal',
+      items: [
+        { to: '/delivery/shift-schedule', icon: 'fa-calendar-alt', label: 'My Schedule' },
+        { to: '/delivery/leave', icon: 'fa-calendar-times', label: 'Leave' },
+        { to: '/delivery/salary', icon: 'fa-money-bill-wave', label: 'My Salary' },
+      ]
+    }
+  ];
+
   return (
-    <div className="dashboard-container">
-      <aside className={`sidebar sidebar--flush-left ${sidebarOpen ? '' : 'sidebar--hidden'}`}>
-        <div className="sidebar-header">Delivery Staff</div>
-        <ul className="sidebar-nav">
-          <li className="nav-item"><NavLink to="/delivery">Dashboard</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/route-plan">Route Plan</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/tasks">My Tasks</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/assigned-requests">Assigned Requests</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/task-history">Task History</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/shift-schedule">My Shift Schedule</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/barrel-intake">Barrel Intake</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/attendance">Attendance</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/leave">Leave</NavLink></li>
-          <li className="nav-item"><NavLink to="/delivery/salary">My Salary</NavLink></li>
-        </ul>
+    <div className="delivery-dashboard-container">
+      {/* Sidebar Overlay for Mobile */}
+      <div 
+        className={`delivery-sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
+      {/* Sidebar */}
+      <aside className={`delivery-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${!sidebarOpen ? 'hidden' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+        {/* Sidebar Header */}
+        <div className="delivery-sidebar-header">
+          <div className="delivery-brand">
+            <div className="delivery-brand-icon">
+              <i className="fas fa-truck"></i>
+            </div>
+            <div className="delivery-brand-text">
+              <h3>HFP Delivery</h3>
+              <span>Staff Portal</span>
+            </div>
+          </div>
+          <button 
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <i className={`fas ${sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
+          </button>
+        </div>
+
+        {/* User Profile Card */}
+        <div className="delivery-user-card">
+          <div className="delivery-user-avatar">
+            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+          </div>
+          <div className="delivery-user-info">
+            <div className="delivery-user-greeting">Good day,</div>
+            <div className="delivery-user-name">{user?.name || user?.email || 'User'}</div>
+            <div className="delivery-user-role">Delivery Staff</div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="delivery-nav">
+          {navigationItems.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="delivery-nav-section">
+              <div className="delivery-nav-title">{section.section}</div>
+              <div className="delivery-nav-items">
+                {section.items.map((item, itemIndex) => (
+                  <NavLink
+                    key={itemIndex}
+                    to={item.to}
+                    className={({ isActive }) => 
+                      `delivery-nav-item ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <div className="delivery-nav-icon">
+                      <i className={`fas ${item.icon}`}></i>
+                    </div>
+                    <span className="delivery-nav-label">{item.label}</span>
+                    {item.badge && (
+                      <span className="delivery-nav-badge">{item.badge}</span>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div className="delivery-sidebar-footer">
+          <button className="delivery-logout-btn" onClick={handleLogout}>
+            <i className="fas fa-sign-out-alt"></i>
+            <span>Sign Out</span>
+          </button>
+        </div>
       </aside>
-      <div className="main-content-wrapper">
-        <header className="dashboard-header" style={{ justifyContent: 'flex-end' }}>
-          <div className="user-header-actions">
-            <div className="profile-menu" ref={menuRef}>
-              <button type="button" className="profile-link" onClick={() => setMenuOpen(v => !v)}>
-                <i className="fas fa-user-circle" />
-                <span>Profile</span>
+
+      {/* Main Content */}
+      <div className={`delivery-main-content ${sidebarCollapsed ? 'expanded' : ''} ${!sidebarOpen ? 'full-width' : ''}`}>
+        {/* Top Header */}
+        <header className="delivery-top-header">
+          <div className="delivery-header-left">
+            <button 
+              className="delivery-mobile-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <i className="fas fa-bars"></i>
+            </button>
+            
+            <div className="delivery-page-title">
+              <div className="delivery-page-icon">
+                <i className={`fas ${pageInfo.icon}`}></i>
+              </div>
+              <div className="delivery-page-info">
+                <h1>{pageInfo.title}</h1>
+                <p>{pageInfo.subtitle}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="delivery-header-right">
+            {/* Quick Stats */}
+            <div className="delivery-quick-stats">
+              <div className="delivery-stat-item">
+                <div className="delivery-stat-icon pending">
+                  <i className="fas fa-clock"></i>
+                </div>
+                <div className="delivery-stat-content">
+                  <div className="delivery-stat-number">{quickStats.pending}</div>
+                  <div className="delivery-stat-label">Pending</div>
+                </div>
+              </div>
+              <div className="delivery-stat-item">
+                <div className="delivery-stat-icon completed">
+                  <i className="fas fa-check"></i>
+                </div>
+                <div className="delivery-stat-content">
+                  <div className="delivery-stat-number">{quickStats.completed}</div>
+                  <div className="delivery-stat-label">Completed</div>
+                </div>
+              </div>
+              <div className="delivery-stat-item">
+                <div className="delivery-stat-icon earnings">
+                  <i className="fas fa-rupee-sign"></i>
+                </div>
+                <div className="delivery-stat-content">
+                  <div className="delivery-stat-number">₹{quickStats.earnings}</div>
+                  <div className="delivery-stat-label">Today</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Notifications */}
+            <button className="delivery-notification-btn">
+              <i className="fas fa-bell"></i>
+              <div className="delivery-notification-dot"></div>
+            </button>
+
+            {/* Profile Dropdown */}
+            <div className="delivery-profile-dropdown" ref={menuRef}>
+              <button 
+                className="delivery-profile-btn"
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              >
+                <div className="delivery-profile-avatar">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div className="delivery-profile-info">
+                  <div className="delivery-profile-name">{user?.name || 'User'}</div>
+                  <div className="delivery-profile-role">Delivery Staff</div>
+                </div>
+                <i className={`fas fa-chevron-${profileMenuOpen ? 'up' : 'down'}`}></i>
               </button>
-              {menuOpen && (
-                <div className="profile-dropdown" style={{ position: 'absolute', right: 92, top: 56, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, minWidth: 240, boxShadow: '0 10px 24px rgba(0,0,0,0.10)' }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#f3f4f6', display: 'grid', placeItems: 'center', color: '#6b7280' }}>
-                      <i className="fas fa-user" />
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700 }}>{user?.name || user?.email || 'User'}</div>
-                      <div style={{ fontSize: 12, color: '#6b7280' }}>{user?.email || ''}</div>
-                      <div style={{ fontSize: 12, color: '#374151', marginTop: 2 }}>{(user?.role || '').replace('_', ' ')}</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gap: 8 }}>
-                    <NavLink to="/user/profile/view" onClick={() => setMenuOpen(false)} className="dropdown-item">View Profile</NavLink>
-                    <NavLink to="/user/profile" onClick={() => setMenuOpen(false)} className="dropdown-item">Edit Profile</NavLink>
+
+              {profileMenuOpen && (
+                <div className="delivery-dropdown-menu">
+                  <NavLink 
+                    to="/user/profile/view" 
+                    className="delivery-dropdown-item"
+                    onClick={() => setProfileMenuOpen(false)}
+                  >
+                    <i className="fas fa-user"></i>
+                    View Profile
+                  </NavLink>
+                  <NavLink 
+                    to="/user/profile" 
+                    className="delivery-dropdown-item"
+                    onClick={() => setProfileMenuOpen(false)}
+                  >
+                    <i className="fas fa-edit"></i>
+                    Edit Profile
+                  </NavLink>
+                  <div className="delivery-dropdown-item" onClick={handleLogout}>
+                    <i className="fas fa-sign-out-alt"></i>
+                    Sign Out
                   </div>
                 </div>
               )}
             </div>
-            <button className="logout-button" onClick={handleLogout}>Logout</button>
           </div>
         </header>
-        <main className="dashboard-content">{children}</main>
+
+        {/* Content Area */}
+        <main className="delivery-content">
+          {children}
+        </main>
       </div>
     </div>
   );

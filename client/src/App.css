@@ -1,18 +1,25 @@
 /* === Google Fonts & Global Styles === */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
 
 :root {
-    --primary-color: #00ed64;
-    --primary-hover: #00d857;
+    /* Light Theme Colors - Consistent across all pages */
+    --primary-blue: #2563eb;
+    --primary-blue-hover: #1d4ed8;
+    --primary-blue-light: #3b82f6;
     --secondary-color: #ffffff;
-    --text-color: #001e2b;
-    --border-color: rgba(0,0,0,0.1);
-    --error-color: #ff3b30;
-    --success-color: #00ed64;
+    --text-dark: #1f2937;
+    --text-light: #6b7280;
+    --text-muted: #9ca3af;
+    --border-color: #e5e7eb;
+    --error-color: #ef4444;
+    --success-color: #10b981;
     --white-color: #ffffff;
-    --brand-dark: #001e2b;
+    --bg-light: #ffffff;
+    --bg-gray: #f9fafb;
     --shadow-light: 0 2px 8px rgba(0,0,0,0.08);
     --shadow-strong: 0 4px 16px rgba(0,0,0,0.12);
+    --font-primary: 'Inter', sans-serif;
+    --font-secondary: 'Roboto', sans-serif;
 }
 
 * {
@@ -22,38 +29,42 @@
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #ffffff;
-    color: #001e2b;
+    font-family: var(--font-primary);
+    background-color: var(--bg-light);
+    color: var(--text-dark);
     line-height: 1.6;
+    font-size: 16px;
 }
 
 /* === Centered Authentication Layout === */
 .auth-wrapper {
     display: flex;
-    justify-content: center;   /* horizontally center */
-    align-items: center;       /* vertically center */
-    min-height: 100vh;         /* full screen height */
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
     padding: 2rem;
-    background: linear-gradient(135deg, #0071e3 0%, #00a8ff 100%);
+    background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-gray) 100%);
 }
 
 .form-container {
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--white-color);
     backdrop-filter: blur(20px);
     padding: 40px;
-    border-radius: 18px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    border-radius: 20px;
+    box-shadow: var(--shadow-strong);
     width: 100%;
     max-width: 450px;
     text-align: center;
+    border: 1px solid var(--border-color);
 }
 
 /* === Heading === */
 .form-container h2 {
     margin-bottom: 25px;
     font-weight: 600;
-    color: var(--text-color);
+    color: var(--text-dark);
+    font-family: var(--font-secondary);
+    font-size: 1.8rem;
 }
 
 /* === Input Group === */
@@ -62,21 +73,34 @@ body {
     text-align: left;
 }
 
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-dark);
+    font-size: 0.95rem;
+}
+
 .form-input {
     width: 100%;
     padding: 14px 18px;
     border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.15);
+    border: 2px solid var(--border-color);
     font-size: 1rem;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font-primary);
     transition: border-color 0.3s, box-shadow 0.3s;
-    background: #ffffff;
+    background: var(--white-color);
+    color: var(--text-dark);
 }
 
 .form-input:focus {
     outline: none;
-    border-color: #00a8cc;
-    box-shadow: 0 0 0 3px rgba(0, 168, 204, 0.15);
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.form-input::placeholder {
+    color: var(--text-muted);
 }
 
 /* === Buttons === */
@@ -85,29 +109,68 @@ body {
     padding: 14px;
     border: none;
     border-radius: 12px;
-    background: #00ed64;
-    color: #001e2b;
+    background: var(--primary-blue) !important;
+    color: var(--white-color) !important;
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.2s;
-    box-shadow: none;
+    box-shadow: var(--shadow-light);
+    font-family: var(--font-primary);
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 48px;
 }
 
 .form-button:hover {
-    background: #00d857;
+    background: var(--primary-blue-hover) !important;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 237, 100, 0.25);
+    box-shadow: var(--shadow-strong);
+}
+
+/* Additional button classes for auth pages */
+.btn-primary, 
+button[type="submit"],
+input[type="submit"] {
+    width: 100% !important;
+    padding: 14px !important;
+    border: none !important;
+    border-radius: 12px !important;
+    background: var(--primary-blue) !important;
+    color: white !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    box-shadow: var(--shadow-light) !important;
+    font-family: var(--font-primary) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 48px !important;
+    text-decoration: none !important;
+}
+
+.btn-primary:hover,
+button[type="submit"]:hover,
+input[type="submit"]:hover {
+    background: var(--primary-blue-hover) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-strong) !important;
 }
 
 /* === Form Text === */
 .form-text {
     margin-top: 20px;
     font-size: 0.9rem;
+    color: var(--text-light);
 }
 
 .form-text a {
-    color: var(--primary-color);
+    color: var(--primary-blue);
     text-decoration: none;
     font-weight: 500;
 }
@@ -126,15 +189,15 @@ body {
 }
 
 .error-message { 
-    background-color: #f8d7da; 
-    color: #721c24; 
-    border: 1px solid #f5c6cb;
+    background-color: #fef2f2; 
+    color: var(--error-color); 
+    border: 1px solid #fecaca;
 }
 
 .success-message { 
-    background-color: #d4edda; 
-    color: #155724; 
-    border: 1px solid #c3e6cb;
+    background-color: #f0fdf4; 
+    color: var(--success-color); 
+    border: 1px solid #bbf7d0;
 }
 
 /* === Disabled === */
@@ -145,7 +208,7 @@ body {
 }
 
 .form-button:disabled:hover {
-    background: #00ed64;
+    background: var(--primary-blue);
     transform: none;
 }
 
