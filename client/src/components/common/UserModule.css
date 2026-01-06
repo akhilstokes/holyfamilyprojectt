@@ -1,18 +1,15 @@
 /* User Module Container */
-/* User Module Container */
 .user-module {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 16px;
-    background: transparent;
-    /* Transparent to show header bg */
-    padding: 4px 0;
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
-    width: auto;
-    /* removed full width forcing */
+    background: var(--surface-base);
+    padding: 10px 16px; /* tighter vertical padding for stable height */
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(17, 24, 39, 0.08);
+    border: 1px solid var(--border-subtle);
+    width: 100%; /* ensure full width inside header */
 }
 
 .user-module-left,
@@ -30,27 +27,25 @@
 }
 
 .icon-btn {
-    background: #fff;
-    border: 1px solid #fed7aa;
-    color: #ea580c;
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    color: #0f172a;
     font-size: 16px;
     padding: 0;
-    border-radius: 12px;
-    /* rounded-square tile */
+    border-radius: 12px; /* rounded-square tile */
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    /* consistent tile size */
+    width: 40px; /* consistent tile size */
     height: 40px;
-    box-shadow: inset 0 0 0 0 rgba(0, 0, 0, 0);
+    box-shadow: inset 0 0 0 0 rgba(0,0,0,0);
 }
 
 .icon-btn:hover {
-    background: #ffedd5;
+    background: color-mix(in oklab, var(--role-primary, #3b82f6) 10%, var(--surface-alt));
     transform: translateY(-1px);
 }
 
@@ -58,8 +53,8 @@
     transform: translateY(0);
 }
 
-.notification-btn {
-    position: relative;
+.notification-btn { 
+    position: relative; 
 }
 
 .notification-badge {
@@ -114,7 +109,7 @@
 }
 
 .profile-name {
-    color: #1e293b;
+    color: #0f172a;
     font-weight: 600;
     font-size: 13px;
     letter-spacing: 0.4px;
@@ -142,7 +137,7 @@
 .profile-dropdown-btn {
     background: transparent;
     border: none;
-    color: #475569;
+    color: #0f172a;
     font-size: 16px;
     padding: 6px;
     border-radius: 8px;
@@ -178,7 +173,6 @@
         opacity: 0;
         transform: translateY(-10px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -274,12 +268,10 @@
         transform: scale(1);
         opacity: 1;
     }
-
     50% {
         transform: scale(1.1);
         opacity: .85;
     }
-
     100% {
         transform: scale(1);
         opacity: 1;

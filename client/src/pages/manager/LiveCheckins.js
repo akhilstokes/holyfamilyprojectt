@@ -8,11 +8,14 @@ const LiveCheckins = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // all, on-time, late
   const [viewMode, setViewMode] = useState('table'); // table, grid
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [tick, setTick] = useState(0); // For live duration updates
+
+
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -28,6 +31,7 @@ const LiveCheckins = () => {
       setLoading(false);
     }
   }, [today]);
+
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -86,12 +90,40 @@ const LiveCheckins = () => {
 
   // Duration formatter
   const formatDuration = (ms) => {
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ margin: 0 }}>Live Check-ins</h2>
+        <button onClick={load} disabled={loading}>{loading ? 'Refreshing...' : 'Refresh'}</button>
+      </div>
+      {error && <div style={{ color: 'tomato', marginTop: 8 }}>{error}</div>}
+      <div style={{ marginTop: 12, overflowX: 'auto' }}>
+        <table className="dashboard-table" style={{ minWidth: 640 }}>
+          <thead>
+            <tr>
+              <th>Staff</th>
+              <th>Staff ID</th>
+              <th>Check In</th>
+              <th>Late</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const checkInAt = r.checkInAt ? new Date(r.checkInAt) : null;
+              const duration = checkInAt ? (Date.now() - checkInAt.getTime()) : 0;
+              const fmt = (ms) => {
+
                 const total = Math.floor(ms / 1000);
                 const h = String(Math.floor(total / 3600)).padStart(2, '0');
                 const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
                 const s = String(total % 60).padStart(2, '0');
                 return `${h}:${m}:${s}`;
               };
+
 
   // Get initials for avatar
   const getInitials = (name) => {
@@ -425,10 +457,27 @@ const LiveCheckins = () => {
                       </div>
                     </td>
                   </tr>
+
+              return (
+                <tr key={`${r.staff}-${r.date}`}>
+                  <td>{r.staffName || '-'}</td>
+                  <td>{r.staff || '-'}</td>
+                  <td>{checkInAt ? checkInAt.toLocaleTimeString() : '-'}</td>
+                  <td>{r.isLate ? 'Yes' : 'No'}</td>
+                  <td>{checkInAt ? fmt(duration) : '-'}</td>
+                </tr>
+              );
+            })}
+            {!loading && rows.length === 0 && (
+              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#9aa'}}>
+                No one is currently checked in.
+              </td></tr>
+
             )}
           </tbody>
         </table>
       </div>
+
         </div>
       ) : (
         // Grid/Card View
@@ -585,6 +634,8 @@ const LiveCheckins = () => {
           )}
         </div>
       )}
+
+
     </div>
   );
 };

@@ -93,6 +93,7 @@ exports.assignFieldStaff = async (req, res) => {
     if (!doc) return res.status(404).json({ message: 'Request not found' });
     doc.assignedFieldStaffId = fieldStaffId;
     if (['REQUESTED', 'FIELD_ASSIGNED'].includes(doc.status)) doc.status = 'FIELD_ASSIGNED';
+    if (['REQUESTED','FIELD_ASSIGNED'].includes(doc.status)) doc.status = 'FIELD_ASSIGNED';
     await doc.save();
     return res.json({ success: true, request: doc });
   } catch (e) {
@@ -111,6 +112,7 @@ exports.assignDeliveryStaff = async (req, res) => {
     if (!doc) return res.status(404).json({ message: 'Request not found' });
     doc.assignedDeliveryStaffId = deliveryStaffId;
     if (['COLLECTED', 'DELIVER_ASSIGNED'].includes(doc.status)) doc.status = 'DELIVER_ASSIGNED';
+    if (['COLLECTED','DELIVER_ASSIGNED'].includes(doc.status)) doc.status = 'DELIVER_ASSIGNED';
     await doc.save();
     return res.json({ success: true, request: doc });
   } catch (e) {

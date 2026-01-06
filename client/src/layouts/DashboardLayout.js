@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+
+import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import UserModule from '../components/common/UserModule';
 import './DashboardLayout.css';
 
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const [notificationCount] = useState(1);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        // Menu close logic can be added here if needed
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleLogout = async () => {
     try {

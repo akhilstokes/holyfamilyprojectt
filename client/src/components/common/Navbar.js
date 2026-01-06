@@ -6,12 +6,18 @@ import './Navbar.css';
 const Navbar = () => {
     const { isAuthenticated, logout, user } = useAuth();
     const navigate = useNavigate();
+
     const location = useLocation();
+
+
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
     const [scrolled, setScrolled] = useState(false);
 
+
     const isHome = location.pathname === '/';
+
+
 
     useEffect(() => {
         const handler = (e) => {
@@ -40,6 +46,7 @@ const Navbar = () => {
     };
 
     return (
+
         <nav className={`navbar${scrolled ? ' scrolled' : ''} ${isHome ? 'home-nav' : ''}`}>
             <div className="navbar-container">
                 {/* Logo Section */}

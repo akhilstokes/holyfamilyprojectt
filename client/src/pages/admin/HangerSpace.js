@@ -1,4 +1,8 @@
+
 import React, { useEffect, useMemo, useState } from 'react';
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+
 import './HangerSpace.css';
 import { listHangerSpaces, seedHangerGrid, setHangerSpaceStatus, bulkSetHangerSpaceStatus } from '../../services/adminService';
 
@@ -104,12 +108,20 @@ const HangerSpace = () => {
     }
   };
 
+
   const ensureSeeded = async () => {
+
+  const ensureSeeded = useCallback(async () => {
+
     if (!slots || slots.length === 0) {
       await seedHangerGrid();
       await load();
     }
+
   };
+
+  }, [slots, load]);
+
 
   useEffect(() => { load(); }, []);
   useEffect(() => { ensureSeeded(); /* seed only once if empty */ }, [slots, ensureSeeded]);

@@ -19,6 +19,7 @@ const ManagerDashboardLayout = ({ children }) => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const token = localStorage.getItem('token');
 
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -26,6 +27,7 @@ const ManagerDashboardLayout = ({ children }) => {
       navigate('/login');
     }
   };
+
 
   // Load notifications
   useEffect(() => {
@@ -74,6 +76,7 @@ const ManagerDashboardLayout = ({ children }) => {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
 
   // Close mobile menu on route change
   useEffect(() => {

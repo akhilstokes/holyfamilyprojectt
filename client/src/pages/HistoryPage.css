@@ -1,3 +1,4 @@
+
 /* History Page Styles */
 .history-page {
     min-height: 100vh;
@@ -560,3 +561,43 @@
         font-size: 2rem;
     }
 }
+
+.history-page {
+  padding: 40px;
+  max-width: 900px;
+  margin: 0 auto;
+  color: #1d1d1f; /* dark text on light background */
+}
+.history-page h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #1d1d1f;
+  font-weight: 700;
+}
+
+.timeline {
+  margin-top: 30px;
+  position: relative;
+  padding-left: 20px;
+}
+
+.timeline-item {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.timeline-year {
+  font-weight: bold;
+  color: #ff6b35;
+  width: 80px;
+}
+
+.timeline-content {
+  background: #ffffff;
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  color: #4b5563;
+}
+

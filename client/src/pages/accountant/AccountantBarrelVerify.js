@@ -15,6 +15,7 @@ const AccountantBarrelVerify = () => {
   const confirm = useConfirm();
   const [rate, setRate] = useState({}); // id -> marketRate
 
+
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -26,6 +27,8 @@ const AccountantBarrelVerify = () => {
     totalVolumeKg: '',
     drcPct: ''
   });
+
+
 
   const load = async () => {
     setLoading(true); setError('');
@@ -61,6 +64,7 @@ const AccountantBarrelVerify = () => {
       setError(e?.message || 'Calculate failed');
     }
   };
+
 
   const handleDelete = async (id) => {
     if (!await confirm('Delete Intake', 'Are you sure you want to delete this intake?')) return;
@@ -135,6 +139,16 @@ const AccountantBarrelVerify = () => {
       </div>
       {error && <div style={{ color: 'tomato', marginTop: 8 }}>{error}</div>}
       <div style={{ color: '#6b7280', fontSize: 13, marginTop: 6 }}>
+
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <h2>Delivery Intake / Verify</h2>
+        <button onClick={load} disabled={loading}>{loading ? 'Refreshing...' : 'Refresh'}</button>
+      </div>
+      {error && <div style={{ color:'tomato', marginTop:8 }}>{error}</div>}
+      <div style={{ color:'#6b7280', fontSize: 13, marginTop: 6 }}>
+
         Lab provides DRC% and barrel count. Enter market rate to calculate amount. After calculation, the manager will verify and generate invoice.
       </div>
       <div style={{ marginTop: 12, overflowX: 'auto' }}>
@@ -162,7 +176,11 @@ const AccountantBarrelVerify = () => {
               const totalKg = Number(r.totalVolumeKg || 0);
               const dryKg = Math.round(totalKg * (drc / 100) * 100) / 100;
               const mr = rate[r._id] ?? (r.marketRate ?? '');
+
               const amount = r.amount ? Number(r.amount) : (mr ? Math.round((Number(mr) || 0) * dryKg) : null);
+
+              const amount = r.amount ? Number(r.amount) : (mr ? Math.round((Number(mr)||0) * dryKg) : null);
+
               const perBarrel = r.barrelCount ? (amount ? (amount / Number(r.barrelCount)) : null) : null;
               return (
                 <tr key={r._id}>
@@ -175,26 +193,41 @@ const AccountantBarrelVerify = () => {
                   <td>{isNaN(dryKg) ? '-' : dryKg}</td>
                   <td>
                     <input type="number" step="any" min="0" value={mr}
+
                       onChange={(e) => setRate(prev => ({ ...prev, [r._id]: e.target.value }))}
                       style={{ width: 100 }} placeholder="Rate"
+
+                      onChange={(e)=> setRate(prev => ({ ...prev, [r._id]: e.target.value }))}
+                      style={{ width: 160 }} placeholder="e.g. 145"
+
                     />
                   </td>
                   <td>{amount != null && !isNaN(amount) ? amount : '-'}</td>
                   <td>{perBarrel != null && !isNaN(perBarrel) ? perBarrel.toFixed(2) : '-'}</td>
+
                   <td style={{ display: 'flex', gap: 8 }}>
                     <button className="btn" onClick={() => calculate(r._id)} style={{ padding: '4px 8px', fontSize: 12 }}>Calc</button>
                     <button className="btn" onClick={() => openEdit(r)} style={{ padding: '4px 8px', fontSize: 12, background: '#64748b' }}>Edit</button>
                     <button className="btn" onClick={() => handleDelete(r._id)} style={{ padding: '4px 8px', fontSize: 12, background: '#ef4444' }}>Del</button>
+
+                  <td>
+                    <button className="btn" onClick={() => calculate(r._id)}>Calculate</button>
+
                   </td>
                 </tr>
               );
             })}
             {rows.length === 0 && !loading && (
+
               <tr><td colSpan={11} style={{ textAlign: 'center', color: '#6b7280' }}>No pending intakes.</td></tr>
+
+              <tr><td colSpan={7} style={{ textAlign:'center', color:'#6b7280' }}>No pending intakes.</td></tr>
+
             )}
           </tbody>
         </table>
       </div>
+
 
       {showModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
@@ -231,6 +264,8 @@ const AccountantBarrelVerify = () => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 };

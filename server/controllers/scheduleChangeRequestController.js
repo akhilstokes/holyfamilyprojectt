@@ -2,7 +2,7 @@ const ScheduleChangeRequest = require('../models/scheduleChangeRequestModel');
 const WeeklyShiftSchedule = require('../models/weeklyShiftScheduleModel');
 const User = require('../models/userModel');
 
-// =================== STAFF SCHEDULE CHANGE REQUESTS ===================
+// ===== STAFF SCHEDULE CHANGE REQUESTS =====
 
 // Create a new schedule change request
 exports.createScheduleChangeRequest = async (req, res) => {
@@ -161,7 +161,7 @@ exports.deleteScheduleChangeRequest = async (req, res) => {
   }
 };
 
-// =================== MANAGER/ADMIN SCHEDULE CHANGE REQUEST MANAGEMENT ===================
+// ===== MANAGER/ADMIN SCHEDULE CHANGE REQUEST MANAGEMENT =====
 
 // Get all schedule change requests (for managers/admins)
 exports.getAllScheduleChangeRequests = async (req, res) => {

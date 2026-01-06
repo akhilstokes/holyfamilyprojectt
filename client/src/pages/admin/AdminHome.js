@@ -27,6 +27,7 @@ const Section = ({ title, children }) => (
 const AdminHome = () => {
   return (
     <div>
+
       {/* Quick Action Button */}
       <div style={{ marginBottom: 24, textAlign: 'right' }}>
         <Link 
@@ -110,6 +111,22 @@ const AdminHome = () => {
           to="/admin/overview" 
           action="System View" 
         />
+      </Section>
+
+      <Section title="Manager">
+        <Card title="Create Barrel" desc="Create barrel IDs and print QR" to="/admin/create-barrel" action="Open" />
+        <Card title="Approve Barrel" desc="Approve purchase by ID" to="/admin/create-barrel" action="Go" />
+        <Card title="Barrel History" desc="View movement logs" to="/manager/barrel-history" action="View" />
+        <Card title="Scan Barrel" desc="Scan and verify" to="/manager/barrel-scan" action="Scan" />
+      </Section>
+
+      <Section title="Staff Modules">
+        <Card title="Staff Scan" desc="Field/Staff scanner" to="/staff/barrel-scan" action="Scan" />
+        <Card title="Staff Barrel History" desc="Lookup movement logs" to="/staff/barrel-history" action="View" />
+        <Card title="Delivery Scan" desc="Delivery staff scanning" to="/delivery/barrel-scan" action="Scan" />
+        <Card title="Accountant Billing" desc="Payments and billing" to="/accountant/payments" action="Open" />
+        <Card title="Lab DRC" desc="Enter/compute DRC" to="/lab/drc-update" action="Open" />
+
       </Section>
     </div>
   );

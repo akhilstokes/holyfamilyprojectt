@@ -448,9 +448,9 @@ const testEndpoint = async (req, res) => {
 
 // Note: Export ALL handlers together to avoid undefined destructures in routes
 
-// =====================
+// 
 // Workflow Controllers
-// =====================
+// 
 
 // PUT /api/latex/collect/:id
 // Mark request as collected at yard

@@ -24,6 +24,7 @@ export default function UserLiveRate() {
     return { official: isNaN(official) ? null : official, company: isNaN(company) ? null : company, date };
   };
 
+
   // Calculate effective rate based on DRC
   const calculateEffectiveRate = () => {
     if (!rate || !drc) return null;
@@ -41,6 +42,8 @@ export default function UserLiveRate() {
   };
 
   const effective = calculateEffectiveRate();
+
+
 
   const reloadLatest = () => {
     setLoadingLatest(true);
@@ -113,9 +116,18 @@ export default function UserLiveRate() {
         <div style={{ marginBottom: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>Category: LATEX60</div>
 
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
               <span style={{ color: '#334155', fontWeight: 600 }}>Effectve Price Calculator (DRC %)</span>
+            </label>
+          </div>
+
+          {/* Optional DRC input (calculator buttons removed) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <span style={{ color: '#334155', fontWeight: 600 }}>DRC (%)</span>
+
               <input
                 type="number"
                 min={0}
@@ -123,6 +135,7 @@ export default function UserLiveRate() {
                 step="0.01"
                 value={drc}
                 onChange={(e) => setDrc(e.target.value)}
+
                 placeholder="Enter DRC"
                 style={{ width: 100, padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
               />
@@ -141,6 +154,7 @@ export default function UserLiveRate() {
                 </div>
               </div>
             )}
+
           </div>
         </div>
 

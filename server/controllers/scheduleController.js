@@ -124,6 +124,7 @@ exports.getByWeek = async (req, res) => {
         eveningEnd: '22:00'
       });
     }
+    
     res.json(doc);
   } catch (e) { res.status(500).json({ message: e.message }); }
 };

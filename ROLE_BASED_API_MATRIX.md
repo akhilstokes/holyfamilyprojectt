@@ -229,3 +229,7 @@ This document maps user roles to their available API endpoints and capabilities 
 
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 3c894b97a18da6093adca71085bcfa17543eb1e5

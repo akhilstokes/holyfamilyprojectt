@@ -5,6 +5,7 @@ const wagesController = require('../controllers/wagesController');
 
 // All routes require authentication
 router.use(protect);
+
 // Note: Rate limiting temporarily disabled to prevent 429 errors during development
 // router.use(wagesRateLimiter);
 

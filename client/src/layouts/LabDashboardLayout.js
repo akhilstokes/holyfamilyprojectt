@@ -17,6 +17,7 @@ const LabDashboardLayout = ({ children }) => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const token = localStorage.getItem('token');
 
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -25,6 +26,7 @@ const LabDashboardLayout = ({ children }) => {
       navigate('/login');
     }
   };
+
 
   // Load notifications
   useEffect(() => {
@@ -73,6 +75,7 @@ const LabDashboardLayout = ({ children }) => {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
 
   const navigationItems = [
     { path: '/lab/dashboard', icon: 'fas fa-chart-line', label: 'Overview', category: 'main' },

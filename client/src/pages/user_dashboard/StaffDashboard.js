@@ -1,11 +1,14 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import './StaffDashboard.css';
+
 
 export default function StaffDashboard() {
   const [data, setData] = useState({ worker: null, attendance: null, route: null });
   const [shiftSchedule, setShiftSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
 
   const token = localStorage.getItem('token');
   const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -24,6 +27,7 @@ export default function StaffDashboard() {
     try {
       setLoading(true);
       setError('');
+
       const res = await fetch(`${apiBase}/api/workers/field/dashboard`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -67,6 +71,7 @@ export default function StaffDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
   const action = async (type) => {
     try {
       const url = type === 'in' ? '/api/workers/field/attendance/check-in' : '/api/workers/field/attendance/check-out';
@@ -78,6 +83,7 @@ export default function StaffDashboard() {
       alert(e.message || 'Failed');
     }
   };
+
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">Error: {error}</div>;

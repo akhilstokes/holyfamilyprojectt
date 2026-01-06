@@ -1,0 +1,8 @@
+{
+  "short_name": "Holy Family Polymers",
+  "name": "Holy Family Polymers Management System",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

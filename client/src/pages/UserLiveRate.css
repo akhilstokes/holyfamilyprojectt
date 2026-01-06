@@ -17,6 +17,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 4px 18px rgba(17, 24, 39, 0.06);
+
 }
 
 /* Rates table */
@@ -54,13 +55,18 @@
 }
 
 /* Category label */
+
 .user-rate-history .dash-card>div:first-child {
+
+.user-rate-history .dash-card > div:first-child {
+
   color: #334155;
 }
 
 /* Responsive */
 @media (max-width: 640px) {
   .rates-table thead {
+
     display: none;
     /* mobile-friendly stacked rows */
   }
@@ -73,6 +79,14 @@
     width: 100%;
   }
 
+
+    display: none; /* mobile-friendly stacked rows */
+  }
+  .rates-table, .rates-table tbody, .rates-table tr, .rates-table td {
+    display: block;
+    width: 100%;
+  }
+
   .rates-table tr {
     margin-bottom: 10px;
     border: 1px solid #e5e7eb;
@@ -80,11 +94,15 @@
     overflow: hidden;
   }
 
+
+
+
   .rates-table td {
     display: grid;
     grid-template-columns: 140px 1fr;
     gap: 8px;
   }
+
 
   /* For 3-column table (Live latest): Date | Official Market Rate (INR) | Company Buying Rate */
   .rates-table td:nth-child(1)::before {
@@ -152,3 +170,4 @@
     transform: translateY(0);
   }
 }
+

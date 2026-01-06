@@ -14,6 +14,7 @@ const Notifications = () => {
       try {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         const res = await axios.get(`${API}/api/notifications`, { headers });
         const data = res.data;
         const list = Array.isArray(data?.notifications) ? data.notifications : (Array.isArray(data) ? data : []);
@@ -53,6 +54,15 @@ const Notifications = () => {
       } catch (e) {
         console.error('Error loading notifications:', e);
         setItems([]);
+
+        const res = await axios.get(`${API}/api/users/notifications`, { headers });
+        setItems(Array.isArray(res.data) ? res.data : (res.data?.notifications || []));
+      } catch (e) {
+        setItems([
+          { id: 'n1', title: 'Welcome to HFP', message: 'Your account is ready.', createdAt: new Date().toISOString(), read: false },
+          { id: 'n2', title: 'Rate Update', message: 'New live rate is available.', createdAt: new Date().toISOString(), read: false },
+        ]);
+
       } finally {
         setLoading(false);
       }
@@ -67,6 +77,7 @@ const Notifications = () => {
 
   const markAsRead = async (id) => {
     // optimistic
+
     setItems(prev => prev.map(n => (n._id === id || n.id === id) ? { ...n, read: true } : n));
     try {
       const token = localStorage.getItem('token');
@@ -76,6 +87,14 @@ const Notifications = () => {
     } catch (e) {
       // rollback on failure
       setItems(prev => prev.map(n => (n._id === id || n.id === id) ? { ...n, read: false } : n));
+
+    setItems(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    try {
+      await axios.post(`${API}/api/users/notifications/${id}/read`, {}, { headers: tokenHeaders() });
+    } catch (e) {
+      // rollback on failure
+      setItems(prev => prev.map(n => n.id === id ? { ...n, read: false } : n));
+
     }
   };
 
@@ -83,11 +102,16 @@ const Notifications = () => {
     const backup = items;
     setItems([]);
     try {
+
       await axios.post(`${API}/api/notifications/clear`, {}, { headers: tokenHeaders() });
+
+      await axios.post(`${API}/api/users/notifications/clear`, {}, { headers: tokenHeaders() });
+
     } catch (e) {
       setItems(backup);
     }
   };
+
 
   // Format notification metadata in a user-friendly way
   const formatMetadata = (meta) => {
@@ -156,12 +180,23 @@ const Notifications = () => {
           <button className="btn-clear" onClick={clearAll} disabled={items.length === 0}>
             Clear All
           </button>
+
+  if (loading) return <p>Loading notifications...</p>;
+
+  return (
+    <div className="notif-container">
+      <div className="notif-head">
+        <h2>Notifications</h2>
+        <div className="notif-actions">
+          <button className="btn-secondary" onClick={clearAll} disabled={items.length === 0}>Clear all</button>
+
         </div>
       </div>
 
       {error && <div className="alert error">{error}</div>}
 
       {items.length === 0 ? (
+
         <div className="empty-state">
           <div className="empty-icon">🔔</div>
           <p className="empty-text">No notifications at the moment</p>
@@ -211,6 +246,23 @@ const Notifications = () => {
                   </button>
                 )}
               </div>
+
+        <div className="notif-empty">No notifications</div>
+      ) : (
+        <div className="notif-grid">
+          {items.map((n) => (
+            <div key={n.id} className={`notif-card ${n.read ? 'read' : ''}`}>
+              <div className="notif-card-head">
+                <div className="notif-title">{n.title || 'Notification'}</div>
+                {!n.read && (
+                  <button className="btn-mark" onClick={() => markAsRead(n.id)} title="Mark as read">
+                    <i className="fas fa-check"></i>
+                  </button>
+                )}
+              </div>
+              <div className="notif-message">{n.message}</div>
+              <div className="notif-meta">{new Date(n.createdAt || Date.now()).toLocaleString()}</div>
+
             </div>
           ))}
         </div>

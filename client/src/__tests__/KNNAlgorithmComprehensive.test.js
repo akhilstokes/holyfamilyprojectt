@@ -50,7 +50,7 @@ describe('KNN Algorithm Comprehensive Tests', () => {
     testResults.details.forEach(result => {
       console.log(`${result.status}: ${result.test}${result.error ? ` - ${result.error}` : ''}`);
     });
-    console.log('===============================================\n');
+    console.log('=====\n');
   });
 
   describe('1. Basic KNN Algorithm Tests', () => {

@@ -1,4 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
+
+import React, { useCallback, useEffect, useState } from 'react';
+
 import { 
   getAllStaffRecords, 
   deleteStaffRecord, 
@@ -18,7 +22,11 @@ const StaffRecordManagement = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [deleteReason, setDeleteReason] = useState('');
 
+
   const loadStaffRecords = async () => {
+
+  const loadStaffRecords = useCallback(async () => {
+
     setLoading(true);
     setError('');
     try {
@@ -32,11 +40,19 @@ const StaffRecordManagement = () => {
     } finally {
       setLoading(false);
     }
+
   };
 
   useEffect(() => {
     loadStaffRecords();
   }, [filter]);
+
+  }, [filter]);
+
+  useEffect(() => {
+    loadStaffRecords();
+  }, [loadStaffRecords]);
+
 
   const handleDelete = async () => {
     if (!selectedRecord) return;
@@ -315,6 +331,10 @@ const StaffRecordManagement = () => {
 };
 
 export default StaffRecordManagement;
+
+
+
+
 
 
 

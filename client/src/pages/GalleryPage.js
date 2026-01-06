@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
@@ -257,3 +258,4 @@ const GalleryPage = () => {
 };
 
 export default GalleryPage;
+

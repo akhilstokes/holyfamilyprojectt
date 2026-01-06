@@ -94,7 +94,7 @@ exports.updateItem = async (req, res) => {
   }
 };
 
-// ============ CRUD for manager verification ============
+// ===== CRUD for manager verification =====
 // List all stock items
 exports.listItems = async (req, res) => {
   try {

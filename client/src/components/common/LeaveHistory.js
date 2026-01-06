@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
+
 import { formatDate, formatTableDateTime } from '../../utils/dateUtils';
+
+
 
 const LeaveHistory = ({ staffType = 'staff' }) => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -122,7 +125,37 @@ const LeaveHistory = ({ staffType = 'staff' }) => {
     );
   };
 
+
   // Using centralized date formatting utilities
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      return new Date(dateString).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return '-';
+    }
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      return new Date(dateString).toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '-';
+    }
+  };
+
 
   const calculateDays = (startDate, endDate) => {
     if (!startDate || !endDate) return '-';
@@ -337,6 +370,10 @@ const LeaveHistory = ({ staffType = 'staff' }) => {
 };
 
 export default LeaveHistory;
+
+
+
+
 
 
 

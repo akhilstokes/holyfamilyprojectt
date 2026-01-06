@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { validateBarrelForm } from '../../utils/adminValidations';
 
+
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+
 
 function AdminCreateBarrel() {
   const navigate = useNavigate();
@@ -27,8 +30,11 @@ function AdminCreateBarrel() {
   const [activeTab, setActiveTab] = useState('create'); // 'create' | 'approve'
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [managerRequests, setManagerRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+
+
 
   // Validate form on change
   useEffect(() => {
@@ -37,6 +43,7 @@ function AdminCreateBarrel() {
       setFormErrors(newErrors);
     }
   }, [form]);
+
 
   // Load manager requests
   const loadManagerRequests = async () => {
@@ -63,6 +70,8 @@ function AdminCreateBarrel() {
     loadManagerRequests();
   }, []);
 
+
+
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({
@@ -86,6 +95,7 @@ function AdminCreateBarrel() {
     setForm(prev => ({ ...prev, barrelId: id }));
   };
 
+
   const markRequestAsInProgress = async (requestId) => {
     try {
       const res = await fetch(`/api/barrel-creation-requests/${requestId}`, {
@@ -103,6 +113,8 @@ function AdminCreateBarrel() {
       console.error('Failed to update request:', e);
     }
   };
+
+
 
   const submit = async (e) => {
     e.preventDefault();
@@ -133,7 +145,11 @@ function AdminCreateBarrel() {
         unit: form.unit || 'L',
       };
       
+
       const res = await fetch(`${API}/api/barrels`, {
+
+      const res = await fetch('/api/barrels', {
+
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
@@ -178,6 +194,7 @@ function AdminCreateBarrel() {
   return (
     <div className="card" style={{ maxWidth: 860, margin: '0 auto' }}>
       <div className="card-body">
+
         {/* Manager Barrel Requests */}
         {managerRequests.length > 0 && (
           <div style={{ 
@@ -249,6 +266,8 @@ function AdminCreateBarrel() {
           </div>
         )}
 
+
+
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <button type="button" className={`btn ${activeTab === 'create' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('create')}>Create Barrel</button>
@@ -272,7 +291,11 @@ function AdminCreateBarrel() {
                   if (!/^BHFP\d{2}$/i.test(id)) { setActionMsg('Invalid ID. Use format BHFP01'); return; }
                   setActionMsg(''); setActionLoading(true);
                   try {
+
                     const res = await fetch(`${API}/api/barrel-logistics/approve/purchase`, {
+
+                    const res = await fetch('/api/barrel-logistics/approve/purchase', {
+
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : undefined },
                       body: JSON.stringify({ barrelId: id }),

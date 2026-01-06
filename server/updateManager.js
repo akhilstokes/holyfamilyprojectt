@@ -49,7 +49,7 @@ const updateManagerCredentials = async () => {
     console.log('\n=== Manager Credentials Updated Successfully ===');
     console.log('Email: Manger@xyz.com');
     console.log('Password: Manger@123');
-    console.log('============================================\n');
+    console.log('==\n');
     
   } catch (error) {
     console.error('Error updating manager credentials:', error);

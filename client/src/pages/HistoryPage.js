@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Link } from 'react-router-dom';
 import './HistoryPage.css';
 
@@ -336,3 +337,4 @@ const HistoryPage = () => {
 };
 
 export default HistoryPage;
+

@@ -39,7 +39,10 @@ const DeliveryLeave = () => {
     try {
       const res = await fetch(`${API}/api/leave/my-leaves`, { headers: authHeaders() });
       if (!res.ok) {
+
         const text = await res.text();
+
+
         if (res.status === 404) {
           setError('Leave history is not available yet.');
           setList([]);
@@ -93,10 +96,16 @@ const DeliveryLeave = () => {
       };
       const res = await fetch(`${API}/api/leave/apply`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(payload) });
       if (!res.ok) {
+
         const text = await res.text();
         if (res.status === 404) { setError('Leave application is not available yet.'); return; }
         if (res.status === 500) { setError('Unable to submit leave right now (server error). Please try again later.'); return; }
         throw new Error(`Apply failed (${res.status}) ${text.slice(0,80)}`);
+
+        if (res.status === 404) { setError('Leave application is not available yet.'); return; }
+        if (res.status === 500) { setError('Unable to submit leave right now (server error). Please try again later.'); return; }
+        throw new Error(`Apply failed (${res.status})`);
+
       }
       setForm({ from: '', to: '', type: 'casual', dayType: 'full', reason: '' });
       await load();

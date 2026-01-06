@@ -12,7 +12,7 @@ const {
 // Apply rate limiting to all routes
 router.use(rateLimiter());
 
-// ==================== BARREL TRACKING ROUTES ====================
+// ====== BARREL TRACKING ROUTES ======
 
 // Update barrel weights with lumb detection (Lab only)
 router.put('/barrels/:barrelId/weights',
@@ -47,7 +47,7 @@ router.get('/barrels/:barrelId/tracking',
     BarrelTrackingController.getTrackingStatus
 );
 
-// ==================== AUDIT LOG ROUTES ====================
+// ====== AUDIT LOG ROUTES ======
 
 // Log audit entry (System only)
 router.post('/audit/log',
@@ -70,7 +70,7 @@ router.get('/audit/export',
     AuditLogController.exportLogs
 );
 
-// ==================== NOTIFICATION ROUTES ====================
+// ====== NOTIFICATION ROUTES ======
 
 // Send notification (System, Admin)
 router.post('/notifications/send',
@@ -97,7 +97,7 @@ router.put('/notifications/mark-all-read',
     NotificationController.markAllAsRead
 );
 
-// ==================== DASHBOARD ROUTES ====================
+// ====== DASHBOARD ROUTES ======
 
 // Admin dashboard (Admin only)
 router.get('/dashboard/admin',
@@ -141,7 +141,7 @@ router.get('/dashboard/customer',
     DashboardController.getCustomerDashboard
 );
 
-// ==================== ENHANCED BARREL ROUTES ====================
+// ====== ENHANCED BARREL ROUTES ======
 
 // Create barrel with enhanced validation (Admin, Manager)
 router.post('/barrels',
@@ -207,7 +207,7 @@ router.get('/barrels/stats',
     }
 );
 
-// ==================== ENHANCED ATTENDANCE ROUTES ====================
+// ====== ENHANCED ATTENDANCE ROUTES ======
 
 // GPS-based check-in (Field Staff, Labour)
 router.post('/attendance/check-in',
@@ -308,7 +308,7 @@ router.post('/attendance/:id/verify',
     }
 );
 
-// ==================== ENHANCED LEAVE ROUTES ====================
+// ====== ENHANCED LEAVE ROUTES ======
 
 // Apply for leave (Labour only)
 router.post('/leaves/apply',
@@ -369,7 +369,7 @@ router.post('/leaves/:id/approve',
     }
 );
 
-// ==================== ENHANCED STOCK ROUTES ====================
+// ====== ENHANCED STOCK ROUTES ======
 
 // Update stock with enhanced validation (Admin, Manager, Lab)
 router.put('/stock/:name',
@@ -415,7 +415,7 @@ router.put('/stock/:name',
     }
 );
 
-// ==================== REPAIR WORKFLOW ROUTES ====================
+// ====== REPAIR WORKFLOW ROUTES ======
 
 // Open repair job (Lab, Field Staff)
 router.post('/repairs/open',

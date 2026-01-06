@@ -109,7 +109,10 @@ export const getRequests = async (params = {}) => {
       _id: b._id,
       createdAt: b.createdAt,
       type: 'BARREL',
+
       quantity: b.quantity,
+
+
       notes: b.notes,
       status: b.status || 'pending',
     })),

@@ -1,3 +1,4 @@
+
 /* Modern Admin Dashboard Layout */
 .admin-dashboard-container {
   display: flex;
@@ -477,3 +478,77 @@
   justify-content: center;
   padding: 12px;
 }
+
+/* Basic admin dashboard layout styling */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--surface-base);
+  color: var(--text-default);
+}
+.admin-sidebar {
+  width: 260px;
+  background: var(--navy-850);
+  border-right: 1px solid var(--slate-800);
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+.admin-brand span { color: var(--slate-100); }
+.admin-brand img {
+  width: 36px;
+  height: 36px;
+}
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-link {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--slate-200);
+  text-decoration: none;
+}
+.admin-link.active,
+.admin-link:hover {
+  background: var(--role-primary);
+  color: #ffffff;
+}
+.admin-content {
+  flex: 1;
+  padding: 24px;
+}
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* Sign out button */
+.admin-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--role-primary), var(--role-secondary));
+  color: var(--navy-900);
+  border: 1px solid var(--role-primary);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 14px color-mix(in oklab, var(--role-primary) 28%, transparent);
+}
+.admin-signout:hover { filter: brightness(1.05); }
+.admin-signout i { font-size: 0.95rem; }
+

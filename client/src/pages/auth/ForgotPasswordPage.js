@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import './AuthStyles.css';
+
 import './ButtonFix.css';
+
+
 
 const ForgotPasswordPage = () => {
     const [email, setEmail] = useState('');
@@ -30,6 +33,7 @@ const ForgotPasswordPage = () => {
     };
 
     return (
+
         <div className="modern-auth-wrapper">
             <div className="auth-container">
                 {/* Background Elements */}

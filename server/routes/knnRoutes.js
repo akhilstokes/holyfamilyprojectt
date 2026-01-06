@@ -16,6 +16,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
  * @access  Private (Manager, Admin)
  */
 router.post('/predict-price', protect, authorize('manager', 'admin'), predictPrice);
+router.post('/predict-price', protect, authorize(['manager', 'admin']), predictPrice);
 
 /**
  * @route   POST /api/knn/classify-quality
@@ -30,6 +31,7 @@ router.post('/classify-quality', protect, authorize('lab', 'lab_staff', 'lab_man
  * @access  Private (Manager, Admin)
  */
 router.post('/forecast-demand', protect, authorize('manager', 'admin'), forecastDemand);
+router.post('/forecast-demand', protect, authorize(['manager', 'admin']), forecastDemand);
 
 /**
  * @route   POST /api/knn/segment-customer/:userId
@@ -37,6 +39,7 @@ router.post('/forecast-demand', protect, authorize('manager', 'admin'), forecast
  * @access  Private (Manager, Admin)
  */
 router.post('/segment-customer/:userId', protect, authorize('manager', 'admin'), segmentCustomer);
+router.post('/segment-customer/:userId', protect, authorize(['manager', 'admin']), segmentCustomer);
 
 /**
  * @route   POST /api/knn/detect-anomaly
@@ -44,6 +47,7 @@ router.post('/segment-customer/:userId', protect, authorize('manager', 'admin'),
  * @access  Private (Admin)
  */
 router.post('/detect-anomaly', protect, authorize('admin'), detectAnomaly);
+router.post('/detect-anomaly', protect, authorize(['admin']), detectAnomaly);
 
 /**
  * @route   GET /api/knn/metrics/:modelType
@@ -51,6 +55,7 @@ router.post('/detect-anomaly', protect, authorize('admin'), detectAnomaly);
  * @access  Private (Admin)
  */
 router.get('/metrics/:modelType', protect, authorize('admin'), getModelMetrics);
+router.get('/metrics/:modelType', protect, authorize(['admin']), getModelMetrics);
 
 module.exports = router;
 

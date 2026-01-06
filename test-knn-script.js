@@ -138,7 +138,7 @@ const runAllTests = () => {
   });
   
   console.log('📊 TEST RESULTS SUMMARY');
-  console.log('======================');
+  console.log('=');
   console.log(`Total Tests: ${passed + failed}`);
   console.log(`✅ Passed: ${passed}`);
   console.log(`❌ Failed: ${failed}`);
@@ -156,7 +156,7 @@ runAllTests();
 
 // API Testing Instructions
 console.log('\n🌐 API Testing Instructions');
-console.log('==========================');
+console.log('=====');
 console.log('1. Start the backend server: cd server && npm start');
 console.log('2. Start the frontend: cd client && npm start');
 console.log('3. Open browser to: http://localhost:3000');

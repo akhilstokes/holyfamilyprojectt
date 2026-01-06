@@ -548,6 +548,7 @@ const AdminStaff = () => {
         </div>
       </div>
 
+
       <div style={{ 
         marginTop: 24,
         padding: '20px',
@@ -565,6 +566,9 @@ const AdminStaff = () => {
           gap: 16, 
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))'
         }}>
+
+      <form onSubmit={onInviteSubmit} style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', marginTop: 12 }}>
+
         <div>
           <label>Name *</label><br />
           <input 
@@ -578,6 +582,65 @@ const AdminStaff = () => {
           {validationErrors.name && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{validationErrors.name}</div>}
         </div>
         <div>
+
+
+          <label>Role *</label><br />
+          <select
+            value={form.role}
+            onChange={(e)=>setForm({ ...form, role: e.target.value })}
+            required
+            style={{ width:'100%', borderColor: validationErrors.role ? '#dc3545' : '' }}
+          >
+            <option value="field">Field Staff</option>
+            <option value="lab">Lab Staff</option>
+            <option value="delivery">Delivery Staff</option>
+            <option value="accountant">Accountant</option>
+            <option value="manager">Manager</option>
+          </select>
+          {validationErrors.role && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{validationErrors.role}</div>}
+        </div>
+        <div>
+          <label>
+            {(() => {
+              if (form.role === 'delivery') return 'Staff ID (e.g., STF-2025-005) *';
+              if (form.role === 'accountant') return 'Staff ID (e.g., ACC01) *';
+              if (form.role === 'manager') return 'Staff ID (e.g., MGR01) *';
+              return 'Staff ID (HFP01) *';
+            })()}
+          </label><br />
+          <div style={{ display:'flex', gap:8 }}>
+            <input 
+              type="text"
+              value={form.staffId}
+              onChange={(e)=>setForm({ ...form, staffId: noSpaces(e.target.value.toUpperCase()) })}
+              placeholder={form.role === 'delivery' ? 'STF-2025-005' : (form.role === 'accountant' ? 'ACC01' : (form.role === 'manager' ? 'MGR01' : 'HFP01'))}
+              required
+              maxLength={form.role === 'delivery' ? 13 : 5}
+              style={{ flex:1, borderColor: validationErrors.staffId ? '#dc3545' : '' }}
+              onKeyDown={(e)=>{ if (e.key === ' ') e.preventDefault(); }}
+            />
+            {form.role !== 'delivery' && (
+              <button type="button" className="btn btn-outline" onClick={()=>{
+                // Generate next available ID by role prefix
+                const prefix = form.role === 'accountant' ? 'ACC' : (form.role === 'manager' ? 'MGR' : 'HFP');
+                const all = [...rows, ...staffUsers];
+                let max = 0;
+                all.forEach(u=>{
+                  const sid = (u.staffId || u.staff_id || '').toString();
+                  const up = sid.toUpperCase();
+                  const m = up.startsWith(prefix) ? up.slice(prefix.length).match(/^(\d{2})$/) : null;
+                  if (m) { const num = parseInt(m[1],10); if (!Number.isNaN(num)) max = Math.max(max, num); }
+                });
+                const next = Math.min(99, max + 1);
+                const nextId = `${prefix}${String(next).padStart(2,'0')}`;
+                setForm(f=>({ ...f, staffId: nextId }));
+              }}>Generate</button>
+            )}
+          </div>
+          {validationErrors.staffId && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{validationErrors.staffId}</div>}
+        </div>
+        <div>
+
           <label>Email *</label><br />
           <input 
             type="email" 
@@ -612,6 +675,7 @@ const AdminStaff = () => {
           />
           {validationErrors.phone && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{validationErrors.phone}</div>}
         </div>
+
         <div>
           <label>Role *</label><br />
           <select
@@ -695,6 +759,8 @@ const AdminStaff = () => {
           </div>
           {validationErrors.staffId && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>{validationErrors.staffId}</div>}
         </div>
+
+
         <div style={{ gridColumn: '1 / -1' }}>
           <label>Address *</label><br />
           <textarea 
@@ -713,7 +779,10 @@ const AdminStaff = () => {
           </button>
         </div>
       </form>
+
       </div>
+
+
 
       {/* Confirmation Modal */}
       {showConfirmation && (

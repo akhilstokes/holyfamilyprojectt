@@ -74,7 +74,7 @@ describe('RegisterPage Comprehensive Tests', () => {
     testResults.details.forEach(result => {
       console.log(`${result.status}: ${result.test}${result.error ? ` - ${result.error}` : ''}`);
     });
-    console.log('================================================\n');
+    console.log('======\n');
   });
 
   const renderRegisterPage = () => {

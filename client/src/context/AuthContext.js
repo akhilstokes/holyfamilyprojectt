@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setToken(null);
       saveAuth(null);
+      return null;
     }
   }, [apiBase, token, saveAuth]);
 

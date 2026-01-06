@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
 import './AuthStyles.css';
+
 import './ButtonFix.css';
 import {
   cleanPhoneNumber,

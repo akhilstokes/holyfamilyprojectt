@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { listDailyWageWorkers, calcMonthlySalary, getSalarySummary } from '../../services/accountantService';
+
 import './AccountantWages.css';
+
+
 
 export default function AccountantWages() {
   const [workers, setWorkers] = useState([]);
@@ -9,7 +12,10 @@ export default function AccountantWages() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [selected, setSelected] = useState(null);
   const [result, setResult] = useState(null);
+
   const [calculating, setCalculating] = useState(false);
+
+
 
   const loadWorkers = async () => {
     setLoading(true);
@@ -30,6 +36,7 @@ export default function AccountantWages() {
     setResult(null);
     const ok = window.confirm(`Auto-calculate wages for ${w.name}?`);
     if (!ok) return;
+
 
     setCalculating(true);
     try {

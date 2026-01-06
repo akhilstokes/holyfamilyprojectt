@@ -90,25 +90,3 @@ activityLogSchema.index({ entityType: 1, entityId: 1 });
 activityLogSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('ActivityLog', activityLogSchema);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

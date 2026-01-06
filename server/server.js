@@ -13,7 +13,7 @@ dotenv.config();
 
 const app = express();
 
-// ✅ CORS Setup: Allow React frontend and Vercel deployment
+// ✅ CORS Setup: Allow React frontend, Vercel, and Render deployments
 const allowedOrigins = [
     'http://localhost:3000', 
     'http://localhost:3001',
@@ -21,8 +21,10 @@ const allowedOrigins = [
     'http://127.0.0.1:3000',
     'http://127.0.0.1:5000',
     'https://holyfamilyprojectt.vercel.app',
-    'https://holyfamilyprojectt-b486fa3gw-akhilstokes-projects.vercel.app'
-];
+    'https://holyfamilyprojectt-b486fa3gw-akhilstokes-projects.vercel.app',
+    'https://holy-family-polymers-frontend.onrender.com',
+    process.env.FRONTEND_URL // Dynamic frontend URL from env
+].filter(Boolean);
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -240,7 +242,7 @@ const seedLabStaff = async () => {
 };
 
 // Start the server only after DB connection is established
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const http = require('http');
 const setupWebSocketServer = require('./websocketServer');
 

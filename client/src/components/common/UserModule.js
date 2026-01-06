@@ -80,6 +80,7 @@ const UserModule = ({ showIcons = true, showProfile = true, showLogout = true })
                                         <i className="fas fa-eye"></i>
                                         <span>View Profile</span>
                                     </NavLink>
+
                                     <NavLink
                                         to="/user/profile"
                                         className="dropdown-item"

@@ -288,7 +288,7 @@ class QualityClassificationKNN extends KNNAlgorithm {
 
   /**
    * Train model for quality classification
-   * Features: [drc_percentage, moisture_content, impurities, color_score]
+   * Features: [drc_percentage, moisture_content, impurities, color_score, viscosity]
    * Labels: quality categories (A, B, C, D)
    */
   trainQualityModel(qualityData) {
@@ -296,7 +296,8 @@ class QualityClassificationKNN extends KNNAlgorithm {
       record.drcPercentage || 0,
       record.moistureContent || 0,
       record.impurities || 0,
-      record.colorScore || 0
+      record.colorScore || 0,
+      record.viscosity || 0
     ]);
     
     const labels = qualityData.map(record => record.qualityGrade);
@@ -307,8 +308,8 @@ class QualityClassificationKNN extends KNNAlgorithm {
   /**
    * Classify quality of new sample
    */
-  classifyQuality(drcPercentage, moistureContent, impurities, colorScore) {
-    const testPoint = [drcPercentage, moistureContent, impurities, colorScore];
+  classifyQuality(drcPercentage, moistureContent, impurities, colorScore, viscosity) {
+    const testPoint = [drcPercentage, moistureContent, impurities, colorScore, viscosity];
     return this.predict(testPoint);
   }
 }

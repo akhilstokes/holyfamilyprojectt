@@ -1,19 +1,31 @@
 /* === About Header Section — Minimal Clean === */
 .about-header {
     background: transparent;
+
     color: var(--text-dark, #1f2937);
     text-align: center;
     padding: 120px 2rem 2.75rem;
     border-bottom: 1px solid var(--border-color, #e5e7eb);
+
+    color: #1d1d1f; /* dark text on light background */
+    text-align: center;
+    padding: 3.5rem 2rem 2.75rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+
 }
 
 .about-header h1 {
     font-size: 2.6rem;
     font-weight: 700;
     margin-bottom: 0.75rem;
+
     color: var(--text-dark, #1f2937);
     position: relative;
     font-family: var(--font-secondary, 'Roboto', sans-serif);
+
+    color: #1d1d1f;
+    position: relative;
+
 }
 
 .about-header h1::after {
@@ -25,7 +37,11 @@
     width: 88px;
     height: 3px;
     border-radius: 3px;
+
     background: linear-gradient(90deg, var(--primary-blue, #2563eb), var(--primary-blue-light, #3b82f6));
+
+    background: linear-gradient(90deg, #ff6b35, #ff9f66);
+
 }
 
 .about-header p {
@@ -33,8 +49,12 @@
     font-weight: 400;
     max-width: 780px;
     margin: 0.75rem auto 0;
+
     color: var(--text-light, #6b7280);
     font-family: var(--font-primary, 'Inter', sans-serif);
+
+    color: #6b7280;
+
 }
 
 /* === Content Section === */
@@ -80,20 +100,32 @@
 .story-image img {
     width: 100%;
     border-radius: 18px;
+
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+
     transition: transform .4s ease, box-shadow .4s ease;
 }
 
 .story-text p {
     margin-bottom: 1rem;
     line-height: 1.8;
+
     color: #4b5563;
     /* darker text on light background */
+
+    color: #4b5563; /* darker text on light background */
+
 }
 
 .story-image img:hover {
     transform: translateY(-4px);
+
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+
 }
 
 /* === Values Section (Card Layout) === */
@@ -108,9 +140,15 @@
     padding: 2rem;
     text-align: center;
     border-radius: 18px;
+
     border: 1px solid rgba(0, 0, 0, 0.08);
     transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+
+    border: 1px solid rgba(0,0,0,0.08);
+    transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+
 }
 
 .value-icon {

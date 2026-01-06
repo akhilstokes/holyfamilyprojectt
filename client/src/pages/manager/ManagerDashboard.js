@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+
 import './ManagerDashboard.css';
+
+
 
 const ManagerDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -143,6 +146,7 @@ const ManagerDashboard = () => {
     } catch {}
   };
 
+
   // Format notification metadata in a user-friendly way
   const formatMetadata = (meta) => {
     if (!meta) return null;
@@ -188,7 +192,7 @@ const ManagerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="manager-dashboard" style={{ textAlign: 'center', paddingTop: 60 }}>
+      <div style={{ padding: 16, textAlign: 'center' }}>
         <h2>Manager Dashboard</h2>
         <div>Loading dashboard data...</div>
       </div>
@@ -387,6 +391,7 @@ const ManagerDashboard = () => {
       </div>
 
       {/* Notifications Section */}
+
       <div className="notifications-section">
         <div className="notifications-header">
           <h4>Recent Notifications</h4>

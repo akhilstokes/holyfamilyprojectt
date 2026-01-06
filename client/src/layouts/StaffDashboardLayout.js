@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import './StaffDashboardLayout.css';
@@ -21,6 +22,7 @@ const StaffDashboardLayout = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -29,6 +31,7 @@ const StaffDashboardLayout = ({ children }) => {
       navigate('/login');
     }
   };
+
 
   const navigationItems = [
     { path: '/staff/attendance', icon: 'fas fa-user-clock', label: 'Attendance' },

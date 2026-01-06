@@ -213,6 +213,14 @@ exports.classifyQuality = async (req, res) => {
       }
     }
 
+    // Ensure we have training data
+    if (trainingData.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No training data available for classification'
+      });
+    }
+
     // Train KNN model
     const qualityModel = new QualityClassificationKNN(3);
     qualityModel.trainQualityModel(trainingData);
@@ -222,7 +230,8 @@ exports.classifyQuality = async (req, res) => {
       drcPercentage,
       moistureContent || 0,
       impurities || 0,
-      colorScore || 5
+      colorScore || 5,
+      viscosity || 100
     );
 
     res.status(200).json({
@@ -246,8 +255,7 @@ exports.classifyQuality = async (req, res) => {
     console.error('Quality classification error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error classifying quality',
-      error: error.message
+      message: 'Internal server error during quality classification'
     });
   }
 };

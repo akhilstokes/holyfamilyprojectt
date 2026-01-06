@@ -416,7 +416,8 @@ export const commonValidationRules = {
     email: [validators.required, validators.email],
     phoneNumber: [validators.required, validators.phone],
     password: [validators.required, validators.password],
-    confirmPassword: [validators.required]
+    confirmPassword: [validators.required],
+    role: [validators.required, validators.role]
   },
   
   // Latex request

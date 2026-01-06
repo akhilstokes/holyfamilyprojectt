@@ -67,7 +67,10 @@ const ValidatedInput = ({
 
   return (
     <div className={containerClasses}>
+
       {!label && <label htmlFor={name} className="sr-only">{props['aria-label'] || name}</label>}
+
+
       <input
         id={name}
         name={name}
@@ -75,12 +78,19 @@ const ValidatedInput = ({
         value={value}
         onChange={handleChange}
         onBlur={handleBlur}
+
         placeholder={placeholder || undefined}
         required={required}
         disabled={disabled}
         className={inputClasses}
         aria-label={props['aria-label'] || (!label ? name : undefined)}
         title={props['aria-label'] || label || name}
+
+        placeholder=" "
+        required={required}
+        disabled={disabled}
+        className={inputClasses}
+
         {...props}
       />
       

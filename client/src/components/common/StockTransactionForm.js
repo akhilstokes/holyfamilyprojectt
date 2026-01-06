@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+
 import { formatDateTime } from '../../utils/dateUtils';
+
+
 
 const StockTransactionForm = ({ onSubmit, onCancel, initialData = {}, productName = null }) => {
   const [form, setForm] = useState({
@@ -135,7 +138,11 @@ const StockTransactionForm = ({ onSubmit, onCancel, initialData = {}, productNam
           <strong>Current Stock:</strong> {currentStock.quantityInLiters} {form.unit}
           <br />
           <small style={{ color: '#666' }}>
+
             Last updated: {formatDateTime(currentStock.lastUpdated)}
+
+            Last updated: {new Date(currentStock.lastUpdated).toLocaleString()}
+
           </small>
         </div>
       )}
@@ -425,6 +432,10 @@ const StockTransactionForm = ({ onSubmit, onCancel, initialData = {}, productNam
 };
 
 export default StockTransactionForm;
+
+
+
+
 
 
 

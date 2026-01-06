@@ -1,6 +1,6 @@
-/* ================================
+/* ====
    Role-Based Theme System
-   ================================ */
+   ==== */
 
 /* 🎨 Role Color Variables */
 :root {
@@ -391,10 +391,10 @@
   background: linear-gradient(135deg, var(--role-primary), var(--role-secondary));
 }
 
-/* ================================
+/* ====
    Admin-scoped button overrides
    Applies to any native button or .btn variants rendered inside admin layout
-   ================================ */
+   ==== */
 .role-admin button,
 .role-admin .btn {
   background: var(--role-primary);

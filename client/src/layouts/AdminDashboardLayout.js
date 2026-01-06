@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './AdminDashboardLayout.css';
@@ -12,6 +13,7 @@ const AdminDashboardLayout = ({ children }) => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
+
   const handleSignOut = async () => {
     try {
       await logout();
@@ -19,6 +21,7 @@ const AdminDashboardLayout = ({ children }) => {
       navigate('/', { replace: true });
     }
   };
+
 
   // Click outside handler
   useEffect(() => {

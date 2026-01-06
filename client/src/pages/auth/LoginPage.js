@@ -4,19 +4,26 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
 import { validators, validateField, commonValidationRules } from '../../utils/validation';
 import './AuthStyles.css';
+
 import './ButtonFix.css';
+
+
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
     const [successMessage, setSuccessMessage] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+
+
     const navigate = useNavigate();
     const location = useLocation();
     const { login, googleSignIn } = useAuth();
 
     const returnTo = location.state?.from || null;
+
     
     // Check if coming from registration
     React.useEffect(() => {
@@ -33,6 +40,8 @@ const LoginPage = () => {
     React.useEffect(() => {
         setFormData(prev => ({ ...prev, email: '' }));
     }, []);
+
+
 
     const { email, password } = formData;
 
@@ -70,16 +79,23 @@ const LoginPage = () => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
         
+
         // Clear error and success message when user starts typing
+
+        // Clear error when user starts typing
+
         if (fieldErrors[name]) {
             setFieldErrors(prev => ({
                 ...prev,
                 [name]: ''
             }));
         }
+
         if (successMessage) {
             setSuccessMessage('');
         }
+
+
     };
     
     const navigatePostLogin = (loggedInUser) => {
@@ -154,6 +170,7 @@ const LoginPage = () => {
     
 
     return (
+
         <div className="modern-auth-wrapper">
             <div className="auth-container">
                 {/* Background Elements */}

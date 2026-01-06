@@ -19,6 +19,7 @@ const ManagerWages = () => {
 
   // Load employees when group changes
   useEffect(() => {
+
     // Debounce the API call to prevent rate limiting
     const timeoutId = setTimeout(async () => {
       const loadUsers = async () => {
@@ -27,6 +28,14 @@ const ManagerWages = () => {
           const api = process.env.REACT_APP_API_URL || 'http://localhost:5000';
           const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
           const hdrs = token ? { Authorization: `Bearer ${token}` } : {};
+
+    const loadUsers = async () => {
+      try {
+        setError('');
+        const api = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const hdrs = token ? { Authorization: `Bearer ${token}` } : {};
+
         
         // Determine role mapping
         const roleMapping = {
@@ -135,6 +144,7 @@ const ManagerWages = () => {
         setError(e?.message || 'Failed to load employees');
         setEmployees([]);
       }
+
       };
       
       loadUsers();
@@ -142,6 +152,11 @@ const ManagerWages = () => {
 
     // Cleanup timeout on unmount or dependency change
     return () => clearTimeout(timeoutId);
+
+    };
+    
+    loadUsers();
+
   }, [form.group]);
 
   // If group is accountant and employees loaded, auto-select the first employee when none chosen
@@ -221,6 +236,7 @@ const ManagerWages = () => {
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error(`Save failed (${res.status})`);
+
       
       const savedData = await res.json();
       setSaveMsg('Payslip saved.');
@@ -252,6 +268,9 @@ const ManagerWages = () => {
         setSaveMsg('Payslip saved (notification failed to send).');
       }
       
+
+      setSaveMsg('Payslip saved.');
+
     } catch (e) {
       const msg = e?.message || 'Failed to save payslip';
       // Improve visibility if backend route is missing

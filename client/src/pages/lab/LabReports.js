@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
+
 import { Link } from 'react-router-dom';
 import './LabDashboard.css'; // Ensure we use the dashboard theme
+
+
 
 const LabReports = () => {
   const base = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -12,9 +15,12 @@ const LabReports = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+
   // Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newReport, setNewReport] = useState({ date: '', sampleId: '', supplier: '', drc: '', barrels: '' });
+
+
 
   const run = async () => {
     setLoading(true); setError('');
@@ -31,6 +37,7 @@ const LabReports = () => {
   };
 
   useEffect(() => { /* on mount, optionally auto-load today */ }, []);
+
 
   const handleCreate = async () => {
     // Logic to save the new report goes here
@@ -246,6 +253,45 @@ const LabReports = () => {
           </div>
         </div>
       )}
+
+  return (
+    <div className="dash-card" style={{ padding: 16 }}>
+      <h3 style={{ marginTop: 0 }}>Reports</h3>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap', marginBottom: 12 }}>
+        <label>From<input type="date" value={from} onChange={(e)=>setFrom(e.target.value)} /></label>
+        <label>To<input type="date" value={to} onChange={(e)=>setTo(e.target.value)} /></label>
+        <button className="btn" onClick={run} disabled={loading}>{loading ? 'Loading...' : 'Run'}</button>
+      </div>
+      {error && <div className="error-message">{error}</div>}
+      <div style={{ overflowX: 'auto' }}>
+        <table className="dashboard-table" style={{ minWidth: 720 }}>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Sample ID</th>
+              <th>Supplier</th>
+              <th>Batch</th>
+              <th>Qty (L)</th>
+              <th>DRC %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length ? rows.map((r, i) => (
+              <tr key={i}>
+                <td>{r.analyzedAt ? new Date(r.analyzedAt).toLocaleDateString() : '-'}</td>
+                <td>{r.sampleId || '-'}</td>
+                <td>{r.supplier || '-'}</td>
+                <td>{r.batch || '-'}</td>
+                <td>{r.quantityLiters ?? '-'}</td>
+                <td>{r.drc ?? '-'}</td>
+              </tr>
+            )) : (
+              <tr><td colSpan={6} style={{ color: '#9aa' }}>No data</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
     </div>
   );
 };

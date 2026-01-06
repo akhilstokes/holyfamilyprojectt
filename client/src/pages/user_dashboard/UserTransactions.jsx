@@ -16,9 +16,12 @@ const UserTransactions = () => {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
+
   // Stats for the top cards (calculated from current rows for demo, ideal would be API)
   const totalAmount = rows.reduce((sum, r) => sum + (parseFloat(r.finalAmount) || 0), 0);
   const pendingCount = rows.filter(r => !r.isVerified).length; // Assuming logical property
+
+
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -36,7 +39,11 @@ const UserTransactions = () => {
     }
   };
 
+
   useEffect(() => { load(); }, [page, pageSize]);
+
+  useEffect(() => { load(); }, [load, page, pageSize]);
+
 
   const beginEdit = (tx) => {
     const ok = window.confirm('Are you sure you want to edit this transaction?');
@@ -58,6 +65,10 @@ const UserTransactions = () => {
     setSaving(true);
     try {
       await updateTransaction(id, editData);
+
+
+      // reflect changes locally to keep UX snappy
+
       setRows(prev => prev.map(r => (r._id === id || r.id === id) ? { ...r, ...editData } : r));
       setEditingId(null);
       setEditData({});
@@ -74,6 +85,10 @@ const UserTransactions = () => {
     setPublishing(true);
     try {
       await publishTransaction(id);
+
+
+      // Optionally reload to ensure server state
+
       await load();
       alert('Published successfully');
     } catch (e) {
@@ -84,6 +99,7 @@ const UserTransactions = () => {
   };
 
   return (
+
     <div className="transactions-page">
       {/* Header Section */}
       <div style={{ marginBottom: '2rem' }}>
@@ -281,6 +297,114 @@ const UserTransactions = () => {
           </div>
         </div>
       )}
+
+    <div>
+      <h2>Transactions & Bills</h2>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'end', marginBottom: 12 }}>
+        <label>
+          From
+          <input
+            type="date"
+            value={from}
+            max={todayStr}
+            onChange={e => {
+              const v = e.target.value;
+              if (to && to < v) setTo(v);
+              setFrom(v);
+            }}
+          />
+        </label>
+        <label>
+          To
+          <input
+            type="date"
+            value={to}
+            min={from}
+            max={todayStr}
+            onChange={e => {
+              const v = e.target.value;
+              setTo(from && v < from ? from : v);
+            }}
+          />
+        </label>
+        <button className="btn" onClick={() => { setPage(1); load(); }}>Filter</button>
+      </div>
+
+      {loading ? (
+        <p>Loading...</p>
+      ) : rows.length === 0 ? (
+        <div className="no-data">No transactions</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Batch</th>
+                <th>Weight (kg)</th>
+                <th>DRC (%)</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(tx => {
+                const id = tx.id || tx._id;
+                const isEditing = editingId === id;
+                return (
+                  <tr key={id}>
+                    <td>{new Date(tx.date || tx.createdAt).toLocaleDateString('en-IN')}</td>
+                    <td>{tx.batchId || '-'}</td>
+                    <td>
+                      {isEditing ? (
+                        <input type="number" step="0.01" value={editData.weightKg}
+                          onChange={e => setEditData(d => ({ ...d, weightKg: e.target.value }))} style={{ width: 110 }} />
+                      ) : (
+                        tx.weightKg ?? tx.weight ?? '-'
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input type="number" step="0.01" value={editData.drcPercent}
+                          onChange={e => setEditData(d => ({ ...d, drcPercent: e.target.value }))} style={{ width: 90 }} />
+                      ) : (
+                        tx.drcPercent ?? '-'
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input type="number" step="0.01" value={editData.finalAmount}
+                          onChange={e => setEditData(d => ({ ...d, finalAmount: e.target.value }))} style={{ width: 110 }} />
+                      ) : (
+                        tx.finalAmount ?? '-'
+                      )}
+                    </td>
+                    <td style={{ display: 'flex', gap: 8 }}>
+                      <Link className="btn-secondary" to={`/user/transactions/${id}`}>View</Link>
+                      {!isEditing ? (
+                        <button className="btn" onClick={() => beginEdit(tx)}>Edit</button>
+                      ) : (
+                        <>
+                          <button className="btn" disabled={saving} onClick={() => saveEdit(id)}>{saving ? 'Saving...' : 'Save'}</button>
+                          <button className="btn-secondary" onClick={cancelEdit}>Cancel</button>
+                          <button className="btn" disabled={publishing} onClick={() => doPublish(id)}>{publishing ? 'Publishing...' : 'Publish'}</button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button className="btn-secondary" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
+        <span>Page {page}</span>
+        <button className="btn-secondary" disabled={rows.length < pageSize || page * pageSize >= total} onClick={() => setPage(p => p + 1)}>Next</button>
+      </div>
+
     </div>
   );
 };

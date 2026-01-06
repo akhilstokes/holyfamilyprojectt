@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { getStockSummary, getStockLevel } from '../../services/adminService';
+
 import { formatDateTime, formatTableDateTime } from '../../utils/dateUtils';
+
+
 
 const YardStock = () => {
   const [data, setData] = useState(null);
@@ -47,7 +50,11 @@ const YardStock = () => {
             </div>
             <div>
               <div style={{ fontSize: 12, color:'#9aa' }}>Updated</div>
+
               <div>{formatDateTime(data.updatedAt)}</div>
+
+              <div>{data.updatedAt ? new Date(data.updatedAt).toLocaleString() : '-'}</div>
+
             </div>
           </div>
         </div>
@@ -67,7 +74,11 @@ const YardStock = () => {
               <tr key={it._id || it.id || it.productName}>
                 <td>{it.productName || it.name}</td>
                 <td>{it.quantityInLiters ?? it.qty ?? '-'}</td>
+
                 <td>{formatTableDateTime(it.updatedAt)}</td>
+
+                <td>{it.updatedAt ? new Date(it.updatedAt).toLocaleString() : '-'}</td>
+
               </tr>
             ))}
             {items.length === 0 && (
